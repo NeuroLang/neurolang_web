@@ -3,6 +3,8 @@
 # +
 import base64  # type: ignore
 
+from functools import partial
+
 import html  # type: ignore
 
 from ipysheet import row, sheet  # type: ignore
@@ -37,6 +39,8 @@ import os  # type: ignore
 import pandas as pd  # type: ignore
 
 from typing import Dict
+
+import traitlets
 
 
 # -
@@ -185,12 +189,12 @@ class PlotWidget(Output):
 
 
 class TableSetWidget(VBox):
+    selection = traitlets.Set()  # selected images in table
+
     def __init__(self, name: str, wras: WrappedRelationalAlgebraSet):
         super(TableSetWidget, self).__init__()
 
         self.wras = wras
-        self.selection = []
-
         self.name_label = HTML(f"<h2>{name}</h2>")
         self.sheet = self._init_sheet(self.wras, self.selection)
 
@@ -206,33 +210,31 @@ class TableSetWidget(VBox):
             layout=Layout(width="auto", height=f"{50 * rows_visible}px"),
         )
 
+        def selection_changed(change, image):
+            if change["new"]:
+                self.selection = self.selection | {image}
+            else:
+                self.selection = self.selection - {image}
+
         for i, tuple_ in enumerate(wras.unwrapped_iter()):
             row_temp = []
             for el in tuple_:
                 if isinstance(el, ExplicitVBR):
                     checkbox = Checkbox(value=False, description="show region")
-                    checkbox.region_spatial_image = el.spatial_image()
-                    checkbox.observe(self._selection_changed)
+                    checkbox.observe(
+                        partial(selection_changed, image=el.spatial_image()),
+                        names="value",
+                    )
                     row_temp.append(checkbox)
                 else:
                     row_temp.append(Label(str(el)))
             row(i, row_temp)
         return table
 
-    def _selection_changed(self, event):
-        if self.viewer is not None:
-            if event["type"] == "change" and event["name"] == "value":
-                if not event["old"] and event["new"]:
-                    self.selection.append(event["owner"].region_spatial_image)
-                elif event["old"] and not event["new"]:
-                    self.selection.remove(event["owner"].region_spatial_image)
-                self.viewer.plot(self.selection)
-
-    def set_viewer(self, viewer: PlotWidget):
-        self.viewer = viewer
-
 
 class ResultWidget(VBox):
+    selection = traitlets.Set()  # union of selected images for each table in results
+
     def __init__(self):
         super(ResultWidget, self).__init__()
 
@@ -243,14 +245,27 @@ class ResultWidget(VBox):
         # self.viewer = PapayaWidget(layout = Layout(width='700px', height='600px', border='1px solid black'))
 
     def show_results(self, res: Dict[str, WrappedRelationalAlgebraSet]):
+        self.selection = set()
         tablesets = self._create_tablesets(res)
+
+        def selection_changed(_):
+            print(f"Result selection changed: {self.selection}")
+            self.viewer.plot(self.selection)
+
+        self.observe(selection_changed, names="selection")
         self.children = [self.viewer] + tablesets
 
     def _create_tablesets(self, res):
         tablesets = []
         for name, result_set in res.items():
             tableset_widget = TableSetWidget(name, result_set)
-            tableset_widget.set_viewer(self.viewer)
+
+            def selection_changed(change):
+                old = change["old"]
+                new = change["new"]
+                self.selection = (self.selection - (old - new)) | (new - old)
+
+            tableset_widget.observe(selection_changed, names="selection")
             tablesets.append(tableset_widget)
         return tablesets
 
@@ -299,4 +314,3 @@ default_query = "ans(region_union(r)) :- destrieux(..., r)"
 
 qw = QueryWidget(nl, default_query)
 qw
-# -
