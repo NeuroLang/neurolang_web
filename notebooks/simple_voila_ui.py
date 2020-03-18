@@ -3,6 +3,8 @@
 # +
 import base64  # type: ignore
 
+from functools import partial
+
 import html  # type: ignore
 
 from ipysheet import row, sheet  # type: ignore
@@ -37,6 +39,8 @@ import os  # type: ignore
 import pandas as pd  # type: ignore
 
 from typing import Dict
+
+import traitlets
 
 
 # -
@@ -79,6 +83,50 @@ def run_query(nl, query):
 
 
 # ## UI utilities
+
+
+# +
+import asyncio
+
+
+class Timer:
+    def __init__(self, timeout, callback):
+        self._timeout = timeout
+        self._callback = callback
+        self._task = asyncio.ensure_future(self._job())
+
+    async def _job(self):
+        await asyncio.sleep(self._timeout)
+        self._callback()
+
+    def cancel(self):
+        self._task.cancel()
+
+
+def debounce(wait):
+    """ Decorator that will postpone a function's
+        execution until after `wait` seconds
+        have elapsed since the last time it was invoked. """
+
+    def decorator(fn):
+        timer = None
+
+        def debounced(*args, **kwargs):
+            nonlocal timer
+
+            def call_it():
+                fn(*args, **kwargs)
+
+            if timer is not None:
+                timer.cancel()
+            timer = Timer(wait, call_it)
+
+        return debounced
+
+    return decorator
+
+
+# -
 
 
 class PapayaWidget(HTML):
@@ -185,16 +233,27 @@ class PlotWidget(Output):
 
 
 class TableSetWidget(VBox):
+    selection = traitlets.Set()  # selected images in table
+
     def __init__(self, name: str, wras: WrappedRelationalAlgebraSet):
         super(TableSetWidget, self).__init__()
 
         self.wras = wras
-        self.selection = []
+        self.checkboxes = []
 
-        self.name_label = HTML(f"<h2>{name}</h2>")
+        name_label = HTML(f"<h2>{name}</h2>")
+        select_all = Button(description="select all")
+        select_all.on_click(self.select_all)
+        clear_selection = Button(description="clear selection")
+        clear_selection.on_click(self.unselect_all)
+
+        header = HBox(
+            [name_label, select_all, clear_selection],
+            layout=Layout(align_items="center"),
+        )
         self.sheet = self._init_sheet(self.wras, self.selection)
 
-        self.children = [self.name_label, self.sheet]
+        self.children = [header, self.sheet]
 
     def _init_sheet(self, wras, selection):
         column_headers = [str(i) for i in range(wras.arity)]
@@ -206,33 +265,40 @@ class TableSetWidget(VBox):
             layout=Layout(width="auto", height=f"{50 * rows_visible}px"),
         )
 
+        def selection_changed(change, image):
+            if change["new"]:
+                self.selection = self.selection | {image}
+            else:
+                self.selection = self.selection - {image}
+
         for i, tuple_ in enumerate(wras.unwrapped_iter()):
             row_temp = []
             for el in tuple_:
                 if isinstance(el, ExplicitVBR):
                     checkbox = Checkbox(value=False, description="show region")
-                    checkbox.region_spatial_image = el.spatial_image()
-                    checkbox.observe(self._selection_changed)
+                    checkbox.observe(
+                        partial(selection_changed, image=el.spatial_image()),
+                        names="value",
+                    )
                     row_temp.append(checkbox)
+                    self.checkboxes.append(checkbox)
                 else:
                     row_temp.append(Label(str(el)))
             row(i, row_temp)
         return table
 
-    def _selection_changed(self, event):
-        if self.viewer is not None:
-            if event["type"] == "change" and event["name"] == "value":
-                if not event["old"] and event["new"]:
-                    self.selection.append(event["owner"].region_spatial_image)
-                elif event["old"] and not event["new"]:
-                    self.selection.remove(event["owner"].region_spatial_image)
-                self.viewer.plot(self.selection)
+    def select_all(self, args, **kwargs):
+        for cb in self.checkboxes:
+            cb.value = True
 
-    def set_viewer(self, viewer: PlotWidget):
-        self.viewer = viewer
+    def unselect_all(self, args, **kwargs):
+        for cb in self.checkboxes:
+            cb.value = False
 
 
 class ResultWidget(VBox):
+    selection = traitlets.Set()  # union of selected images for each table in results
+
     def __init__(self):
         super(ResultWidget, self).__init__()
 
@@ -243,14 +309,27 @@ class ResultWidget(VBox):
         # self.viewer = PapayaWidget(layout = Layout(width='700px', height='600px', border='1px solid black'))
 
     def show_results(self, res: Dict[str, WrappedRelationalAlgebraSet]):
+        self.selection = set()
         tablesets = self._create_tablesets(res)
+
+        @debounce(0.2)
+        def selection_changed(_):
+            self.viewer.plot(self.selection)
+
+        self.observe(selection_changed, names="selection")
         self.children = [self.viewer] + tablesets
 
     def _create_tablesets(self, res):
         tablesets = []
         for name, result_set in res.items():
             tableset_widget = TableSetWidget(name, result_set)
-            tableset_widget.set_viewer(self.viewer)
+
+            def selection_changed(change):
+                old = change["old"]
+                new = change["new"]
+                self.selection = (self.selection - (old - new)) | (new - old)
+
+            tableset_widget.observe(selection_changed, names="selection")
             tablesets.append(tableset_widget)
         return tablesets
 
