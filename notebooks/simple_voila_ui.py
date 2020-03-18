@@ -85,6 +85,50 @@ def run_query(nl, query):
 # ## UI utilities
 
 
+# +
+import asyncio
+
+
+class Timer:
+    def __init__(self, timeout, callback):
+        self._timeout = timeout
+        self._callback = callback
+        self._task = asyncio.ensure_future(self._job())
+
+    async def _job(self):
+        await asyncio.sleep(self._timeout)
+        self._callback()
+
+    def cancel(self):
+        self._task.cancel()
+
+
+def debounce(wait):
+    """ Decorator that will postpone a function's
+        execution until after `wait` seconds
+        have elapsed since the last time it was invoked. """
+
+    def decorator(fn):
+        timer = None
+
+        def debounced(*args, **kwargs):
+            nonlocal timer
+
+            def call_it():
+                fn(*args, **kwargs)
+
+            if timer is not None:
+                timer.cancel()
+            timer = Timer(wait, call_it)
+
+        return debounced
+
+    return decorator
+
+
+# -
+
+
 class PapayaWidget(HTML):
     def __init__(self, *args, **kwargs):
         super(PapayaWidget, self).__init__(*args, **kwargs)
@@ -195,10 +239,21 @@ class TableSetWidget(VBox):
         super(TableSetWidget, self).__init__()
 
         self.wras = wras
-        self.name_label = HTML(f"<h2>{name}</h2>")
+        self.checkboxes = []
+
+        name_label = HTML(f"<h2>{name}</h2>")
+        select_all = Button(description="select all")
+        select_all.on_click(self.select_all)
+        clear_selection = Button(description="clear selection")
+        clear_selection.on_click(self.unselect_all)
+
+        header = HBox(
+            [name_label, select_all, clear_selection],
+            layout=Layout(align_items="center"),
+        )
         self.sheet = self._init_sheet(self.wras, self.selection)
 
-        self.children = [self.name_label, self.sheet]
+        self.children = [header, self.sheet]
 
     def _init_sheet(self, wras, selection):
         column_headers = [str(i) for i in range(wras.arity)]
@@ -226,10 +281,19 @@ class TableSetWidget(VBox):
                         names="value",
                     )
                     row_temp.append(checkbox)
+                    self.checkboxes.append(checkbox)
                 else:
                     row_temp.append(Label(str(el)))
             row(i, row_temp)
         return table
+
+    def select_all(self, args, **kwargs):
+        for cb in self.checkboxes:
+            cb.value = True
+
+    def unselect_all(self, args, **kwargs):
+        for cb in self.checkboxes:
+            cb.value = False
 
 
 class ResultWidget(VBox):
@@ -248,8 +312,8 @@ class ResultWidget(VBox):
         self.selection = set()
         tablesets = self._create_tablesets(res)
 
+        @debounce(0.2)
         def selection_changed(_):
-            print(f"Result selection changed: {self.selection}")
             self.viewer.plot(self.selection)
 
         self.observe(selection_changed, names="selection")
@@ -314,3 +378,4 @@ default_query = "ans(region_union(r)) :- destrieux(..., r)"
 
 qw = QueryWidget(nl, default_query)
 qw
+# -
