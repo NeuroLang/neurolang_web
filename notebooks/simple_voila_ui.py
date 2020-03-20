@@ -182,7 +182,8 @@ class PlotWidget(Output):
         self.reset()
         if len(images) > 0:
             with self:
-                self.display = plotting.plot_prob_atlas(images)
+                image = next(iter(images))
+                self.display = plotting.plot_roi(image)
                 plotting.show()
 
     def reset(self):
