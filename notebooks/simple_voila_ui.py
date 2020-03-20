@@ -119,6 +119,7 @@ class PapayaWidget(HTML):
         self.encoder = json.JSONEncoder()
 
     def _encode_images(self, images):
+        images = list(images)
         encoded_images = []
         image_txt = []
         self.spatial_images = [self.atlas_image] + images
@@ -260,11 +261,13 @@ class ResultWidget(VBox):
     def __init__(self):
         super(ResultWidget, self).__init__()
 
-        self.viewer = PlotWidget(
-            layout=Layout(width="500px", height="250px", border="1px solid black")
-        )
+        # self.viewer = PlotWidget(
+        #    layout=Layout(width="500px", height="250px", border="1px solid black")
+        # )
 
-        # self.viewer = PapayaWidget(layout = Layout(width='700px', height='600px', border='1px solid black'))
+        self.viewer = PapayaWidget(
+            layout=Layout(width="700px", height="600px", border="1px solid black")
+        )
 
     def show_results(self, res: Dict[str, WrappedRelationalAlgebraSet]):
         self.selection = set()
