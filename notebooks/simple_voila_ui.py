@@ -181,7 +181,8 @@ class PlotWidget(Output):
         self.reset()
         if len(images) > 0:
             with self:
-                self.display = plotting.plot_prob_atlas(images)
+                image = next(iter(images))
+                self.display = plotting.plot_roi(image)
                 plotting.show()
 
     def reset(self):
@@ -264,7 +265,7 @@ class ResultWidget(VBox):
             layout=Layout(width="500px", height="250px", border="1px solid black")
         )
 
-        # self.viewer = PapayaWidget(layout = Layout(width='700px', height='600px', border='1px solid black'))
+        #self.viewer = PapayaWidget(layout = Layout(width='700px', height='600px', border='1px solid black'))
 
     def show_results(self, res: Dict[str, WrappedRelationalAlgebraSet]):
         self.selection = set()
@@ -337,3 +338,5 @@ default_query = "ans(region_union(r)) :- destrieux(..., r)"
 qw = QueryWidget(nl, default_query)
 qw
 # -
+
+
