@@ -172,26 +172,6 @@ class PapayaWidget(HTML):
         pass
 
 
-class PlotWidget(Output):
-    def __init__(self, *args, **kwargs):
-        super(PlotWidget, self).__init__(*args, **kwargs)
-
-        self.display = None
-
-    def plot(self, images):
-        self.reset()
-        if len(images) > 0:
-            with self:
-                image = next(iter(images))
-                self.display = plotting.plot_roi(image)
-                plotting.show()
-
-    def reset(self):
-        if self.display is not None:
-            self.display.close()
-        self.clear_output()
-
-
 class TableSetWidget(VBox):
     selection = traitlets.Set()  # selected images in table
 
@@ -261,10 +241,6 @@ class ResultWidget(VBox):
 
     def __init__(self):
         super(ResultWidget, self).__init__()
-
-        # self.viewer = PlotWidget(
-        #    layout=Layout(width="500px", height="250px", border="1px solid black")
-        # )
 
         self.viewer = PapayaWidget(
             layout=Layout(width="700px", height="600px", border="1px solid black")
@@ -340,4 +316,3 @@ default_query = "ans(region_union(r)) :- destrieux(..., r)"
 
 qw = QueryWidget(nl, default_query)
 qw
-# -
