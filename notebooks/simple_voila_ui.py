@@ -179,14 +179,11 @@ class TableSetWidget(VBox):
         self.checkboxes = []
 
         name_label = HTML(f"<h2>{name}</h2>")
-        select_all = Button(description="select all")
-        select_all.on_click(self.select_all)
         clear_selection = Button(description="clear selection")
         clear_selection.on_click(self.unselect_all)
 
         header = HBox(
-            [name_label, select_all, clear_selection],
-            layout=Layout(align_items="center"),
+            [name_label, clear_selection], layout=Layout(align_items="center"),
         )
         self.sheet = self._init_sheet(self.wras, self.selection)
 
