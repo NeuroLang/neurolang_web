@@ -31,7 +31,7 @@ from neurolang.frontend import NeurolangDL, ExplicitVBR  # type: ignore
 
 from nlweb.util import debounce
 
-from nilearn import datasets, plotting  # type: ignore
+from nilearn import datasets  # type: ignore
 import nibabel as nib  # type: ignore
 
 import numpy as np  # type: ignore
@@ -310,4 +310,3 @@ default_query = "ans(region_union(r)) :- destrieux(..., r)"
 
 qw = QueryWidget(nl, default_query)
 qw
-# -
