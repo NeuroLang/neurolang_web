@@ -136,37 +136,34 @@ class PapayaWidget(HTML):
 
     def plot(self, images):
         self.reset()
-        if len(images) > 0:
-            params = dict()
-            params.update(self.params)
+        params = dict()
+        params.update(self.params)
 
-            encoded_images, image_names = self._encode_images(images)
-            params["encodedImages"] = image_names
+        encoded_images, image_names = self._encode_images(images)
+        params["encodedImages"] = image_names
 
-            for image_name in image_names[1:]:
-                params[image_name] = {"min": 0, "max": 10, "lut": "Red Overlay"}
+        for image_name in image_names[1:]:
+            params[image_name] = {"min": 0, "max": 10, "lut": "Red Overlay"}
 
-            if len(self.spatial_images) > 0:
-                coords = (
-                    np.transpose(self.spatial_images[-1].get_fdata().nonzero())
-                    .mean(0)
-                    .astype(int)
-                )
-                coords = nib.affines.apply_affine(
-                    self.spatial_images[-1].affine, coords
-                )
-                params["coordinate"] = [int(c) for c in coords]
-
-            escaped_papaya_html = html.escape(
-                self.html.format(
-                    params=self.encoder.encode(params), encoded_images=encoded_images
-                )
+        if len(self.spatial_images) > 0:
+            coords = (
+                np.transpose(self.spatial_images[-1].get_fdata().nonzero())
+                .mean(0)
+                .astype(int)
             )
-            iframe = (
-                f'<iframe srcdoc="{escaped_papaya_html}" id="papaya" '
-                f'width="700px" height="600px"></iframe>'
+            coords = nib.affines.apply_affine(self.spatial_images[-1].affine, coords)
+            params["coordinate"] = [int(c) for c in coords]
+
+        escaped_papaya_html = html.escape(
+            self.html.format(
+                params=self.encoder.encode(params), encoded_images=encoded_images
             )
-            self.value = iframe
+        )
+        iframe = (
+            f'<iframe srcdoc="{escaped_papaya_html}" id="papaya" '
+            f'width="700px" height="600px"></iframe>'
+        )
+        self.value = iframe
 
     def reset(self):
         pass
@@ -316,3 +313,4 @@ default_query = "ans(region_union(r)) :- destrieux(..., r)"
 
 qw = QueryWidget(nl, default_query)
 qw
+# -
