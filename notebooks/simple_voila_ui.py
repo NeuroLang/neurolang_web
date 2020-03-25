@@ -27,6 +27,7 @@ from neurolang import regions  # type: ignore
 from neurolang.datalog.wrapped_collections import (
     WrappedRelationalAlgebraSet,
 )  # type: ignore
+import neurolang
 from neurolang.frontend import NeurolangDL, ExplicitVBR  # type: ignore
 
 from nlweb.util import debounce
@@ -95,6 +96,8 @@ class PapayaWidget(HTML):
 
         self.atlas_image = nib.load("avg152T1_brain.nii.gz")
 
+        self.spatial_images = [self.atlas_image]
+
         self.html = """
             <!DOCTYPE html>
             <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
@@ -118,11 +121,9 @@ class PapayaWidget(HTML):
         """
         self.encoder = json.JSONEncoder()
 
-    def _encode_images(self, images):
-        images = list(images)
+    def _encode_images(self):
         encoded_images = []
         image_txt = []
-        self.spatial_images = [self.atlas_image] + images
         for i, image in enumerate(self.spatial_images):
             encoded_image = base64.encodebytes(
                 nib.Nifti2Image(image.get_fdata(), affine=image.affine).to_bytes()
@@ -134,12 +135,20 @@ class PapayaWidget(HTML):
         encoded_images = "\n".join(encoded_images)
         return encoded_images, image_txt
 
-    def plot(self, images):
+    def add(self, image):
+        self.spatial_images.append(image)
+        self.plot()
+
+    def remove(self, image):
+        self.spatial_images.remove(image)
+        self.plot()
+
+    def plot(self):
         self.reset()
         params = dict()
         params.update(self.params)
 
-        encoded_images, image_names = self._encode_images(images)
+        encoded_images, image_names = self._encode_images()
         params["encodedImages"] = image_names
 
         for image_name in image_names[1:]:
@@ -169,27 +178,74 @@ class PapayaWidget(HTML):
         pass
 
 
-class TableSetWidget(VBox):
-    selection = traitlets.Set()  # selected images in table
+# +
+class CellWidgetFactory:
+    @staticmethod
+    def get_cell_widget(obj):
+        if isinstance(obj, neurolang.frontend.ExplicitVBR):
+            return ExVBRCellWidget(obj)
+        elif isinstance(obj, str) or isinstance(obj, neurolang.regions.EmptyRegion):
+            return LabelCellWidget(str(obj))
 
-    def __init__(self, name: str, wras: WrappedRelationalAlgebraSet):
+
+class ViewerFactory:
+    papaya_viewer = PapayaWidget(
+        layout=Layout(width="700px", height="600px", border="1px solid black")
+    )
+
+    @staticmethod
+    def get_region_viewer():
+        return ViewerFactory.papaya_viewer
+
+
+# -
+
+
+class LabelCellWidget(Label):
+    def __init__(self, obj, *args, **kwargs):
+        super(LabelCellWidget, self).__init__(*args, **kwargs)
+
+    def get_viewer(self):
+        return None
+
+
+class ExVBRCellWidget(Checkbox):
+    def __init__(self, obj: neurolang.frontend.ExplicitVBR, *args, **kwargs):
+        super(ExVBRCellWidget, self).__init__(*args, **kwargs)
+
+        self.value = False
+        self.description = "show region"
+
+        def _selection_changed(change, image):
+            if change["new"]:
+                self.viewer.add(image)
+            else:
+                self.viewer.remove(image)
+
+        self.observe(
+            partial(_selection_changed, image=obj.spatial_image()), names="value",
+        )
+
+        self.viewer = ViewerFactory.get_region_viewer()
+
+    def get_viewer(self):
+        return self.viewer
+
+
+class TableSetWidget(VBox):
+    def __init__(self, name: str, wras: WrappedRelationalAlgebraSet, viewers: set):
         super(TableSetWidget, self).__init__()
 
         self.wras = wras
-        self.checkboxes = []
+        self.cell_viewers = viewers
 
+        # create widgets
         name_label = HTML(f"<h2>{name}</h2>")
-        clear_selection = Button(description="clear selection")
-        clear_selection.on_click(self.unselect_all)
+        self.sheet = self._init_sheet(self.wras)
 
-        header = HBox(
-            [name_label, clear_selection], layout=Layout(align_items="center"),
-        )
-        self.sheet = self._init_sheet(self.wras, self.selection)
+        self.children = [name_label, self.sheet]
 
-        self.children = [header, self.sheet]
-
-    def _init_sheet(self, wras, selection):
+    def _init_sheet(self, wras):
         column_headers = [str(i) for i in range(wras.arity)]
         rows_visible = min(len(wras), 5)
         table = sheet(
@@ -199,79 +255,39 @@ class TableSetWidget(VBox):
             layout=Layout(width="auto", height=f"{50 * rows_visible}px"),
         )
 
-        def selection_changed(change, image):
-            if change["new"]:
-                self.selection = self.selection | {image}
-            else:
-                self.selection = self.selection - {image}
-
         for i, tuple_ in enumerate(wras.unwrapped_iter()):
             row_temp = []
             for el in tuple_:
-                if isinstance(el, ExplicitVBR):
-                    checkbox = Checkbox(value=False, description="show region")
-                    checkbox.observe(
-                        partial(selection_changed, image=el.spatial_image()),
-                        names="value",
-                    )
-                    row_temp.append(checkbox)
-                    self.checkboxes.append(checkbox)
-                else:
-                    row_temp.append(Label(str(el)))
+                cell_widget = CellWidgetFactory.get_cell_widget(el)
+                row_temp.append(cell_widget)
+                if cell_widget.get_viewer() is not None:
+                    self.cell_viewers.add(cell_widget.get_viewer())
             row(i, row_temp)
         return table
 
-    def select_all(self, args, **kwargs):
-        for cb in self.checkboxes:
-            cb.value = True
-
-    def unselect_all(self, args, **kwargs):
-        for cb in self.checkboxes:
-            cb.value = False
-
 
 class ResultWidget(VBox):
-    selection = traitlets.Set()  # union of selected images for each table in results
-
     def __init__(self):
         super(ResultWidget, self).__init__()
 
-        self.viewer = PapayaWidget(
-            layout=Layout(width="700px", height="600px", border="1px solid black")
-        )
+        self.viewers = set()
 
     def show_results(self, res: Dict[str, WrappedRelationalAlgebraSet]):
-        self.selection = set()
         tablesets = self._create_tablesets(res)
 
-        @debounce(0.2)
-        def selection_changed(_):
-            self.viewer.plot(self.selection)
-
-        self.observe(selection_changed, names="selection")
-        self.children = [self.viewer] + tablesets
+        self.children = tuple(self.viewers) + tuple(tablesets)
 
     def _create_tablesets(self, res):
         tablesets = []
         for name, result_set in res.items():
-            tableset_widget = TableSetWidget(name, result_set)
-
-            def selection_changed(change):
-                old = change["old"]
-                new = change["new"]
-                self.selection = (self.selection - (old - new)) | (new - old)
-
-            tableset_widget.observe(selection_changed, names="selection")
+            tableset_widget = TableSetWidget(name, result_set, self.viewers)
             tablesets.append(tableset_widget)
         return tablesets
 
     def reset(self):
-        self.viewer.reset()
-
         for table in self.children[1:]:
             table.close()
-
-        self.children = [self.viewer]
+        self.children = []
 
 
 class QueryWidget(VBox):
