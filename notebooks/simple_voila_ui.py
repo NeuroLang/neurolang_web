@@ -16,6 +16,7 @@ from ipywidgets import (
     Label,
     Layout,
     Output,
+    Tab,
     Textarea,
     VBox,
     Widget,
@@ -144,7 +145,6 @@ class PapayaWidget(HTML):
         self.plot()
 
     def plot(self):
-        self.reset()
         params = dict()
         params.update(self.params)
 
@@ -175,7 +175,8 @@ class PapayaWidget(HTML):
         self.value = iframe
 
     def reset(self):
-        pass
+        self.spatial_images = [self.atlas_image]
+        self.plot()
 
 
 # +
@@ -233,11 +234,11 @@ class ExVBRCellWidget(Checkbox):
 
 
 class TableSetWidget(VBox):
-    def __init__(self, name: str, wras: WrappedRelationalAlgebraSet, viewers: set):
+    def __init__(self, name: str, wras: WrappedRelationalAlgebraSet):
         super(TableSetWidget, self).__init__()
 
         self.wras = wras
-        self.cell_viewers = viewers
+        self.cell_viewers = set()
 
         # create widgets
         name_label = HTML(f"<h2>{name}</h2>")
@@ -265,29 +266,44 @@ class TableSetWidget(VBox):
             row(i, row_temp)
         return table
 
+    def get_viewers(self):
+        return self.cell_viewers
+
 
 class ResultWidget(VBox):
     def __init__(self):
         super(ResultWidget, self).__init__()
 
-        self.viewers = set()
+        self.tab = Tab()
 
     def show_results(self, res: Dict[str, WrappedRelationalAlgebraSet]):
-        tablesets = self._create_tablesets(res)
+        names, tablesets = self._create_tablesets(res)
 
-        self.children = tuple(self.viewers) + tuple(tablesets)
+        for i, name in enumerate(names):
+            self.tab.set_title(i, name)
+        self.tab.children = tablesets
+
+        def _tab_changed(tablesets, event):
+            # the viewers should be updated depending on selected tableset
+
+            new = event.new
+            self.children = tuple([self.tab]) + tuple(tablesets[new].get_viewers())
+
+        self.tab.observe(partial(_tab_changed, tablesets), names="selected_index")
+
+        self.children = tuple([self.tab]) + tuple(tablesets[0].get_viewers())
 
     def _create_tablesets(self, res):
         tablesets = []
+        names = []
         for name, result_set in res.items():
-            tableset_widget = TableSetWidget(name, result_set, self.viewers)
+            tableset_widget = TableSetWidget(name, result_set)
             tablesets.append(tableset_widget)
-        return tablesets
+            names.append(name)
+        return names, tablesets
 
     def reset(self):
-        for table in self.children[1:]:
-            table.close()
-        self.children = []
+        pass
 
 
 class QueryWidget(VBox):
