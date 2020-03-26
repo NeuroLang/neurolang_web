@@ -241,10 +241,9 @@ class TableSetWidget(VBox):
         self.cell_viewers = set()
 
         # create widgets
-        name_label = HTML(f"<h2>{name}</h2>")
         self.sheet = self._init_sheet(self.wras)
 
-        self.children = [name_label, self.sheet]
+        self.children = [self.sheet]
 
     def _init_sheet(self, wras):
         column_headers = [str(i) for i in range(wras.arity)]
