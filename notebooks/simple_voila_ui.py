@@ -203,7 +203,7 @@ class ViewerFactory:
 
 
 class LabelCellWidget(Label):
-    def __init__(self, obj, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super(LabelCellWidget, self).__init__(*args, **kwargs)
 
     def get_viewer(self):
@@ -224,7 +224,7 @@ class ExVBRCellWidget(Checkbox):
                 self.viewer.remove(image)
 
         self.observe(
-            partial(_selection_changed, image=obj.spatial_image()), names="value",
+            partial(_selection_changed, image=obj.spatial_image()), names="value"
         )
 
         self.viewer = ViewerFactory.get_region_viewer()
