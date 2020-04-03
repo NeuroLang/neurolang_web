@@ -1,5 +1,9 @@
 # ## Neurolang Query UI
 
+import warnings  # type: ignore
+
+warnings.filterwarnings("ignore")
+
 # +
 import base64  # type: ignore
 
