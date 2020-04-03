@@ -1,4 +1,4 @@
-# ## Neurolang Query UI
+# ## Imports
 
 import warnings  # type: ignore
 
@@ -53,43 +53,40 @@ import traitlets
 # -
 
 
-def init_agent():
-    """
-    Set up the neurolang query runner (?) and add facts (?) to
-    the database
-    """
-    nl = NeurolangDL()
+# ## UI components
 
-    @nl.add_symbol
-    def region_union(rs):
-        return regions.region_union(rs)
+# ### Cell and cell viewer widgets
 
-    destrieux_atlas = datasets.fetch_atlas_destrieux_2009()
-    destrieux_atlas_image = nib.load(destrieux_atlas["maps"])
-    destrieux_labels = dict(destrieux_atlas["labels"])
 
-    destrieux_set = set()
-    for k, v in destrieux_labels.items():
-        if k == 0:
-            continue
-        destrieux_set.add(
-            (
-                v.decode("utf8"),
-                ExplicitVBR.from_spatial_image_label(destrieux_atlas_image, k),
-            )
+class LabelCellWidget(Label):
+    def __init__(self, *args, **kwargs):
+        super(LabelCellWidget, self).__init__(*args, **kwargs)
+
+    def get_viewer(self):
+        return None
+
+
+class ExVBRCellWidget(Checkbox):
+    def __init__(self, obj: neurolang.frontend.ExplicitVBR, *args, **kwargs):
+        super(ExVBRCellWidget, self).__init__(*args, **kwargs)
+
+        self.value = False
+        self.description = "show region"
+
+        def _selection_changed(change, image):
+            if change["new"]:
+                self.viewer.add(image)
+            else:
+                self.viewer.remove(image)
+
+        self.observe(
+            partial(_selection_changed, image=obj.spatial_image()), names="value"
         )
 
-    nl.add_tuple_set(destrieux_set, name="destrieux")
-    return nl
+        self.viewer = ViewerFactory.get_region_viewer()
 
-
-def run_query(nl, query):
-    with nl.scope as s:
-        nl.execute_nat_datalog_program(query)
-        return nl.solve_all()
-
-
-# ## UI utilities
+    def get_viewer(self):
+        return self.viewer
 
 
 class PapayaWidget(HTML):
@@ -182,7 +179,9 @@ class PapayaWidget(HTML):
         pass
 
 
-# +
+# ###  Factories
+
+
 class CellWidgetFactory:
     @staticmethod
     def get_cell_widget(obj):
@@ -202,38 +201,7 @@ class ViewerFactory:
         return ViewerFactory.papaya_viewer
 
 
-# -
-
-
-class LabelCellWidget(Label):
-    def __init__(self, *args, **kwargs):
-        super(LabelCellWidget, self).__init__(*args, **kwargs)
-
-    def get_viewer(self):
-        return None
-
-
-class ExVBRCellWidget(Checkbox):
-    def __init__(self, obj: neurolang.frontend.ExplicitVBR, *args, **kwargs):
-        super(ExVBRCellWidget, self).__init__(*args, **kwargs)
-
-        self.value = False
-        self.description = "show region"
-
-        def _selection_changed(change, image):
-            if change["new"]:
-                self.viewer.add(image)
-            else:
-                self.viewer.remove(image)
-
-        self.observe(
-            partial(_selection_changed, image=obj.spatial_image()), names="value"
-        )
-
-        self.viewer = ViewerFactory.get_region_viewer()
-
-    def get_viewer(self):
-        return self.viewer
+# ### Query and result widgets
 
 
 class TableSetWidget(VBox):
@@ -322,6 +290,45 @@ class QueryWidget(VBox):
         self.result_viewer.show_results(qresult)
 
 
+# ## Query Agent
+
+
+def init_agent():
+    """
+    Set up the neurolang query runner (?) and add facts (?) to
+    the database
+    """
+    nl = NeurolangDL()
+
+    @nl.add_symbol
+    def region_union(rs):
+        return regions.region_union(rs)
+
+    destrieux_atlas = datasets.fetch_atlas_destrieux_2009()
+    destrieux_atlas_image = nib.load(destrieux_atlas["maps"])
+    destrieux_labels = dict(destrieux_atlas["labels"])
+
+    destrieux_set = set()
+    for k, v in destrieux_labels.items():
+        if k == 0:
+            continue
+        destrieux_set.add(
+            (
+                v.decode("utf8"),
+                ExplicitVBR.from_spatial_image_label(destrieux_atlas_image, k),
+            )
+        )
+
+    nl.add_tuple_set(destrieux_set, name="destrieux")
+    return nl
+
+
+def run_query(nl, query):
+    with nl.scope as s:
+        nl.execute_nat_datalog_program(query)
+        return nl.solve_all()
+
+
 # ## Query the NeuroLang engine and display results
 
 # +
@@ -330,3 +337,4 @@ default_query = "ans(region_union(r)) :- destrieux(..., r)"
 
 qw = QueryWidget(nl, default_query)
 qw
+# -
