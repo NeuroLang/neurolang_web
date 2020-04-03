@@ -55,38 +55,66 @@ import traitlets
 
 # ## UI components
 
-# ### Cell and cell viewer widgets
+# ### Cell widgets and cell viewer widgets
 
 
-class LabelCellWidget(Label):
+class CellWidget:
+    """Base class for a cell widget which displays data depending on the column type. Some cell widgets might require additional viewers."""
+
+    def __init__(self):
+        self._viewer = None
+
+    @property
+    def viewer(self):
+        """Returns the special viewer for this widget.
+        
+        Returns
+        -------
+             the special viewer for this widget, `None` if no special viewer is required.
+        """
+        return self._viewer
+
+
+class LabelCellWidget(Label, CellWidget):
+    """A cell widget for data type `str` that simply displays the given string.
+    
+    Requires no additional viewer.
+    """
+
     def __init__(self, *args, **kwargs):
-        super(LabelCellWidget, self).__init__(*args, **kwargs)
-
-    def get_viewer(self):
-        return None
+        CellWidget.__init__(self)
+        Label.__init__(self, *args, **kwargs)
 
 
-class ExVBRCellWidget(Checkbox):
-    def __init__(self, obj: neurolang.frontend.ExplicitVBR, *args, **kwargs):
-        super(ExVBRCellWidget, self).__init__(*args, **kwargs)
+class ExplicitVBRCellWidget(CellWidget, Checkbox):
+    """ A cell widget for data type `ExplicitVBR` that displays a checkbox connected to a viewer that visualizes spatial image of `ExplicitVBR`.
+    """
+
+    def __init__(self, obj: ExplicitVBR, *args, **kwargs):
+        """
+        Parameters
+        ----------
+        obj: ExplicitVBR
+            
+        """
+        CellWidget.__init__(self,)
+        Checkbox.__init__(self, *args, **kwargs)
 
         self.value = False
         self.description = "show region"
 
-        def _selection_changed(change, image):
+        # viewer that visualizes the spatial image when checkbox is checked.
+        self._viewer = ViewerFactory.get_region_viewer()
+
+        def selection_changed(change, image):
             if change["new"]:
-                self.viewer.add(image)
+                self._viewer.add(image)
             else:
-                self.viewer.remove(image)
+                self._viewer.remove(image)
 
         self.observe(
-            partial(_selection_changed, image=obj.spatial_image()), names="value"
+            partial(selection_changed, image=obj.spatial_image()), names="value"
         )
-
-        self.viewer = ViewerFactory.get_region_viewer()
-
-    def get_viewer(self):
-        return self.viewer
 
 
 class PapayaWidget(HTML):
@@ -186,7 +214,7 @@ class CellWidgetFactory:
     @staticmethod
     def get_cell_widget(obj):
         if isinstance(obj, neurolang.frontend.ExplicitVBR):
-            return ExVBRCellWidget(obj)
+            return ExplicitVBRCellWidget(obj)
         elif isinstance(obj, str) or isinstance(obj, neurolang.regions.EmptyRegion):
             return LabelCellWidget(str(obj))
 
@@ -232,8 +260,8 @@ class TableSetWidget(VBox):
             for el in tuple_:
                 cell_widget = CellWidgetFactory.get_cell_widget(el)
                 row_temp.append(cell_widget)
-                if cell_widget.get_viewer() is not None:
-                    self.cell_viewers.add(cell_widget.get_viewer())
+                if cell_widget.viewer is not None:
+                    self.cell_viewers.add(cell_widget.viewer)
             row(i, row_temp)
         return table
 
@@ -250,10 +278,17 @@ class ResultWidget(VBox):
         self.children = tuple(self.viewers) + tuple(tablesets)
 
     def _create_tablesets(self, res):
+
+        answer = "ans"
+
         tablesets = []
         for name, result_set in res.items():
             tableset_widget = TableSetWidget(name, result_set, self.viewers)
-            tablesets.append(tableset_widget)
+
+            if name == answer:
+                tablesets.insert(0, tableset_widget)
+            else:
+                tablesets.append(tableset_widget)
         return tablesets
 
     def reset(self):
@@ -337,4 +372,3 @@ default_query = "ans(region_union(r)) :- destrieux(..., r)"
 
 qw = QueryWidget(nl, default_query)
 qw
-# -
