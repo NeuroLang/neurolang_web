@@ -1,5 +1,9 @@
 # ## Neurolang Query UI
 
+import warnings  # type: ignore
+
+warnings.filterwarnings("ignore")
+
 # +
 import base64  # type: ignore
 
@@ -341,4 +345,3 @@ default_query = "ans(region_union(r)) :- destrieux(..., r)"
 
 qw = QueryWidget(nl, default_query)
 qw
-# -
