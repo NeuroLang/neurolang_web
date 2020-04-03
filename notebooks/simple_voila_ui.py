@@ -55,7 +55,9 @@ import traitlets
 
 # ## UI components
 
-# ### Cell widgets and cell viewer widgets
+# For each column in ..., we define a cell widget that visualizes the contents depending on the column type. A cell widget can have an associated viewer if further visualization is required.
+
+# ### Cell widgets
 
 
 class CellWidget:
@@ -91,7 +93,8 @@ class ExplicitVBRCellWidget(CellWidget, Checkbox):
     """
 
     def __init__(self, obj: ExplicitVBR, *args, **kwargs):
-        """
+        """Initializes the widget with the specified `obj`.
+        
         Parameters
         ----------
         obj: ExplicitVBR
@@ -117,84 +120,139 @@ class ExplicitVBRCellWidget(CellWidget, Checkbox):
         )
 
 
-class PapayaWidget(HTML):
-    def __init__(self, *args, **kwargs):
-        super(PapayaWidget, self).__init__(*args, **kwargs)
+# ### Cell viewer widgets
 
+
+# Cell viewer widgets visualize data of a columntype in a separate area.
+
+
+def encode_images(images):
+    encoded_images = []
+    image_txt = []
+    for i, image in enumerate(images):
+        nifti_image = nib.Nifti2Image(image.get_fdata(), affine=image.affine)
+        encoded_image = base64.encodebytes(nifti_image.to_bytes())
+        del nifti_image
+        image_txt.append(f"image{i}")
+        enc = encoded_image.decode("utf8").replace("\n", "")
+        encoded_images.append(f'var {image_txt[-1]}="{enc}";')
+
+    encoded_images = "\n".join(encoded_images)
+    return encoded_images, image_txt
+
+
+class PapayaViewerWidget(HTML):
+    """A viewer that overlays multiple label maps.
+    
+    Number of label maps to overlay is limited to 8. ??
+    """
+
+    encoder = json.JSONEncoder()
+
+    # html necessary to embed papaya viewer
+    papaya_html = """
+        <!DOCTYPE html>
+        <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+            <head>
+                <link rel="stylesheet" type="text/css" href="https://raw.githack.com/rii-mango/Papaya/master/release/current/standard/papaya.css" />
+                <script type="text/javascript" src="https://raw.githack.com/rii-mango/Papaya/master/release/current/standard/papaya.js"></script>
+                <title>Papaya Viewer</title>
+
+                <script type="text/javascript">
+
+                    {encoded_images}
+
+                    var params={params};
+                </script>
+            </head>
+
+            <body>
+                <div class="papaya" data-params="params"></div>
+            </body>
+        </html>
+    """
+
+    def __init__(self, atlas="avg152T1_brain.nii.gz", *args, **kwargs):
+        """Initializes the widget with the specified `atlas`.
+        
+        Parameters
+        ----------
+        atlas: str
+            path for the image file to be used as atlas.
+        """
+        HTML.__init__(self, *args, **kwargs)
+
+        # load atlas and add it to image list
+        self.atlas_image = nib.load(atlas)
+        self.images = [self.atlas_image]
+
+        # papaya parameters
         self.params = {"kioskMode": False, "worldSpace": True, "fullScreen": False}
 
-        self.atlas_image = nib.load("avg152T1_brain.nii.gz")
-
-        self.spatial_images = [self.atlas_image]
-
-        self.html = """
-            <!DOCTYPE html>
-            <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
-                <head>
-                    <link rel="stylesheet" type="text/css" href="https://raw.githack.com/rii-mango/Papaya/master/release/current/standard/papaya.css" />
-                    <script type="text/javascript" src="https://raw.githack.com/rii-mango/Papaya/master/release/current/standard/papaya.js"></script>
-                    <title>Papaya Viewer</title>
-
-                    <script type="text/javascript">
-
-                        {encoded_images}
-
-                        var params={params};
-                    </script>
-                </head>
-
-                <body>
-                    <div class="papaya" data-params="params"></div>
-                </body>
-            </html>
-        """
-        self.encoder = json.JSONEncoder()
-
-    def _encode_images(self):
-        encoded_images = []
-        image_txt = []
-        for i, image in enumerate(self.spatial_images):
-            encoded_image = base64.encodebytes(
-                nib.Nifti2Image(image.get_fdata(), affine=image.affine).to_bytes()
-            )
-            image_txt.append(f"image{i}")
-            enc = encoded_image.decode("utf8").replace("\n", "")
-            encoded_images.append(f'var {image_txt[-1]}="{enc}";')
-
-        encoded_images = "\n".join(encoded_images)
-        return encoded_images, image_txt
+        # initially plot the atlas
+        self.plot()
 
     def add(self, image):
-        self.spatial_images.append(image)
+        """Adds the specified `image` to the image list of this viewer.
+        
+        Parameters
+        ----------
+        image:
+            image to be added to the list of this viewer.
+        """
+        self.images.append(image)
         self.plot()
 
     def remove(self, image):
-        self.spatial_images.remove(image)
+        """Removes the specified `image` from the image list of this viewer.
+        
+        Parameters
+        ----------
+        image:
+            image to be removed from the image list of this viewer.
+        """
+        self.images.remove(image)
         self.plot()
 
-    def plot(self):
-        self.reset()
+    def plot(self, center_image=None):
+        """Plots all images in the image list of this viewer.
+        
+        Parameters
+        ----------
+        center_image:
+            the image to center the view.
+        
+        Note
+        ----
+        As papaya has a limit of 8 images, it can display only 8 images overlaid. Selection of images depends on the implementation of papaya.
+        """
+
+        # set center_image as the last appended image if not specified
+        if center_image == None and len(self.images) > 0:
+            center_image = self.images[-1]
+
+        # encode images
+        encoded_images, image_names = encode_images(self.images)
+
+        # set params variable for papaya
         params = dict()
         params.update(self.params)
-
-        encoded_images, image_names = self._encode_images()
         params["encodedImages"] = image_names
 
         for image_name in image_names[1:]:
             params[image_name] = {"min": 0, "max": 10, "lut": "Red Overlay"}
 
-        if len(self.spatial_images) > 0:
+        if center_image is not None:
             coords = (
-                np.transpose(self.spatial_images[-1].get_fdata().nonzero())
-                .mean(0)
-                .astype(int)
+                np.transpose(self.images[-1].get_fdata().nonzero()).mean(0).astype(int)
             )
-            coords = nib.affines.apply_affine(self.spatial_images[-1].affine, coords)
+            coords = nib.affines.apply_affine(self.images[-1].affine, coords)
             params["coordinate"] = [int(c) for c in coords]
 
         escaped_papaya_html = html.escape(
-            self.html.format(
-                params=self.encoder.encode(params), encoded_images=encoded_images
+            PapayaViewerWidget.papaya_html.format(
+                params=PapayaViewerWidget.encoder.encode(params),
+                encoded_images=encoded_images,
             )
         )
         iframe = (
@@ -203,16 +261,13 @@ class PapayaWidget(HTML):
         )
         self.value = iframe
 
-    def reset(self):
-        pass
-
 
 # ###  Factories
 
 
 class CellWidgetFactory:
     @staticmethod
-    def get_cell_widget(obj):
+    def get_widget(obj):
         if isinstance(obj, neurolang.frontend.ExplicitVBR):
             return ExplicitVBRCellWidget(obj)
         elif isinstance(obj, str) or isinstance(obj, neurolang.regions.EmptyRegion):
@@ -220,7 +275,7 @@ class CellWidgetFactory:
 
 
 class ViewerFactory:
-    papaya_viewer = PapayaWidget(
+    papaya_viewer = PapayaViewerWidget(
         layout=Layout(width="700px", height="600px", border="1px solid black")
     )
 
@@ -252,13 +307,13 @@ class TableSetWidget(VBox):
             rows=len(wras),
             columns=wras.arity,
             column_headers=column_headers,
-            layout=Layout(width="auto", height=f"{50 * rows_visible}px"),
+            layout=Layout(width="auto", height=f"{(50 * rows_visible) + 10}px"),
         )
 
         for i, tuple_ in enumerate(wras.unwrapped_iter()):
             row_temp = []
             for el in tuple_:
-                cell_widget = CellWidgetFactory.get_cell_widget(el)
+                cell_widget = CellWidgetFactory.get_widget(el)
                 row_temp.append(cell_widget)
                 if cell_widget.viewer is not None:
                     self.cell_viewers.add(cell_widget.viewer)
