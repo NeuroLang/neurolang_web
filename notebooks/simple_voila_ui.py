@@ -244,9 +244,9 @@ class PapayaViewerWidget(HTML):
 
         if center_image is not None:
             coords = (
-                np.transpose(self.images[-1].get_fdata().nonzero()).mean(0).astype(int)
+                np.transpose(center_image.get_fdata().nonzero()).mean(0).astype(int)
             )
-            coords = nib.affines.apply_affine(self.images[-1].affine, coords)
+            coords = nib.affines.apply_affine(center_image.affine, coords)
             params["coordinate"] = [int(c) for c in coords]
 
         escaped_papaya_html = html.escape(
