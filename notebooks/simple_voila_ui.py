@@ -33,8 +33,7 @@ from neurolang.datalog.wrapped_collections import (
 )  # type: ignore
 import neurolang
 from neurolang.frontend import NeurolangDL, ExplicitVBR  # type: ignore
-
-from nlweb.util import debounce
+from neurolang.frontend.neurosynth_utils import StudyID, TfIDf
 
 from nilearn import datasets, plotting  # type: ignore
 import nibabel as nib  # type: ignore
@@ -119,6 +118,158 @@ class ExplicitVBRCellWidget(CellWidget, Checkbox):
             partial(selection_changed, image=obj.spatial_image()), names="value"
         )
 
+
+# ### Custom cell widgets
+
+# #### Link widget
+
+# A custom link widget to display links.
+
+# +
+from traitlets import Unicode
+from ipywidgets import DOMWidget, register
+
+
+@register
+class LinkWidget(DOMWidget):
+    _view_name = Unicode("LinkView").tag(sync=True)
+    _view_module = Unicode("link_widget").tag(sync=True)
+    _view_module_version = Unicode("0.1.0").tag(sync=True)
+
+    # value to appear as link
+    value = Unicode().tag(sync=True)
+    # url of the link
+    href = Unicode().tag(sync=True)
+
+
+# + language="javascript"
+# require.undef('link_widget');
+#
+# define('link_widget', ["@jupyter-widgets/base"], function(widgets) {
+#
+#     var LinkView = widgets.DOMWidgetView.extend({
+#
+#         // Render the view.
+#         render: function() {
+#             this.link = document.createElement('a');
+#             this.link.setAttribute('target', '_blank');
+#
+#             this.link.setAttribute('href', this.model.get('href'));
+#             this.link.innerHTML = this.model.get('value');
+#
+#             this.el.appendChild(this.link);
+#         },
+#
+#         value_changed: function() {
+#             this.link.setAttribute('href', this.model.get('href'));
+#             this.link.innerHTML = this.model.get('value');
+#         }
+#
+#     });
+#
+#     return {
+#         LinkView: LinkView
+#     };
+# });
+# -
+
+
+class StudyIdWidget(CellWidget, LinkWidget):
+    """A widget to display PubMed study IDs as links to publications."""
+
+    __URL = "https://www.ncbi.nlm.nih.gov/pubmed/?term="
+    __PubMed = "PubMed"
+
+    def __init__(self, study_id, *args, **kwargs):
+        """
+        Parameters
+        ----------
+        study_id : str, StudyID
+            PubMed study ID.
+        """
+        CellWidget.__init__(self)
+        LinkWidget.__init__(
+            self,
+            value=StudyIdWidget.__PubMed + ":" + study_id,
+            href=StudyIdWidget.__URL + study_id,
+            *args,
+            **kwargs,
+        )
+
+
+a = StudyIdWidget("23773060")
+a
+
+# #### Progress widget
+
+# A custom progress widget to display progress/percentage.
+#
+# TODO: a tooltip is necessary to display the actual value.
+
+# +
+from traitlets import Int, Float
+from ipywidgets import DOMWidget, register
+
+
+@register
+class ProgressWidget(DOMWidget):
+    _view_name = Unicode("ProgressView").tag(sync=True)
+    _view_module = Unicode("progress_widget").tag(sync=True)
+    _view_module_version = Unicode("0.1.0").tag(sync=True)
+
+    # actual value
+    value = Float().tag(sync=True)
+    # maximum value
+    max = Int().tag(sync=True)
+
+
+# + language="javascript"
+# require.undef('progress_widget');
+#
+# define('progress_widget', ["@jupyter-widgets/base"], function(widgets) {
+#
+#     var ProgressView = widgets.DOMWidgetView.extend({
+#
+#         // Render the view.
+#         render: function() {
+#             this.progress = document.createElement('progress');
+#             this.progress.setAttribute('value',  this.model.get('value'));
+#             this.progress.setAttribute('max', this.model.get('max'));
+#
+#             this.el.appendChild(this.progress);
+#         },
+#
+#         value_changed: function() {
+#             this.progress.setAttribute('value',  this.model.get('value'));
+#             this.progress.setAttribute('max', this.model.get('max'));
+#         }
+#
+#     });
+#
+#     return {
+#         ProgressView: ProgressView
+#     };
+# });
+# -
+
+
+class TfIDfWidget(CellWidget, ProgressWidget):
+    """A widget to display TfIDf value ."""
+
+    # TODO put tooltip to display actual value
+    def __init__(self, tfidf, *args, **kwargs):
+        """
+        Parameters
+        ----------
+        tfidf : float, TfIDf
+            .
+        """
+        CellWidget.__init__(self)
+        ProgressWidget.__init__(self, value=tfidf, max=1, *args, **kwargs)
+
+
+a = TfIDfWidget(0.23589651054299998)
+a
 
 # ### Cell viewer widgets
 
@@ -270,7 +421,15 @@ class CellWidgetFactory:
     def get_widget(obj):
         if isinstance(obj, neurolang.frontend.ExplicitVBR):
             return ExplicitVBRCellWidget(obj)
-        elif isinstance(obj, str) or isinstance(obj, neurolang.regions.EmptyRegion):
+        elif isinstance(obj, neurolang.frontend.neurosynth_utils.StudyID):
+            studyid = str(obj)
+            return StudyIdWidget(studyid)
+        elif isinstance(obj, neurolang.frontend.neurosynth_utils.TfIDf):
+            return TfIDfWidget(float(obj))
+        # TODO remove this case when TfIDf is added as column.
+        elif isinstance(obj, float):
+            return TfIDfWidget(float(obj))
+        else:
             return LabelCellWidget(str(obj))
 
 
@@ -318,6 +477,9 @@ class TableSetWidget(VBox):
                 if cell_widget.viewer is not None:
                     self.cell_viewers.add(cell_widget.viewer)
             row(i, row_temp)
+            # TODO this is to avoid performance problems until paging is implemented
+            if i > 20:
+                break
         return table
 
 
@@ -383,6 +545,7 @@ class QueryWidget(VBox):
 # ## Query Agent
 
 
+# +
 def init_agent():
     """
     Set up the neurolang query runner (?) and add facts (?) to
@@ -394,6 +557,11 @@ def init_agent():
     def region_union(rs):
         return regions.region_union(rs)
 
+    return nl
+
+
+def add_destrieux(nl):
+    destrieux = nl.new_symbol(name="destrieux")
     destrieux_atlas = datasets.fetch_atlas_destrieux_2009()
     destrieux_atlas_image = nib.load(destrieux_atlas["maps"])
     destrieux_labels = dict(destrieux_atlas["labels"])
@@ -410,7 +578,9 @@ def init_agent():
         )
 
     nl.add_tuple_set(destrieux_set, name="destrieux")
-    return nl
+
+
+# -
 
 
 def run_query(nl, query):
@@ -421,9 +591,14 @@ def run_query(nl, query):
 
 # ## Query the NeuroLang engine and display results
 
-# +
 nl = init_agent()
+
+add_destrieux(nl)
+nl.symbols
+
+# +
 default_query = "ans(region_union(r)) :- destrieux(..., r)"
 
 qw = QueryWidget(nl, default_query)
 qw
+# -
