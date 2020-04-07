@@ -15,6 +15,7 @@ from ipysheet import row, sheet  # type: ignore
 from ipywidgets import (
     Button,
     Checkbox,
+    DOMWidget,
     HBox,
     HTML,
     Label,
@@ -23,6 +24,7 @@ from ipywidgets import (
     Textarea,
     VBox,
     Widget,
+    register,
 )  # type: ignore
 
 import json  # type: ignore
@@ -44,9 +46,9 @@ import os  # type: ignore
 
 import pandas as pd  # type: ignore
 
-from typing import Dict
+from traitlets import Float, Int, Unicode  # type: ignore
 
-import traitlets
+from typing import Dict
 
 
 # -
@@ -125,10 +127,6 @@ class ExplicitVBRCellWidget(CellWidget, Checkbox):
 
 # A custom link widget to display links.
 
-# +
-from traitlets import Unicode
-from ipywidgets import DOMWidget, register
-
 
 @register
 class LinkWidget(DOMWidget):
@@ -200,15 +198,12 @@ class StudyIdWidget(CellWidget, LinkWidget):
 a = StudyIdWidget("23773060")
 a
 
+
 # #### Progress widget
 
 # A custom progress widget to display progress/percentage.
 #
 # TODO: a tooltip is necessary to display the actual value.
-
-# +
-from traitlets import Int, Float
-from ipywidgets import DOMWidget, register
 
 
 @register
