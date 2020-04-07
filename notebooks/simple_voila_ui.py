@@ -202,8 +202,6 @@ a
 # #### Progress widget
 
 # A custom progress widget to display progress/percentage.
-#
-# TODO: a tooltip is necessary to display the actual value.
 
 
 @register
@@ -229,6 +227,8 @@ class ProgressWidget(DOMWidget):
 #         render: function() {
 #             this.progress = document.createElement('progress');
 #             this.progress.setAttribute('value',  this.model.get('value'));
+#             // TODO set number of decimal places to display
+#             this.progress.setAttribute('title',  this.model.get('value'));
 #             this.progress.setAttribute('max', this.model.get('max'));
 #
 #             this.el.appendChild(this.progress);
@@ -236,6 +236,7 @@ class ProgressWidget(DOMWidget):
 #
 #         value_changed: function() {
 #             this.progress.setAttribute('value',  this.model.get('value'));
+#             this.progress.setAttribute('title',  this.model.get('value'));
 #             this.progress.setAttribute('max', this.model.get('max'));
 #         }
 #
@@ -251,7 +252,6 @@ class ProgressWidget(DOMWidget):
 class TfIDfWidget(CellWidget, ProgressWidget):
     """A widget to display TfIDf value ."""
 
-    # TODO put tooltip to display actual value
     def __init__(self, tfidf, *args, **kwargs):
         """
         Parameters
