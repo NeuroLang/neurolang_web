@@ -15,6 +15,7 @@ from ipysheet import row, sheet  # type: ignore
 from ipywidgets import (
     Button,
     Checkbox,
+    DOMWidget,
     HBox,
     HTML,
     Label,
@@ -24,6 +25,7 @@ from ipywidgets import (
     Textarea,
     VBox,
     Widget,
+    register,
 )  # type: ignore
 
 import json  # type: ignore
@@ -45,9 +47,9 @@ import os  # type: ignore
 
 import pandas as pd  # type: ignore
 
-from typing import Dict
+from traitlets import Float, Int, Unicode  # type: ignore
 
-import traitlets
+from typing import Dict
 
 
 # -
@@ -126,10 +128,6 @@ class ExplicitVBRCellWidget(CellWidget, Checkbox):
 
 # A custom link widget to display links.
 
-# +
-from traitlets import Unicode
-from ipywidgets import DOMWidget, register
-
 
 @register
 class LinkWidget(DOMWidget):
@@ -201,15 +199,12 @@ class StudyIdWidget(CellWidget, LinkWidget):
 a = StudyIdWidget("23773060")
 a
 
+
 # #### Progress widget
 
 # A custom progress widget to display progress/percentage.
 #
 # TODO: a tooltip is necessary to display the actual value.
-
-# +
-from traitlets import Int, Float
-from ipywidgets import DOMWidget, register
 
 
 @register
@@ -567,7 +562,9 @@ class QueryWidget(VBox):
 # ## Query Agent
 
 
-# +
+# ### Init agent
+
+
 def init_agent():
     """
     Set up the neurolang query runner (?) and add facts (?) to
@@ -579,7 +576,20 @@ def init_agent():
     def region_union(rs):
         return regions.region_union(rs)
 
+    # TODO this can be removed after the bug is fixed
+    # currently symbols are listed twice
+    nl.reset_program()
+
     return nl
+
+
+def run_query(nl, query):
+    with nl.scope as s:
+        nl.execute_nat_datalog_program(query)
+        return nl.solve_all()
+
+
+# ### Frontend feed functions
 
 
 def add_destrieux(nl):
@@ -602,13 +612,24 @@ def add_destrieux(nl):
     nl.add_tuple_set(destrieux_set, name="destrieux")
 
 
-# -
+def add_subramarginal(nl):
+    nl.load_neurosynth_term_regions("supramarginal", name="neurosynth_supramarginal")
 
 
-def run_query(nl, query):
-    with nl.scope as s:
-        nl.execute_nat_datalog_program(query)
-        return nl.solve_all()
+def add_def_mode_study(nl):
+    nl.load_neurosynth_term_study_ids(
+        term="default mode", name="neurosynth_default_mode_study_id"
+    )
+
+
+def add_pcc_study(nl):
+    nl.load_neurosynth_term_study_ids(term="pcc", name="neurosynth_pcc_study_id")
+
+
+def add_study_tf_idf(nl):
+    nl.load_neurosynth_study_tfidf_feature_for_terms(
+        terms=["default mode", "pcc"], name="neurosynth_study_tfidf",
+    )
 
 
 # ## Query the NeuroLang engine and display results
@@ -617,8 +638,22 @@ nl = init_agent()
 
 add_destrieux(nl)
 
+add_subramarginal(nl)
+
+add_def_mode_study(nl)
+
+add_pcc_study(nl)
+
+add_study_tf_idf(nl)
+
 # +
 default_query = "ans(region_union(r)) :- destrieux(..., r)"
+query = "".join(
+    "ans(study_id, term, tfidf):-neurosynth_default_mode_study_id(study_id),"
+    "neurosynth_pcc_study_id(study_id),"
+    "neurosynth_study_tfidf(study_id, term, tfidf)"
+)
 
-qw = QueryWidget(nl, default_query)
+qw = QueryWidget(nl, query)
 qw
+# -
