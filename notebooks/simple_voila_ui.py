@@ -457,8 +457,10 @@ class TableSetWidget(VBox):
     def _init_sheet(self, wras):
         column_headers = [str(i) for i in range(wras.arity)]
         rows_visible = min(len(wras), 5)
+        # TODO this is to avoid performance problems until paging is implemented
+        nb_rows = min(len(wras), 20)
         table = sheet(
-            rows=len(wras),
+            rows=nb_rows,
             columns=wras.arity,
             column_headers=column_headers,
             layout=Layout(width="auto", height=f"{(50 * rows_visible) + 10}px"),
@@ -473,7 +475,7 @@ class TableSetWidget(VBox):
                     self.cell_viewers.add(cell_widget.viewer)
             row(i, row_temp)
             # TODO this is to avoid performance problems until paging is implemented
-            if i > 20:
+            if i == nb_rows - 1:
                 break
         return table
 
@@ -634,4 +636,3 @@ query = "".join(
 
 qw = QueryWidget(nl, query)
 qw
-# -
