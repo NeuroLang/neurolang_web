@@ -129,6 +129,10 @@ class ExplicitVBRCellWidget(CellWidget, Checkbox):
 # A custom link widget to display links.
 
 
+# +
+# TODO add value validations
+
+
 @register
 class LinkWidget(DOMWidget):
     _view_name = Unicode("LinkView").tag(sync=True)
@@ -203,6 +207,10 @@ a
 # #### Progress widget
 
 # A custom progress widget to display progress/percentage.
+
+
+# +
+# TODO add value validations
 
 
 @register
