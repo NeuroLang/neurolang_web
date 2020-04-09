@@ -55,225 +55,96 @@ from typing import Dict
 # -
 
 
+# ## Query Agent
+
+
+# ### Functions
+
+
+def init_agent():
+    """
+    Set up the neurolang query runner (?) and add facts (?) to
+    the database
+    """
+    nl = NeurolangDL()
+
+    @nl.add_symbol
+    def region_union(rs):
+        return regions.region_union(rs)
+
+    # TODO this can be removed after the bug is fixed
+    # currently symbols are listed twice
+    nl.reset_program()
+
+    return nl
+
+
+def run_query(nl, query):
+    with nl.scope as s:
+        nl.execute_nat_datalog_program(query)
+        return nl.solve_all()
+
+
+# +
+def add_destrieux(nl):
+    destrieux = nl.new_symbol(name="destrieux")
+    destrieux_atlas = datasets.fetch_atlas_destrieux_2009()
+    destrieux_atlas_image = nib.load(destrieux_atlas["maps"])
+    destrieux_labels = dict(destrieux_atlas["labels"])
+
+    destrieux_set = set()
+    for k, v in destrieux_labels.items():
+        if k == 0:
+            continue
+        destrieux_set.add(
+            (
+                v.decode("utf8"),
+                ExplicitVBR.from_spatial_image_label(destrieux_atlas_image, k),
+            )
+        )
+
+    nl.add_tuple_set(destrieux_set, name="destrieux")
+
+
+def add_subramarginal(nl):
+    nl.load_neurosynth_term_regions("supramarginal", name="neurosynth_supramarginal")
+
+
+def add_def_mode_study(nl):
+    nl.load_neurosynth_term_study_ids(
+        term="default mode", name="neurosynth_default_mode_study_id"
+    )
+
+
+def add_pcc_study(nl):
+    nl.load_neurosynth_term_study_ids(term="pcc", name="neurosynth_pcc_study_id")
+
+
+def add_study_tf_idf(nl):
+    nl.load_neurosynth_study_tfidf_feature_for_terms(
+        terms=["default mode", "pcc"], name="neurosynth_study_tfidf"
+    )
+
+
+# -
+
+# ### Prepare engine
+
+nl = init_agent()
+
+add_destrieux(nl)
+
+add_subramarginal(nl)
+
+add_def_mode_study(nl)
+
+add_pcc_study(nl)
+
+add_study_tf_idf(nl)
+
 # ## UI components
 
 # For each column in ..., we define a cell widget that visualizes the contents depending on the column type. A cell widget can have an associated viewer if further visualization is required.
-
-# ### Cell widgets
-
-
-class CellWidget:
-    """Base class for a cell widget which displays data depending on the column type. Some cell widgets might require additional viewers."""
-
-    def __init__(self):
-        self._viewer = None
-
-    @property
-    def viewer(self):
-        """Returns the special viewer for this widget.
-        
-        Returns
-        -------
-             the special viewer for this widget, `None` if no special viewer is required.
-        """
-        return self._viewer
-
-
-class LabelCellWidget(Label, CellWidget):
-    """A cell widget for data type `str` that simply displays the given string.
-    
-    Requires no additional viewer.
-    """
-
-    def __init__(self, *args, **kwargs):
-        CellWidget.__init__(self)
-        Label.__init__(self, *args, **kwargs)
-
-
-class ExplicitVBRCellWidget(CellWidget, Checkbox):
-    """ A cell widget for data type `ExplicitVBR` that displays a checkbox connected to a viewer that visualizes spatial image of `ExplicitVBR`.
-    """
-
-    def __init__(self, obj: ExplicitVBR, *args, **kwargs):
-        """Initializes the widget with the specified `obj`.
-        
-        Parameters
-        ----------
-        obj: ExplicitVBR
-            
-        """
-        CellWidget.__init__(self)
-        Checkbox.__init__(self, *args, **kwargs)
-
-        self.value = False
-        self.description = "show region"
-
-        # viewer that visualizes the spatial image when checkbox is checked.
-        self._viewer = ViewerFactory.get_region_viewer()
-
-        self.observe(
-            partial(self._selection_changed, image=obj.spatial_image()), names="value"
-        )
-
-    def _selection_changed(self, change, image):
-        if change["new"]:
-            self._viewer.add(image)
-        else:
-            self._viewer.remove(image)
-
-
-# ### Custom cell widgets
-
-# #### Link widget
-
-# A custom link widget to display links.
-
-
-# +
-# TODO add value validations
-
-
-@register
-class LinkWidget(DOMWidget):
-    _view_name = Unicode("LinkView").tag(sync=True)
-    _view_module = Unicode("link_widget").tag(sync=True)
-    _view_module_version = Unicode("0.1.0").tag(sync=True)
-
-    # value to appear as link
-    value = Unicode().tag(sync=True)
-    # url of the link
-    href = Unicode().tag(sync=True)
-
-
-# + language="javascript"
-# require.undef('link_widget');
-#
-# define('link_widget', ["@jupyter-widgets/base"], function(widgets) {
-#
-#     var LinkView = widgets.DOMWidgetView.extend({
-#
-#         // Render the view.
-#         render: function() {
-#             this.link = document.createElement('a');
-#             this.link.setAttribute('target', '_blank');
-#
-#             this.link.setAttribute('href', this.model.get('href'));
-#             this.link.innerHTML = this.model.get('value');
-#
-#             this.el.appendChild(this.link);
-#         },
-#
-#         value_changed: function() {
-#             this.link.setAttribute('href', this.model.get('href'));
-#             this.link.innerHTML = this.model.get('value');
-#         }
-#
-#     });
-#
-#     return {
-#         LinkView: LinkView
-#     };
-# });
-# -
-
-
-class StudyIdWidget(CellWidget, LinkWidget):
-    """A widget to display PubMed study IDs as links to publications."""
-
-    __URL = "https://www.ncbi.nlm.nih.gov/pubmed/?term="
-    __PubMed = "PubMed"
-
-    def __init__(self, study_id, *args, **kwargs):
-        """
-        Parameters
-        ----------
-        study_id : str, StudyID
-            PubMed study ID.
-        """
-        CellWidget.__init__(self)
-        LinkWidget.__init__(
-            self,
-            value=StudyIdWidget.__PubMed + ":" + study_id,
-            href=StudyIdWidget.__URL + study_id,
-            *args,
-            **kwargs,
-        )
-
-
-a = StudyIdWidget("23773060")
-a
-
-
-# #### Progress widget
-
-# A custom progress widget to display progress/percentage.
-
-
-# +
-# TODO add value validations
-
-
-@register
-class ProgressWidget(DOMWidget):
-    _view_name = Unicode("ProgressView").tag(sync=True)
-    _view_module = Unicode("progress_widget").tag(sync=True)
-    _view_module_version = Unicode("0.1.0").tag(sync=True)
-
-    # actual value
-    value = Float().tag(sync=True)
-    # maximum value
-    max = Int().tag(sync=True)
-
-
-# + language="javascript"
-# require.undef('progress_widget');
-#
-# define('progress_widget', ["@jupyter-widgets/base"], function(widgets) {
-#
-#     var ProgressView = widgets.DOMWidgetView.extend({
-#
-#         // Render the view.
-#         render: function() {
-#             this.progress = document.createElement('progress');
-#             this.progress.setAttribute('value',  this.model.get('value'));
-#             // TODO set number of decimal places to display
-#             this.progress.setAttribute('title',  this.model.get('value'));
-#             this.progress.setAttribute('max', this.model.get('max'));
-#
-#             this.el.appendChild(this.progress);
-#         },
-#
-#         value_changed: function() {
-#             this.progress.setAttribute('value',  this.model.get('value'));
-#             this.progress.setAttribute('title',  this.model.get('value'));
-#             this.progress.setAttribute('max', this.model.get('max'));
-#         }
-#
-#     });
-#
-#     return {
-#         ProgressView: ProgressView
-#     };
-# });
-# -
-
-
-class TfIDfWidget(CellWidget, ProgressWidget):
-    """A widget to display TfIDf value ."""
-
-    def __init__(self, tfidf, *args, **kwargs):
-        """
-        Parameters
-        ----------
-        tfidf : float, TfIDf
-            .
-        """
-        CellWidget.__init__(self)
-        ProgressWidget.__init__(self, value=tfidf, max=1, *args, **kwargs)
-
-
-a = TfIDfWidget(0.23589651054299998)
-a
 
 # ### Cell viewer widgets
 
@@ -421,24 +292,281 @@ class PapayaViewerWidget(HTML):
         self.plot()
 
 
-# ###  Factories
+# ### Cell widgets
 
 
-class CellWidgetFactory:
-    @staticmethod
-    def get_widget(obj):
-        if isinstance(obj, neurolang.frontend.ExplicitVBR):
-            return ExplicitVBRCellWidget(obj)
-        elif isinstance(obj, neurolang.frontend.neurosynth_utils.StudyID):
-            studyid = str(obj)
-            return StudyIdWidget(studyid)
-        elif isinstance(obj, neurolang.frontend.neurosynth_utils.TfIDf):
-            return TfIDfWidget(float(obj))
-        # TODO remove this case when TfIDf is added as column.
-        elif isinstance(obj, float):
-            return TfIDfWidget(float(obj))
+class LabelCellWidget(Label):
+    """A cell widget for data type `str` that simply displays the given string.
+    
+    Requires no additional viewer.
+    """
+
+    def __init__(self, *args, **kwargs):
+        Label.__init__(self, *args, **kwargs)
+
+
+class ExplicitVBRCellWidget(Checkbox):
+    """ A cell widget for data type `ExplicitVBR` that displays a checkbox connected to a viewer that visualizes spatial image of `ExplicitVBR`.
+    """
+
+    def __init__(
+        self,
+        obj: neurolang.regions.ExplicitVBR,
+        viewer: PapayaViewerWidget,
+        *args,
+        **kwargs,
+    ):
+        """Initializes the widget with the specified `obj`.
+        
+        Parameters
+        ----------
+        obj: neurolang.regions.ExplicitVBR
+        
+        viewer : PapayaViewerWidget
+            
+        """
+        Checkbox.__init__(self, *args, **kwargs)
+
+        self.value = False
+        self.description = "show region"
+
+        # viewer that visualizes the spatial image when checkbox is checked.
+        self._viewer = viewer
+
+        self.observe(
+            partial(self._selection_changed, image=obj.spatial_image()), names="value"
+        )
+
+    def _selection_changed(self, change, image):
+        if change["new"]:
+            self._viewer.add(image)
+        else:
+            self._viewer.remove(image)
+
+
+# ### Custom cell widgets
+
+# #### Link widget
+
+# A custom link widget to display links.
+
+
+# +
+# TODO add value validations
+
+
+@register
+class LinkWidget(DOMWidget):
+    _view_name = Unicode("LinkView").tag(sync=True)
+    _view_module = Unicode("link_widget").tag(sync=True)
+    _view_module_version = Unicode("0.1.0").tag(sync=True)
+
+    # value to appear as link
+    value = Unicode().tag(sync=True)
+    # url of the link
+    href = Unicode().tag(sync=True)
+
+
+# + language="javascript"
+# require.undef('link_widget');
+#
+# define('link_widget', ["@jupyter-widgets/base"], function(widgets) {
+#
+#     var LinkView = widgets.DOMWidgetView.extend({
+#
+#         // Render the view.
+#         render: function() {
+#             this.link = document.createElement('a');
+#             this.link.setAttribute('target', '_blank');
+#
+#             this.link.setAttribute('href', this.model.get('href'));
+#             this.link.innerHTML = this.model.get('value');
+#
+#             this.el.appendChild(this.link);
+#         },
+#
+#         value_changed: function() {
+#             this.link.setAttribute('href', this.model.get('href'));
+#             this.link.innerHTML = this.model.get('value');
+#         }
+#
+#     });
+#
+#     return {
+#         LinkView: LinkView
+#     };
+# });
+# -
+
+
+class StudyIdWidget(LinkWidget):
+    """A widget to display PubMed study IDs as links to publications."""
+
+    __URL = "https://www.ncbi.nlm.nih.gov/pubmed/?term="
+    __PubMed = "PubMed"
+
+    def __init__(self, study_id, *args, **kwargs):
+        """
+        Parameters
+        ----------
+        study_id : str, StudyID
+            PubMed study ID.
+        """
+        LinkWidget.__init__(
+            self,
+            value=StudyIdWidget.__PubMed + ":" + study_id,
+            href=StudyIdWidget.__URL + study_id,
+            *args,
+            **kwargs,
+        )
+
+
+a = StudyIdWidget("23773060")
+a
+
+
+# #### Progress widget
+
+# A custom progress widget to display progress/percentage.
+
+
+# +
+# TODO add value validations
+
+
+@register
+class ProgressWidget(DOMWidget):
+    _view_name = Unicode("ProgressView").tag(sync=True)
+    _view_module = Unicode("progress_widget").tag(sync=True)
+    _view_module_version = Unicode("0.1.0").tag(sync=True)
+
+    # actual value
+    value = Float().tag(sync=True)
+    # maximum value
+    max = Int().tag(sync=True)
+
+
+# + language="javascript"
+# require.undef('progress_widget');
+#
+# define('progress_widget', ["@jupyter-widgets/base"], function(widgets) {
+#
+#     var ProgressView = widgets.DOMWidgetView.extend({
+#
+#         // Render the view.
+#         render: function() {
+#             this.progress = document.createElement('progress');
+#             this.progress.setAttribute('value',  this.model.get('value'));
+#             // TODO set number of decimal places to display
+#             this.progress.setAttribute('title',  this.model.get('value'));
+#             this.progress.setAttribute('max', this.model.get('max'));
+#
+#             this.el.appendChild(this.progress);
+#         },
+#
+#         value_changed: function() {
+#             this.progress.setAttribute('value',  this.model.get('value'));
+#             this.progress.setAttribute('title',  this.model.get('value'));
+#             this.progress.setAttribute('max', this.model.get('max'));
+#         }
+#
+#     });
+#
+#     return {
+#         ProgressView: ProgressView
+#     };
+# });
+# -
+
+
+class TfIDfWidget(ProgressWidget):
+    """A widget to display TfIDf value ."""
+
+    def __init__(self, tfidf, *args, **kwargs):
+        """
+        Parameters
+        ----------
+        tfidf : float, TfIDf
+            .
+        """
+        ProgressWidget.__init__(self, value=tfidf, max=1, *args, **kwargs)
+
+
+a = TfIDfWidget(0.23589651054299998)
+a
+
+
+# ### Columns
+
+
+class Column:
+    """Base class for a column which works as a factory to create widgets, controls and viewers of a specific type of column."""
+
+    def __init__(self):
+        self._viewer = None
+        self._controls = []
+
+    @property
+    def viewer(self):
+        """Returns the special viewer for this column.
+        
+        Returns
+        -------
+             the special viewer for this column, `None` if no special viewer is required.
+        """
+        return self._viewer
+
+    @property
+    def controls(self):
+        """Returns list of widgets that are used to control the widgets of this column.
+        
+        Returns
+        -------
+        list 
+            
+        """
+        return self._controls
+
+    def get_widget(self, obj):
+        """Returns a Label widget for the specified `obj`.
+        
+        Returns
+        -------
+        Label
+            
+        """
+        return LabelCellWidget(str(obj))
+
+
+class ExplicitVBRColumn(Column):
+    def __init__(self):
+        Column.__init__(self)
+        self._viewer = ViewerFactory.get_region_viewer()
+
+    def get_widget(self, obj):
+        if isinstance(obj, neurolang.regions.ExplicitVBR):
+            return ExplicitVBRCellWidget(obj, self._viewer)
         else:
             return LabelCellWidget(str(obj))
+
+
+class StudIdColumn(Column):
+    def __init__(self):
+        Column.__init__(self)
+
+    def get_widget(self, obj):
+        return StudyIdWidget(str(obj))
+
+
+class TfIDfColumn(Column):
+    def __init__(self):
+        Column.__init__(self)
+
+    def get_widget(self, obj):
+        return TfIDfWidget(float(obj))
+
+
+# ###  Factories
 
 
 class ViewerFactory:
@@ -451,6 +579,43 @@ class ViewerFactory:
         return ViewerFactory.papaya_viewer
 
 
+class ColumnFactory:
+    @staticmethod
+    def get_column(column_type):
+        if column_type == neurolang.regions.ExplicitVBR:
+            return ExplicitVBRColumn()
+        elif column_type == neurolang.frontend.neurosynth_utils.StudyID:
+            return StudIdColumn()
+        elif (
+            column_type == neurolang.frontend.neurosynth_utils.TfIDf
+            or column_type == float
+        ):
+            return TfIDfColumn()
+        else:
+            return Column()
+
+
+class ColumnFeeder:
+    def __init__(self, column_types: tuple):
+        self.columns = []
+
+        for column_type in column_types.__args__:
+            self.columns.append(ColumnFactory.get_column(column_type))
+
+    def get_widget(self, index, obj):
+        return self.columns[index].get_widget(obj)
+
+    def get_viewers(self):
+        viewers = set()
+        for column in self.columns:
+            if column.viewer is not None:
+                viewers.add(column.viewer)
+        return viewers
+
+    def get_controls(self):
+        return
+
+
 # ### Query and result widgets
 
 
@@ -459,11 +624,15 @@ class TableSetWidget(VBox):
         super(TableSetWidget, self).__init__()
 
         self.wras = wras
-        self.cell_viewers = set()
 
         # create widgets
         name_label = HTML(f"<h2>{name}</h2>")
+
+        self._column_feeder = ColumnFeeder(wras.row_type)
+
         self.sheet = self._init_sheet(self.wras)
+
+        self.cell_viewers = self._column_feeder.get_viewers()
 
         self.children = [name_label, self.sheet]
 
@@ -481,11 +650,9 @@ class TableSetWidget(VBox):
 
         for i, tuple_ in enumerate(wras.unwrapped_iter()):
             row_temp = []
-            for el in tuple_:
-                cell_widget = CellWidgetFactory.get_widget(el)
+            for j, el in enumerate(tuple_):
+                cell_widget = self._column_feeder.get_widget(j, el)
                 row_temp.append(cell_widget)
-                if cell_widget.viewer is not None:
-                    self.cell_viewers.add(cell_widget.viewer)
             row(i, row_temp)
             # TODO this is to avoid performance problems until paging is implemented
             if i == nb_rows - 1:
@@ -580,92 +747,7 @@ class QueryWidget(VBox):
         self.result_viewer.show_results(qresult)
 
 
-# ## Query Agent
-
-
-# ### Init agent
-
-
-def init_agent():
-    """
-    Set up the neurolang query runner (?) and add facts (?) to
-    the database
-    """
-    nl = NeurolangDL()
-
-    @nl.add_symbol
-    def region_union(rs):
-        return regions.region_union(rs)
-
-    # TODO this can be removed after the bug is fixed
-    # currently symbols are listed twice
-    nl.reset_program()
-
-    return nl
-
-
-def run_query(nl, query):
-    with nl.scope as s:
-        nl.execute_nat_datalog_program(query)
-        return nl.solve_all()
-
-
-# ### Frontend feed functions
-
-
-def add_destrieux(nl):
-    destrieux = nl.new_symbol(name="destrieux")
-    destrieux_atlas = datasets.fetch_atlas_destrieux_2009()
-    destrieux_atlas_image = nib.load(destrieux_atlas["maps"])
-    destrieux_labels = dict(destrieux_atlas["labels"])
-
-    destrieux_set = set()
-    for k, v in destrieux_labels.items():
-        if k == 0:
-            continue
-        destrieux_set.add(
-            (
-                v.decode("utf8"),
-                ExplicitVBR.from_spatial_image_label(destrieux_atlas_image, k),
-            )
-        )
-
-    nl.add_tuple_set(destrieux_set, name="destrieux")
-
-
-def add_subramarginal(nl):
-    nl.load_neurosynth_term_regions("supramarginal", name="neurosynth_supramarginal")
-
-
-def add_def_mode_study(nl):
-    nl.load_neurosynth_term_study_ids(
-        term="default mode", name="neurosynth_default_mode_study_id"
-    )
-
-
-def add_pcc_study(nl):
-    nl.load_neurosynth_term_study_ids(term="pcc", name="neurosynth_pcc_study_id")
-
-
-def add_study_tf_idf(nl):
-    nl.load_neurosynth_study_tfidf_feature_for_terms(
-        terms=["default mode", "pcc"], name="neurosynth_study_tfidf"
-    )
-
-
-# ## Query the NeuroLang engine and display results
-
-nl = init_agent()
-
-add_destrieux(nl)
-
-add_subramarginal(nl)
-
-add_def_mode_study(nl)
-
-add_pcc_study(nl)
-
-add_study_tf_idf(nl)
+# ## Query UI
 
 # +
 default_query = "ans(region_union(r)) :- destrieux(..., r)"
