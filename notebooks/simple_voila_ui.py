@@ -496,11 +496,13 @@ class TableSetWidget(VBox):
         return self.cell_viewers
 
 
+# +
 class ResultWidget(VBox):
     def __init__(self):
         super(ResultWidget, self).__init__()
 
         self.tab = Tab()
+        self.children = [self.tab]
 
     def show_results(self, res: Dict[str, WrappedRelationalAlgebraSet]):
         names, tablesets = self._create_tablesets(res)
@@ -509,22 +511,23 @@ class ResultWidget(VBox):
             self.tab.set_title(i, name)
         self.tab.children = tablesets
 
-        def _tab_changed(tablesets, event):
-            # the viewers should be updated depending on selected tableset
+    #        def _tab_changed(tablesets, event):
+    #            # the viewers should be updated depending on selected tableset
 
-            new = event.new
-            self.children = tuple([self.tab]) + tuple(tablesets[new].get_viewers())
+    #            new = event.new
+    #            self.children = tuple([self.tab]) + tuple(tablesets[new].get_viewers())
 
-        self.tab.observe(partial(_tab_changed, tablesets), names="selected_index")
+    #        self.tab.observe(partial(_tab_changed, tablesets), names="selected_index")
 
-        self.children = tuple([self.tab]) + tuple(tablesets[0].get_viewers())
+    #        self.children = tuple([self.tab]) + tuple(tablesets[0].get_viewers())
 
     def _create_tablesets(self, res):
-
         answer = "ans"
 
         tablesets = []
         names = []
+
+        viewers = set()
 
         for name, result_set in res.items():
             tableset_widget = TableSetWidget(name, result_set)
@@ -536,10 +539,16 @@ class ResultWidget(VBox):
                 tablesets.append(tableset_widget)
                 names.append(name)
 
+            viewers = viewers | tableset_widget.get_viewers()
+
+        self.children = self.children + tuple(viewers)
         return names, tablesets
 
     def reset(self):
         pass
+
+
+# -
 
 
 class QueryWidget(VBox):
