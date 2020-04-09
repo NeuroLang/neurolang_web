@@ -15,6 +15,7 @@ from ipysheet import row, sheet  # type: ignore
 from ipywidgets import (
     Button,
     Checkbox,
+    ColorPicker,
     DOMWidget,
     HBox,
     HTML,
@@ -305,7 +306,7 @@ class LabelCellWidget(Label):
         Label.__init__(self, *args, **kwargs)
 
 
-class ExplicitVBRCellWidget(Checkbox):
+class ExplicitVBRCellWidget(HBox):
     """ A cell widget for data type `ExplicitVBR` that displays a checkbox connected to a viewer that visualizes spatial image of `ExplicitVBR`.
     """
 
@@ -325,23 +326,40 @@ class ExplicitVBRCellWidget(Checkbox):
         viewer : PapayaViewerWidget
             
         """
-        Checkbox.__init__(self, *args, **kwargs)
-
-        self.value = False
-        self.description = "show region"
+        HBox.__init__(self, *args, **kwargs)
 
         # viewer that visualizes the spatial image when checkbox is checked.
         self._viewer = viewer
 
-        self.observe(
+        self._checkbox = Checkbox(
+            value=False, description="show region", layout=Layout(width="30px")
+        )
+        self._checkbox.observe(
             partial(self._selection_changed, image=obj.spatial_image()), names="value"
         )
+
+        self._button = Button(description="Fix Center", layout=Layout(width="40px"))
+        self._button.on_click(self._on_click)
+
+        self._color_picker = ColorPicker(
+            concise=True, value="blue", disabled=False, layout=Layout(width="10px")
+        )
+
+        self.children = [self._checkbox, self._button, self._color_picker]
 
     def _selection_changed(self, change, image):
         if change["new"]:
             self._viewer.add(image)
         else:
             self._viewer.remove(image)
+
+    def _on_click(self, event):
+        print("clicked")
+        print(event)
+
+        if self._checkbox.value is False:
+            self._checkbox.value = True
+        # self._viewer.center()
 
 
 # ### Custom cell widgets
