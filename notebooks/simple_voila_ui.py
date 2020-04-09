@@ -496,15 +496,14 @@ class TableSetWidget(VBox):
         return self.cell_viewers
 
 
-# +
 class ResultWidget(VBox):
     def __init__(self):
         super(ResultWidget, self).__init__()
 
-        self.tab = Tab()
-        self.children = [self.tab]
+        self.tab = Tab(layout=Layout(height="400px"))
 
     def show_results(self, res: Dict[str, WrappedRelationalAlgebraSet]):
+        self.reset()
         names, tablesets = self._create_tablesets(res)
 
         for i, name in enumerate(names):
@@ -545,10 +544,8 @@ class ResultWidget(VBox):
         return names, tablesets
 
     def reset(self):
-        pass
-
-
-# -
+        self.children = [self.tab]
+        # close all widgets
 
 
 class QueryWidget(VBox):
@@ -562,7 +559,11 @@ class QueryWidget(VBox):
             placeholder="Type something",
             disabled=False,
             layout=Layout(
-                display="flex", flex_flow="row", align_items="stretch", width="75%"
+                display="flex",
+                flex_flow="row",
+                align_items="stretch",
+                width="75%",
+                height="100px",
             ),
         )
         self.button = Button(description="Run query")
