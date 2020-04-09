@@ -102,7 +102,7 @@ class ExplicitVBRCellWidget(CellWidget, Checkbox):
         obj: ExplicitVBR
             
         """
-        CellWidget.__init__(self,)
+        CellWidget.__init__(self)
         Checkbox.__init__(self, *args, **kwargs)
 
         self.value = False
@@ -111,15 +111,15 @@ class ExplicitVBRCellWidget(CellWidget, Checkbox):
         # viewer that visualizes the spatial image when checkbox is checked.
         self._viewer = ViewerFactory.get_region_viewer()
 
-        def selection_changed(change, image):
-            if change["new"]:
-                self._viewer.add(image)
-            else:
-                self._viewer.remove(image)
-
         self.observe(
-            partial(selection_changed, image=obj.spatial_image()), names="value"
+            partial(self._selection_changed, image=obj.spatial_image()), names="value"
         )
+
+    def _selection_changed(self, change, image):
+        if change["new"]:
+            self._viewer.add(image)
+        else:
+            self._viewer.remove(image)
 
 
 # ### Custom cell widgets
@@ -639,7 +639,7 @@ def add_pcc_study(nl):
 
 def add_study_tf_idf(nl):
     nl.load_neurosynth_study_tfidf_feature_for_terms(
-        terms=["default mode", "pcc"], name="neurosynth_study_tfidf",
+        terms=["default mode", "pcc"], name="neurosynth_study_tfidf"
     )
 
 
