@@ -222,26 +222,29 @@ class PapayaViewerWidget(HTML):
         # initially plot the atlas
         self.plot()
 
-    def add(self, image):
+    def add(self, images):
         """Adds the specified `image` to the image list of this viewer.
         
         Parameters
         ----------
-        image:
-            image to be added to the list of this viewer.
+        images: list
+            images to be added to the list of this viewer.
         """
-        self.images.append(image)
+        for image in images:
+            self.images.append(image)
         self.plot()
 
-    def remove(self, image):
-        """Removes the specified `image` from the image list of this viewer.
+    def remove(self, images):
+        """Removes the specified `images` from the image list of this viewer.
         
         Parameters
         ----------
-        image:
+        images: list
             image to be removed from the image list of this viewer.
         """
-        self.images.remove(image)
+
+        for image in images:
+            self.images.remove(image)
         self.plot()
 
     def set_center(self, widget, image):
@@ -319,7 +322,6 @@ class LabelCellWidget(Label):
         Label.__init__(self, *args, **kwargs)
 
 
-# +
 class ExplicitVBRCellWidget(HBox):
     """ A cell widget for data type `ExplicitVBR` that displays a checkbox connected to a viewer that visualizes spatial image of `ExplicitVBR`.
     """
@@ -345,18 +347,20 @@ class ExplicitVBRCellWidget(HBox):
         # viewer that visualizes the spatial image when checkbox is checked.
         self._viewer = viewer
 
+        self.__image = obj.spatial_image()
+
         self._checkbox = Checkbox(
-            value=False, description="show region", layout=Layout(width="30px")
+            value=False, description="show region", layout=Layout(width="100px")
         )
         self._checkbox.observe(
-            partial(self._selection_changed, image=obj.spatial_image()), names="value"
+            partial(self._selection_changed, image=self.__image), names="value"
         )
 
         self._center_checkbox = Checkbox(
-            value=False, description="center", layout=Layout(width="30px")
+            value=False, description="center", layout=Layout(width="100px")
         )
         self._center_checkbox.observe(
-            partial(self._on_center_selection_changed, image=obj.spatial_image()),
+            partial(self._on_center_selection_changed, image=self.__image),
             names="value",
         )
 
@@ -370,11 +374,22 @@ class ExplicitVBRCellWidget(HBox):
             #            self._color_picker
         ]
 
+    @property
+    def image(self):
+        return self.__image
+
+    @property
+    def is_region_selected(self):
+        return self._checkbox.value
+
+    def unselect_region(self):
+        self._checkbox.value = False
+
     def _selection_changed(self, change, image):
         if change["new"]:
-            self._viewer.add(image)
+            self._viewer.add([image])
         else:
-            self._viewer.remove(image)
+            self._viewer.remove([image])
 
     def _on_center_selection_changed(self, change, image):
         if change["new"]:
@@ -386,9 +401,6 @@ class ExplicitVBRCellWidget(HBox):
 
     def remove_center(self):
         self._center_checkbox.value = False
-
-
-# -
 
 
 # ### Custom cell widgets
@@ -590,11 +602,58 @@ class ExplicitVBRColumn(Column):
         Column.__init__(self)
         self._viewer = ViewerFactory.get_region_viewer()
 
+        self._turn_on_off_btn = Button(
+            description="Turn off selected regions", layout=Layout(width="200px")
+        )
+        self._turn_on_off_btn.on_click(self._on_turn_on_off_btn_clicked)
+        self._controls.append(self._turn_on_off_btn)
+
+        self._unselect_btn = Button(
+            description="Unselect All", layout=Layout(width="150px")
+        )
+        self._unselect_btn.on_click(self._on_unselect_clicked)
+        self._controls.append(self._unselect_btn)
+
+        self.__evbr_widget_list = []
+
     def get_widget(self, obj):
+        """"""
         if isinstance(obj, neurolang.regions.ExplicitVBR):
-            return ExplicitVBRCellWidget(obj, self._viewer)
+            e_widget = ExplicitVBRCellWidget(obj, self._viewer)
+            self.__evbr_widget_list.append(e_widget)
+            return e_widget
         else:
             return LabelCellWidget(str(obj))
+
+    def _selected_images(self):
+        images = []
+        for e_widget in self.__evbr_widget_list:
+            if e_widget.is_region_selected:
+                images.append(e_widget.image)
+        return images
+
+    def _on_unselect_clicked(self, b):
+        images = []
+        for e_widget in self.__evbr_widget_list:
+            if e_widget.is_region_selected:
+                e_widget.unselect_region()
+
+    #                images.append(e_widget.image)
+    #        self._viewer.remove(images)
+
+    def _on_turn_on_off_btn_clicked(self, b):
+        images = []
+        for e_widget in self.__evbr_widget_list:
+            if e_widget.is_region_selected:
+                images.append(e_widget.image)
+        if self._turn_on_off_btn.description == "Turn off selected regions":
+            self._turn_on_off_btn.description = "Turn on selected regions"
+            self._unselect_btn.disabled = True
+            self._viewer.remove(images)
+        else:
+            self._viewer.add(images)
+            self._turn_on_off_btn.description = "Turn off selected regions"
+            self._unselect_btn.disabled = False
 
 
 class StudIdColumn(Column):
@@ -660,7 +719,11 @@ class ColumnFeeder:
         return viewers
 
     def get_controls(self):
-        return
+        controls = []
+        for column in self.columns:
+            if column.controls is not None:
+                controls = controls + column.controls
+        return controls
 
 
 # ### Query and result widgets
@@ -681,7 +744,15 @@ class TableSetWidget(VBox):
 
         self.cell_viewers = self._column_feeder.get_viewers()
 
-        self.children = [name_label, self.sheet]
+        self.controls = self._column_feeder.get_controls()
+
+        if self.controls is not None:
+            hbox = HBox([name_label] + self.controls)
+
+            list_widgets = [hbox] + [self.sheet]
+            self.children = tuple(list_widgets)
+        else:
+            self.children = [name_label, self.sheet]
 
     def _init_sheet(self, wras):
         column_headers = [str(i) for i in range(wras.arity)]
