@@ -14,6 +14,7 @@ import html  # type: ignore
 from ipysheet import row, sheet  # type: ignore
 from ipywidgets import (
     Button,
+    ButtonStyle,
     Checkbox,
     ColorPicker,
     DOMWidget,
@@ -48,7 +49,7 @@ import os  # type: ignore
 
 import pandas as pd  # type: ignore
 
-from traitlets import Float, Int, Unicode  # type: ignore
+from traitlets import Float, Int, Unicode, Any  # type: ignore
 
 from typing import Dict
 
@@ -176,6 +177,9 @@ class PapayaViewerWidget(HTML):
 
     encoder = json.JSONEncoder()
 
+    # papaya parameters
+    params = {"kioskMode": False, "worldSpace": True, "fullScreen": False}
+
     # html necessary to embed papaya viewer
     papaya_html = """
         <!DOCTYPE html>
@@ -212,9 +216,8 @@ class PapayaViewerWidget(HTML):
         # load atlas and add it to image list
         self.atlas_image = nib.load(atlas)
         self.images = [self.atlas_image]
-
-        # papaya parameters
-        self.params = {"kioskMode": False, "worldSpace": True, "fullScreen": False}
+        self._center = None
+        self._center_coords = None
 
         # initially plot the atlas
         self.plot()
@@ -241,13 +244,20 @@ class PapayaViewerWidget(HTML):
         self.images.remove(image)
         self.plot()
 
-    def plot(self, center_image=None):
+    def set_center(self, widget, image):
+        """"""
+        if self._center is not None:
+            self._center.remove_center()
+            self._center_coords = None
+
+        # think of this
+        if image is not None:
+            self._center = widget
+            self._center_coords = PapayaViewerWidget.calculate_coords(image)
+        self.plot()
+
+    def plot(self):
         """Plots all images in the image list of this viewer.
-        
-        Parameters
-        ----------
-        center_image:
-            the image to center the view.
         
         Note
         ----
@@ -255,26 +265,21 @@ class PapayaViewerWidget(HTML):
         """
 
         # set center_image as the last appended image if not specified
-        if center_image == None and len(self.images) > 0:
-            center_image = self.images[-1]
+        if self._center is None and len(self.images) > 0:
+            self._center_coords = PapayaViewerWidget.calculate_coords(self.images[-1])
 
         # encode images
         encoded_images, image_names = encode_images(self.images)
 
         # set params variable for papaya
         params = dict()
-        params.update(self.params)
+        params.update(PapayaViewerWidget.params)
         params["encodedImages"] = image_names
+        if self._center_coords is not None:
+            params["coordinate"] = self._center_coords
 
         for image_name in image_names[1:]:
             params[image_name] = {"min": 0, "max": 10, "lut": "Red Overlay"}
-
-        if center_image is not None:
-            coords = (
-                np.transpose(center_image.get_fdata().nonzero()).mean(0).astype(int)
-            )
-            coords = nib.affines.apply_affine(center_image.affine, coords)
-            params["coordinate"] = [int(c) for c in coords]
 
         escaped_papaya_html = html.escape(
             PapayaViewerWidget.papaya_html.format(
@@ -288,8 +293,16 @@ class PapayaViewerWidget(HTML):
         )
         self.value = iframe
 
+    @staticmethod
+    def calculate_coords(image):
+        """Calculates coordinates for the specified `image`."""
+        coords = np.transpose(image.get_fdata().nonzero()).mean(0).astype(int)
+        coords = nib.affines.apply_affine(image.affine, coords)
+        return [int(c) for c in coords]
+
     def reset(self):
         self.images = [self.atlas_image]
+        self._center = None
         self.plot()
 
 
@@ -306,6 +319,7 @@ class LabelCellWidget(Label):
         Label.__init__(self, *args, **kwargs)
 
 
+# +
 class ExplicitVBRCellWidget(HBox):
     """ A cell widget for data type `ExplicitVBR` that displays a checkbox connected to a viewer that visualizes spatial image of `ExplicitVBR`.
     """
@@ -338,14 +352,23 @@ class ExplicitVBRCellWidget(HBox):
             partial(self._selection_changed, image=obj.spatial_image()), names="value"
         )
 
-        self._button = Button(description="Fix Center", layout=Layout(width="40px"))
-        self._button.on_click(self._on_click)
-
-        self._color_picker = ColorPicker(
-            concise=True, value="blue", disabled=False, layout=Layout(width="10px")
+        self._center_checkbox = Checkbox(
+            value=False, description="center", layout=Layout(width="30px")
+        )
+        self._center_checkbox.observe(
+            partial(self._on_center_selection_changed, image=obj.spatial_image()),
+            names="value",
         )
 
-        self.children = [self._checkbox, self._button, self._color_picker]
+        #        self._color_picker = ColorPicker(
+        #            concise=True, value="blue", disabled=False, layout=Layout(width="10px")
+        #        )
+
+        self.children = [
+            self._checkbox,
+            self._center_checkbox,
+            #            self._color_picker
+        ]
 
     def _selection_changed(self, change, image):
         if change["new"]:
@@ -353,13 +376,19 @@ class ExplicitVBRCellWidget(HBox):
         else:
             self._viewer.remove(image)
 
-    def _on_click(self, event):
-        print("clicked")
-        print(event)
+    def _on_center_selection_changed(self, change, image):
+        if change["new"]:
+            if not self._checkbox.value:
+                self._checkbox.value = True
+            self._viewer.set_center(self, image)
+        else:
+            self._viewer.set_center(None, None)
 
-        if self._checkbox.value is False:
-            self._checkbox.value = True
-        # self._viewer.center()
+    def remove_center(self):
+        self._center_checkbox.value = False
+
+
+# -
 
 
 # ### Custom cell widgets
