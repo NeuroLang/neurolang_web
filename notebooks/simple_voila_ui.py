@@ -16,13 +16,11 @@ from ipywidgets import (
     Button,
     ButtonStyle,
     Checkbox,
-    ColorPicker,
     DOMWidget,
     HBox,
     HTML,
     Label,
     Layout,
-    Output,
     Tab,
     Textarea,
     VBox,
@@ -32,11 +30,11 @@ from ipywidgets import (
 
 import json  # type: ignore
 
+import neurolang
 from neurolang import regions  # type: ignore
 from neurolang.datalog.wrapped_collections import (
     WrappedRelationalAlgebraSet,
 )  # type: ignore
-import neurolang
 from neurolang.frontend import NeurolangDL, ExplicitVBR  # type: ignore
 from neurolang.frontend.neurosynth_utils import StudyID, TfIDf
 
@@ -49,7 +47,7 @@ import os  # type: ignore
 
 import pandas as pd  # type: ignore
 
-from traitlets import Float, Int, Unicode, Any  # type: ignore
+from traitlets import Float, Int, Unicode  # type: ignore
 
 from typing import Dict
 
@@ -133,15 +131,10 @@ def add_study_tf_idf(nl):
 # ### Prepare engine
 
 nl = init_agent()
-
 add_destrieux(nl)
-
 add_subramarginal(nl)
-
 add_def_mode_study(nl)
-
 add_pcc_study(nl)
-
 add_study_tf_idf(nl)
 
 # ## UI components
@@ -364,14 +357,9 @@ class ExplicitVBRCellWidget(HBox):
             names="value",
         )
 
-        #        self._color_picker = ColorPicker(
-        #            concise=True, value="blue", disabled=False, layout=Layout(width="10px")
-        #        )
-
         self.children = [
             self._checkbox,
             self._center_checkbox,
-            #            self._color_picker
         ]
 
     @property
@@ -798,16 +786,6 @@ class ResultWidget(VBox):
         for i, name in enumerate(names):
             self.tab.set_title(i, name)
         self.tab.children = tablesets
-
-    #        def _tab_changed(tablesets, event):
-    #            # the viewers should be updated depending on selected tableset
-
-    #            new = event.new
-    #            self.children = tuple([self.tab]) + tuple(tablesets[new].get_viewers())
-
-    #        self.tab.observe(partial(_tab_changed, tablesets), names="selected_index")
-
-    #        self.children = tuple([self.tab]) + tuple(tablesets[0].get_viewers())
 
     def _create_tablesets(self, res):
         answer = "ans"
