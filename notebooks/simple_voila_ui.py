@@ -859,3 +859,4 @@ query = "".join(
 
 qw = QueryWidget(nl, query)
 qw
+# -
