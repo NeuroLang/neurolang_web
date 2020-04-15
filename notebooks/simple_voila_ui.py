@@ -603,13 +603,14 @@ class ExplicitVBRColumn(Column):
         self._viewer = ViewerFactory.get_region_viewer()
 
         self._turn_on_off_btn = Button(
-            description="Turn off selected regions", layout=Layout(width="200px")
+            description="Turn off selected regions",
+            layout=Layout(width="200px", padding_top="20px"),
         )
         self._turn_on_off_btn.on_click(self._on_turn_on_off_btn_clicked)
         self._controls.append(self._turn_on_off_btn)
 
         self._unselect_btn = Button(
-            description="Unselect All", layout=Layout(width="150px")
+            description="Unselect All", layout=Layout(width="150px", padding_top="20px")
         )
         self._unselect_btn.on_click(self._on_unselect_clicked)
         self._controls.append(self._unselect_btn)
@@ -747,7 +748,10 @@ class TableSetWidget(VBox):
         self.controls = self._column_feeder.get_controls()
 
         if self.controls is not None:
-            hbox = HBox([name_label] + self.controls)
+            hbox_controls = HBox(self.controls)
+            hbox = HBox([name_label, hbox_controls])
+            hbox.layout.justify_content = "space-between"
+            hbox.layout.align_items = "center"
 
             list_widgets = [hbox] + [self.sheet]
             self.children = tuple(list_widgets)
