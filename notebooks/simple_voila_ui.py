@@ -419,10 +419,10 @@ class LinkWidget(DOMWidget):
 #
 # define('link_widget', ["@jupyter-widgets/base"], function(widgets) {
 #
-#     var LinkView = widgets.DOMWidgetView.extend({
+#     class LinkView extends widgets.DOMWidgetView {
 #
 #         // Render the view.
-#         render: function() {
+#         render() {
 #             this.link = document.createElement('a');
 #             this.link.setAttribute('target', '_blank');
 #
@@ -430,14 +430,14 @@ class LinkWidget(DOMWidget):
 #             this.link.innerHTML = this.model.get('value');
 #
 #             this.el.appendChild(this.link);
-#         },
+#         }
 #
-#         value_changed: function() {
+#         value_changed() {
 #             this.link.setAttribute('href', this.model.get('href'));
 #             this.link.innerHTML = this.model.get('value');
 #         }
 #
-#     });
+#     }
 #
 #     return {
 #         LinkView: LinkView
@@ -498,10 +498,10 @@ class ProgressWidget(DOMWidget):
 #
 # define('progress_widget', ["@jupyter-widgets/base"], function(widgets) {
 #
-#     var ProgressView = widgets.DOMWidgetView.extend({
+#     class ProgressView extends widgets.DOMWidgetView {
 #
 #         // Render the view.
-#         render: function() {
+#         render() {
 #             this.progress = document.createElement('progress');
 #             this.progress.setAttribute('value',  this.model.get('value'));
 #             // TODO set number of decimal places to display
@@ -509,15 +509,15 @@ class ProgressWidget(DOMWidget):
 #             this.progress.setAttribute('max', this.model.get('max'));
 #
 #             this.el.appendChild(this.progress);
-#         },
+#         }
 #
-#         value_changed: function() {
+#         value_changed() {
 #             this.progress.setAttribute('value',  this.model.get('value'));
 #             this.progress.setAttribute('title',  this.model.get('value'));
 #             this.progress.setAttribute('max', this.model.get('max'));
 #         }
 #
-#     });
+#     }
 #
 #     return {
 #         ProgressView: ProgressView
@@ -541,7 +541,6 @@ class TfIDfWidget(ProgressWidget):
 
 a = TfIDfWidget(0.23589651054299998)
 a
-
 
 # ### Columns
 
@@ -859,4 +858,3 @@ query = "".join(
 
 qw = QueryWidget(nl, query)
 qw
-# -
