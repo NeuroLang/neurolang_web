@@ -38,6 +38,8 @@ from neurolang.datalog.wrapped_collections import (
 from neurolang.frontend import NeurolangDL, ExplicitVBR  # type: ignore
 from neurolang.frontend.neurosynth_utils import StudyID, TfIDf
 
+from neurolang_ipywidgets import NlLink, NlProgress, NlCheckbox
+
 from nilearn import datasets, plotting  # type: ignore
 import nibabel as nib  # type: ignore
 
@@ -302,7 +304,52 @@ class PapayaViewerWidget(HTML):
         self.plot()
 
 
-# ### Cell widgets
+# ### Cell widgets that extend neurolang_ipywidgets
+
+
+class StudyIdWidget(NlLink):
+    """A widget to display PubMed study IDs as links to publications."""
+
+    __URL = "https://www.ncbi.nlm.nih.gov/pubmed/?term="
+    __PubMed = "PubMed"
+
+    def __init__(self, study_id, *args, **kwargs):
+        """
+        Parameters
+        ----------
+        study_id : str, StudyID
+            PubMed study ID.
+        """
+        NlLink.__init__(
+            self,
+            value=StudyIdWidget.__PubMed + ":" + study_id,
+            href=StudyIdWidget.__URL + study_id,
+            *args,
+            **kwargs,
+        )
+
+
+a = StudyIdWidget("23773060")
+a
+
+
+class TfIDfWidget(NlProgress):
+    """A widget to display TfIDf value ."""
+
+    def __init__(self, tfidf, *args, **kwargs):
+        """
+        Parameters
+        ----------
+        tfidf : float, TfIDf
+            .
+        """
+        NlProgress.__init__(self, value=tfidf, max=1, *args, **kwargs)
+
+
+a = TfIDfWidget(0.23589651054299998)
+a
+
+# ### Cell widgets that extend standard ipywidgets
 
 
 class LabelCellWidget(Label):
@@ -342,14 +389,18 @@ class ExplicitVBRCellWidget(HBox):
 
         self.__image = obj.spatial_image()
 
-        self._checkbox = Checkbox(
-            value=False, description="show region", layout=Layout(width="100px")
+        self._region_checkbox = NlCheckbox(
+            value=False,
+            description="show region",
+            layout=Layout(
+                width="120px", margin="5px 15px 5px 0", padding="5px 15px 5px 15px"
+            ),
         )
-        self._checkbox.observe(
+        self._region_checkbox.observe(
             partial(self._selection_changed, image=self.__image), names="value"
         )
 
-        self._center_checkbox = Checkbox(
+        self._center_checkbox = NlCheckbox(
             value=False, description="center", layout=Layout(width="100px")
         )
         self._center_checkbox.observe(
@@ -358,7 +409,7 @@ class ExplicitVBRCellWidget(HBox):
         )
 
         self.children = [
-            self._checkbox,
+            self._region_checkbox,
             self._center_checkbox,
         ]
 
@@ -368,10 +419,16 @@ class ExplicitVBRCellWidget(HBox):
 
     @property
     def is_region_selected(self):
-        return self._checkbox.value
+        return self._region_checkbox.value
+
+    def disable_region(self, value):
+        # self._region_checkbox.bgcolor = 'silver' if value else 'white'
+        self._region_checkbox.disabled = value
+
+        self._center_checkbox.disabled = value
 
     def unselect_region(self):
-        self._checkbox.value = False
+        self._region_checkbox.value = False
 
     def _selection_changed(self, change, image):
         if change["new"]:
@@ -381,8 +438,8 @@ class ExplicitVBRCellWidget(HBox):
 
     def _on_center_selection_changed(self, change, image):
         if change["new"]:
-            if not self._checkbox.value:
-                self._checkbox.value = True
+            if not self._region_checkbox.value:
+                self._region_checkbox.value = True
             self._viewer.set_center(self, image)
         else:
             self._viewer.set_center(None, None)
@@ -390,157 +447,6 @@ class ExplicitVBRCellWidget(HBox):
     def remove_center(self):
         self._center_checkbox.value = False
 
-
-# ### Custom cell widgets
-
-# #### Link widget
-
-# A custom link widget to display links.
-
-
-# +
-# TODO add value validations
-
-
-@register
-class LinkWidget(DOMWidget):
-    _view_name = Unicode("LinkView").tag(sync=True)
-    _view_module = Unicode("link_widget").tag(sync=True)
-    _view_module_version = Unicode("0.1.0").tag(sync=True)
-
-    # value to appear as link
-    value = Unicode().tag(sync=True)
-    # url of the link
-    href = Unicode().tag(sync=True)
-
-
-# + language="javascript"
-# require.undef('link_widget');
-#
-# define('link_widget', ["@jupyter-widgets/base"], function(widgets) {
-#
-#     class LinkView extends widgets.DOMWidgetView {
-#
-#         // Render the view.
-#         render() {
-#             this.link = document.createElement('a');
-#             this.link.setAttribute('target', '_blank');
-#
-#             this.link.setAttribute('href', this.model.get('href'));
-#             this.link.innerHTML = this.model.get('value');
-#
-#             this.el.appendChild(this.link);
-#         }
-#
-#         value_changed() {
-#             this.link.setAttribute('href', this.model.get('href'));
-#             this.link.innerHTML = this.model.get('value');
-#         }
-#
-#     }
-#
-#     return {
-#         LinkView: LinkView
-#     };
-# });
-# -
-
-
-class StudyIdWidget(LinkWidget):
-    """A widget to display PubMed study IDs as links to publications."""
-
-    __URL = "https://www.ncbi.nlm.nih.gov/pubmed/?term="
-    __PubMed = "PubMed"
-
-    def __init__(self, study_id, *args, **kwargs):
-        """
-        Parameters
-        ----------
-        study_id : str, StudyID
-            PubMed study ID.
-        """
-        LinkWidget.__init__(
-            self,
-            value=StudyIdWidget.__PubMed + ":" + study_id,
-            href=StudyIdWidget.__URL + study_id,
-            *args,
-            **kwargs,
-        )
-
-
-a = StudyIdWidget("23773060")
-a
-
-
-# #### Progress widget
-
-# A custom progress widget to display progress/percentage.
-
-
-# +
-# TODO add value validations
-
-
-@register
-class ProgressWidget(DOMWidget):
-    _view_name = Unicode("ProgressView").tag(sync=True)
-    _view_module = Unicode("progress_widget").tag(sync=True)
-    _view_module_version = Unicode("0.1.0").tag(sync=True)
-
-    # actual value
-    value = Float().tag(sync=True)
-    # maximum value
-    max = Int().tag(sync=True)
-
-
-# + language="javascript"
-# require.undef('progress_widget');
-#
-# define('progress_widget', ["@jupyter-widgets/base"], function(widgets) {
-#
-#     class ProgressView extends widgets.DOMWidgetView {
-#
-#         // Render the view.
-#         render() {
-#             this.progress = document.createElement('progress');
-#             this.progress.setAttribute('value',  this.model.get('value'));
-#             // TODO set number of decimal places to display
-#             this.progress.setAttribute('title',  this.model.get('value'));
-#             this.progress.setAttribute('max', this.model.get('max'));
-#
-#             this.el.appendChild(this.progress);
-#         }
-#
-#         value_changed() {
-#             this.progress.setAttribute('value',  this.model.get('value'));
-#             this.progress.setAttribute('title',  this.model.get('value'));
-#             this.progress.setAttribute('max', this.model.get('max'));
-#         }
-#
-#     }
-#
-#     return {
-#         ProgressView: ProgressView
-#     };
-# });
-# -
-
-
-class TfIDfWidget(ProgressWidget):
-    """A widget to display TfIDf value ."""
-
-    def __init__(self, tfidf, *args, **kwargs):
-        """
-        Parameters
-        ----------
-        tfidf : float, TfIDf
-            .
-        """
-        ProgressWidget.__init__(self, value=tfidf, max=1, *args, **kwargs)
-
-
-a = TfIDfWidget(0.23589651054299998)
-a
 
 # ### Columns
 
@@ -590,17 +496,22 @@ class ExplicitVBRColumn(Column):
         self._viewer = ViewerFactory.get_region_viewer()
 
         self._turn_on_off_btn = Button(
-            description="Turn off selected regions",
-            layout=Layout(width="200px", padding_top="20px"),
+            tooltip="Turn on/off selected regions",
+            icon="eye",
+            layout=Layout(width="30px", padding_top="20px"),
         )
         self._turn_on_off_btn.on_click(self._on_turn_on_off_btn_clicked)
         self._controls.append(self._turn_on_off_btn)
 
         self._unselect_btn = Button(
-            description="Unselect All", layout=Layout(width="150px", padding_top="20px")
+            tooltip="Unselect all selected regions",
+            description="Unselect All",
+            layout=Layout(width="100px", padding_top="20px"),
         )
         self._unselect_btn.on_click(self._on_unselect_clicked)
         self._controls.append(self._unselect_btn)
+
+        self._column_on = True
 
         self.__evbr_widget_list = []
 
@@ -630,17 +541,23 @@ class ExplicitVBRColumn(Column):
     #        self._viewer.remove(images)
 
     def _on_turn_on_off_btn_clicked(self, b):
+        turn_off = True if self._turn_on_off_btn.icon == "eye-slash" else False
+
         images = []
         for e_widget in self.__evbr_widget_list:
+            e_widget.disable_region(self._column_on)
             if e_widget.is_region_selected:
                 images.append(e_widget.image)
-        if self._turn_on_off_btn.description == "Turn off selected regions":
-            self._turn_on_off_btn.description = "Turn on selected regions"
+
+        if self._column_on:
+            self._column_on = False
+            self._turn_on_off_btn.icon = "eye-slash"
             self._unselect_btn.disabled = True
             self._viewer.remove(images)
         else:
             self._viewer.add(images)
-            self._turn_on_off_btn.description = "Turn off selected regions"
+            self._column_on = True
+            self._turn_on_off_btn.icon = "eye"
             self._unselect_btn.disabled = False
 
 
@@ -735,8 +652,8 @@ class TableSetWidget(VBox):
         self.controls = self._column_feeder.get_controls()
 
         if self.controls is not None:
-            hbox_controls = HBox(self.controls)
-            hbox = HBox([name_label, hbox_controls])
+            hbox_menu = HBox(self.controls)
+            hbox = HBox([name_label, hbox_menu])
             hbox.layout.justify_content = "space-between"
             hbox.layout.align_items = "center"
 
@@ -858,3 +775,4 @@ query = "".join(
 
 qw = QueryWidget(nl, query)
 qw
+# -
