@@ -164,7 +164,11 @@ def encode_images(images):
     return encoded_images, image_txt
 
 
-class PapayaViewerWidget(HTML):
+class ColumnViewer:
+    pass
+
+
+class PapayaViewerWidget(HTML, ColumnViewer):
     """A viewer that overlays multiple label maps.
     
     Number of label maps to overlay is limited to 8. ??
@@ -206,7 +210,7 @@ class PapayaViewerWidget(HTML):
         atlas: str
             path for the image file to be used as atlas.
         """
-        HTML.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         # load atlas and add it to image list
         self.atlas_image = nib.load(atlas)
@@ -307,7 +311,11 @@ class PapayaViewerWidget(HTML):
 # ### Cell widgets that extend neurolang_ipywidgets
 
 
-class StudyIdWidget(NlLink):
+class CellWidget:
+    pass
+
+
+class StudyIdWidget(NlLink, CellWidget):
     """A widget to display PubMed study IDs as links to publications."""
 
     __URL = "https://www.ncbi.nlm.nih.gov/pubmed/?term="
@@ -320,8 +328,7 @@ class StudyIdWidget(NlLink):
         study_id : str, StudyID
             PubMed study ID.
         """
-        NlLink.__init__(
-            self,
+        super().__init__(
             value=StudyIdWidget.__PubMed + ":" + study_id,
             href=StudyIdWidget.__URL + study_id,
             *args,
@@ -333,7 +340,7 @@ a = StudyIdWidget("23773060")
 a
 
 
-class TfIDfWidget(NlProgress):
+class TfIDfWidget(NlProgress, CellWidget):
     """A widget to display TfIDf value ."""
 
     def __init__(self, tfidf, *args, **kwargs):
@@ -343,7 +350,7 @@ class TfIDfWidget(NlProgress):
         tfidf : float, TfIDf
             .
         """
-        NlProgress.__init__(self, value=tfidf, max=1, *args, **kwargs)
+        super().__init__(value=tfidf, max=1, *args, **kwargs)
 
 
 a = TfIDfWidget(0.23589651054299998)
@@ -352,17 +359,17 @@ a
 # ### Cell widgets that extend standard ipywidgets
 
 
-class LabelCellWidget(Label):
+class LabelCellWidget(Label, CellWidget):
     """A cell widget for data type `str` that simply displays the given string.
     
     Requires no additional viewer.
     """
 
     def __init__(self, *args, **kwargs):
-        Label.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
 
 
-class ExplicitVBRCellWidget(HBox):
+class ExplicitVBRCellWidget(HBox, CellWidget):
     """ A cell widget for data type `ExplicitVBR` that displays a checkbox connected to a viewer that visualizes spatial image of `ExplicitVBR`.
     """
 
@@ -382,7 +389,7 @@ class ExplicitVBRCellWidget(HBox):
         viewer : PapayaViewerWidget
             
         """
-        HBox.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         # viewer that visualizes the spatial image when checkbox is checked.
         self._viewer = viewer
@@ -455,8 +462,8 @@ class ExplicitVBRCellWidget(HBox):
 # ### Columns
 
 
-class Column:
-    """Base class for a column which works as a factory to create widgets, controls and viewers of a specific type of column."""
+class ColumnFeeder:
+    """Base class for a column feeder which works as a factory to create cell widgets and their corresponding controls and viewers of a specific type of column."""
 
     def __init__(self):
         self._viewer = None
@@ -464,11 +471,11 @@ class Column:
 
     @property
     def viewer(self):
-        """Returns the special viewer for this column.
+        """Returns the special viewer widget for this column.
         
         Returns
         -------
-             the special viewer for this column, `None` if no special viewer is required.
+             the special viewer widget for this column, `None` if no special viewer is required.
         """
         return self._viewer
 
@@ -488,15 +495,15 @@ class Column:
         
         Returns
         -------
-        Label
+        ipywidgets.widgets.Label
             
         """
         return LabelCellWidget(str(obj))
 
 
-class ExplicitVBRColumn(Column):
+class ExplicitVBRColumn(ColumnFeeder):
     def __init__(self):
-        Column.__init__(self)
+        super().__init__()
         self._viewer = ViewerFactory.get_region_viewer()
 
         self._turn_on_off_btn = Button(
@@ -565,17 +572,17 @@ class ExplicitVBRColumn(Column):
             self._unselect_btn.disabled = False
 
 
-class StudIdColumn(Column):
+class StudIdColumn(ColumnFeeder):
     def __init__(self):
-        Column.__init__(self)
+        super().__init__()
 
     def get_widget(self, obj):
         return StudyIdWidget(str(obj))
 
 
-class TfIDfColumn(Column):
+class TfIDfColumn(ColumnFeeder):
     def __init__(self):
-        Column.__init__(self)
+        super().__init__()
 
     def get_widget(self, obj):
         return TfIDfWidget(float(obj))
@@ -594,9 +601,24 @@ class ViewerFactory:
         return ViewerFactory.papaya_viewer
 
 
-class ColumnFactory:
+class ColumnFeederFactory:
+    """A factory class that creates `ColumnFeeder`s for specified column types."""
+
     @staticmethod
     def get_column(column_type):
+        """Creates and returns a `ColumnFeeder` for the specified `column_type`.
+        
+        Parameters
+        ----------
+        column_type: str
+            type of the column for the required `ColumnFeeder`.
+            
+        Returns
+        -------
+        ColumnFeeder
+            column feeder for the specified `column_type`.
+                
+        """
         if column_type == neurolang.regions.ExplicitVBR:
             return ExplicitVBRColumn()
         elif column_type == neurolang.frontend.neurosynth_utils.StudyID:
@@ -607,20 +629,43 @@ class ColumnFactory:
         ):
             return TfIDfColumn()
         else:
-            return Column()
+            return ColumnFeeder()
 
 
-class ColumnFeeder:
+class ColumnsManager:
+    """A class that creates column feeders for a specified `tuple` of column types and manages creation of widgets for each column and, their corresponding viewers and controls. """
+
     def __init__(self, column_types: tuple):
         self.columns = []
 
         for column_type in column_types.__args__:
-            self.columns.append(ColumnFactory.get_column(column_type))
+            self.columns.append(ColumnFeederFactory.get_column(column_type))
 
-    def get_widget(self, index, obj):
+    def get_cell_widget(self, index, obj):
+        """Creates and returns the cell widget for the column specified by `index` and the object `obj` for that column.
+        
+        Parameters
+        ----------
+        index : int
+            index of the column.
+        obj : 
+            object of column type at the specified `index` which will be used by the widget.
+            
+        Returns
+        -------
+        CellWidget
+            a cell widget corresponding to the column type at `index` with the specified object `obj` of the same column type.
+        """
         return self.columns[index].get_widget(obj)
 
     def get_viewers(self):
+        """Iterates each column feeder to get their corresponding viewer widgets and returns the set of viewers.
+        
+        Returns
+        -------
+        set
+            the set of viewer widgets for all columns.
+        """
         viewers = set()
         for column in self.columns:
             if column.viewer is not None:
@@ -628,6 +673,13 @@ class ColumnFeeder:
         return viewers
 
     def get_controls(self):
+        """Iterates each column feeder to get their corresponding control widgets and returns the list of controls.
+        
+        Returns
+        -------
+        list
+            the list of control widgets for all columns.
+        """
         controls = []
         for column in self.columns:
             if column.controls is not None:
@@ -639,24 +691,27 @@ class ColumnFeeder:
 
 
 class TableSetWidget(VBox):
+    """"""
+
     def __init__(self, name: str, wras: WrappedRelationalAlgebraSet):
-        super(TableSetWidget, self).__init__()
+        super().__init__()
 
         self.wras = wras
 
         # create widgets
         name_label = HTML(f"<h2>{name}</h2>")
 
-        self._column_feeder = ColumnFeeder(wras.row_type)
+        self._columns_manager = ColumnsManager(wras.row_type)
 
         self.sheet = self._init_sheet(self.wras)
 
-        self.cell_viewers = self._column_feeder.get_viewers()
+        self.cell_viewers = self._columns_manager.get_viewers()
 
-        self.controls = self._column_feeder.get_controls()
+        self.controls = self._columns_manager.get_controls()
 
         if self.controls is not None:
             hbox_menu = HBox(self.controls)
+
             hbox = HBox([name_label, hbox_menu])
             hbox.layout.justify_content = "space-between"
             hbox.layout.align_items = "center"
@@ -681,7 +736,7 @@ class TableSetWidget(VBox):
         for i, tuple_ in enumerate(wras.unwrapped_iter()):
             row_temp = []
             for j, el in enumerate(tuple_):
-                cell_widget = self._column_feeder.get_widget(j, el)
+                cell_widget = self._columns_manager.get_cell_widget(j, el)
                 row_temp.append(cell_widget)
             row(i, row_temp)
             # TODO this is to avoid performance problems until paging is implemented
@@ -695,7 +750,7 @@ class TableSetWidget(VBox):
 
 class ResultWidget(VBox):
     def __init__(self):
-        super(ResultWidget, self).__init__()
+        super().__init__()
 
         self.tab = Tab(layout=Layout(height="400px"))
 
@@ -736,8 +791,16 @@ class ResultWidget(VBox):
 
 
 class QueryWidget(VBox):
-    def __init__(self, neurolang_engine, default_query):
-        super(QueryWidget, self).__init__()
+    """"""
+
+    def __init__(
+        self,
+        neurolang_engine,
+        default_query="ans(region_union(r)) :- destrieux(..., r)",
+    ):
+        super().__init__()
+
+        # TODO check if neurolang_engine is None.
 
         self.neurolang_engine = neurolang_engine
 
@@ -761,6 +824,14 @@ class QueryWidget(VBox):
         self.children = [HBox([self.query, self.button]), self.result_viewer]
 
     def _on_query_button_clicked(self, b):
+        """Runs the query in the query text area and diplays the results.
+        
+        Parameters
+        ----------
+        b: ipywidgets.Button
+            button clicked.
+        """
+
         self.result_viewer.reset()
 
         qresult = run_query(self.neurolang_engine, self.query.value)
@@ -770,7 +841,6 @@ class QueryWidget(VBox):
 # ## Query UI
 
 # +
-default_query = "ans(region_union(r)) :- destrieux(..., r)"
 query = "".join(
     "ans(study_id, term, tfidf):-neurosynth_default_mode_study_id(study_id),"
     "neurosynth_pcc_study_id(study_id),"
@@ -779,4 +849,3 @@ query = "".join(
 
 qw = QueryWidget(nl, query)
 qw
-# -
