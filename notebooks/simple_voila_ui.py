@@ -400,17 +400,17 @@ class ExplicitVBRCellWidget(HBox):
             partial(self._selection_changed, image=self.__image), names="value"
         )
 
-        self._center_checkbox = NlCheckbox(
-            value=False, description="center", layout=Layout(width="100px")
+        self._center_btn = Button(
+            tooltip="Center on region", icon="map-marker", layout=Layout(width="30px")
         )
-        self._center_checkbox.observe(
-            partial(self._on_center_selection_changed, image=self.__image),
-            names="value",
-        )
+        self._center_btn.on_click(self._center_btn_clicked)
+        self._centered = False
+
+        self.layout.align_items = "center"
 
         self.children = [
             self._region_checkbox,
-            self._center_checkbox,
+            self._center_btn,
         ]
 
     @property
@@ -421,11 +421,9 @@ class ExplicitVBRCellWidget(HBox):
     def is_region_selected(self):
         return self._region_checkbox.value
 
-    def disable_region(self, value):
-        # self._region_checkbox.bgcolor = 'silver' if value else 'white'
-        self._region_checkbox.disabled = value
-
-        self._center_checkbox.disabled = value
+    def disable_region(self, is_disabled):
+        self._region_checkbox.disabled = is_disabled
+        self._center_btn.disabled = is_disabled
 
     def unselect_region(self):
         self._region_checkbox.value = False
@@ -436,16 +434,22 @@ class ExplicitVBRCellWidget(HBox):
         else:
             self._viewer.remove([image])
 
-    def _on_center_selection_changed(self, change, image):
-        if change["new"]:
+    def center_region(self, is_centered):
+        self._centered = is_centered
+        if is_centered:
+            self._center_btn.icon = "map-pin"
+        else:
+            self._center_btn.icon = "map-marker"
+
+    def _center_btn_clicked(self, b):
+        if not self._centered:
+            self.center_region(True)
             if not self._region_checkbox.value:
                 self._region_checkbox.value = True
-            self._viewer.set_center(self, image)
-        else:
-            self._viewer.set_center(None, None)
+            self._viewer.set_center(self, self.image)
 
     def remove_center(self):
-        self._center_checkbox.value = False
+        self.center_region(False)
 
 
 # ### Columns
