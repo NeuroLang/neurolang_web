@@ -116,3 +116,19 @@ class ExplicitVBRColumn(ColumnFeeder):
             self._unselect_btn.disabled = False
 
         self.result_tab.icon = self._turn_on_off_btn.icon
+
+
+class StudIdColumn(ColumnFeeder):
+    def __init__(self):
+        super().__init__()
+
+    def get_widget(self, obj):
+        return StudyIdWidget(str(obj))
+
+
+class TfIDfColumn(ColumnFeeder):
+    def __init__(self):
+        super().__init__()
+
+    def get_widget(self, obj):
+        return TfIDfWidget(float(obj))
