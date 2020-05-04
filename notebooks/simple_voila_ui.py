@@ -6,11 +6,9 @@ import warnings  # type: ignore
 warnings.filterwarnings("ignore")
 
 # +
-import neurolang
 from neurolang import regions  # type: ignore
 from neurolang.frontend import NeurolangDL, ExplicitVBR  # type: ignore
 
-from nlweb.viewers import PapayaViewerWidget
 from nlweb.viewers.query import QueryWidget
 
 import nibabel as nib
@@ -47,7 +45,7 @@ def init_agent():
 
 # +
 def add_destrieux(nl):
-    destrieux = nl.new_symbol(name="destrieux")
+    nl.new_symbol(name="destrieux")
     destrieux_atlas = datasets.fetch_atlas_destrieux_2009()
     destrieux_atlas_image = nib.load(destrieux_atlas["maps"])
     destrieux_labels = dict(destrieux_atlas["labels"])
