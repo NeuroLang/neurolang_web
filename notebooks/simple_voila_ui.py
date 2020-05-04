@@ -11,6 +11,7 @@ from neurolang import regions  # type: ignore
 from neurolang.frontend import NeurolangDL, ExplicitVBR  # type: ignore
 
 from nlweb.viewers import PapayaViewerWidget
+from nlweb.viewers.query import QueryWidget
 
 import nibabel as nib
 

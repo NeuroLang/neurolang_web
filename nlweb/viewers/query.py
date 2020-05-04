@@ -12,7 +12,7 @@ from neurolang.datalog.wrapped_collections import (
     WrappedRelationalAlgebraSet,
 )  # type: ignore
 
-from nlweb.viewers.cell import NlIconTab
+from neurolang_ipywidgets import NlIconTab
 from nlweb.viewers.factory import ColumnsManager
 
 from traitlets import Unicode  # type: ignore
@@ -187,5 +187,5 @@ class QueryWidget(VBox):
 
         self.result_viewer.reset()
 
-        qresult = run_query(self.neurolang_engine, self.query.value)
+        qresult = self.run_query(self.query.value)
         self.result_viewer.show_results(qresult)

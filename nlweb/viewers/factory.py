@@ -3,12 +3,7 @@ from ipywidgets import Layout
 import neurolang
 
 from nlweb.viewers import PapayaViewerWidget
-from nlweb.viewers.column import (
-    ColumnFeeder,
-    ExplicitVBRColumn,
-    StudIdColumn,
-    TfIDfColumn,
-)
+import nlweb.viewers.column
 
 
 class ViewerFactory:
@@ -42,16 +37,16 @@ class ColumnFeederFactory:
                 
         """
         if column_type == neurolang.regions.ExplicitVBR:
-            return ExplicitVBRColumn(result_tab)
+            return nlweb.viewers.column.ExplicitVBRColumn(result_tab)
         elif column_type == neurolang.frontend.neurosynth_utils.StudyID:
-            return StudIdColumn()
+            return nlweb.viewers.column.StudIdColumn()
         elif (
             column_type == neurolang.frontend.neurosynth_utils.TfIDf
             or column_type == float
         ):
-            return TfIDfColumn()
+            return nlweb.viewers.column.TfIDfColumn()
         else:
-            return ColumnFeeder()
+            return nlweb.viewers.column.ColumnFeeder()
 
 
 class ColumnsManager:

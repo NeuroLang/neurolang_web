@@ -1,3 +1,16 @@
+from ipywidgets import Button, Layout
+
+import neurolang
+
+from nlweb.viewers.cell import (
+    ExplicitVBRCellWidget,
+    LabelCellWidget,
+    StudyIdWidget,
+    TfIDfWidget,
+)
+from nlweb.viewers.factory import ViewerFactory
+
+
 class ColumnFeeder:
     """Base class for a column feeder which works as a factory to create cell widgets and their corresponding controls and viewers of a specific type of column."""
 
