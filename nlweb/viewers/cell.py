@@ -1,4 +1,6 @@
-from ipywidgets import HBox, Label
+from functools import partial
+
+from ipywidgets import Button, HBox, Label, Layout
 
 import neurolang
 

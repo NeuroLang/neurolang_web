@@ -3,7 +3,6 @@ from ipywidgets import Layout
 import neurolang
 
 from nlweb.viewers import PapayaViewerWidget
-import nlweb.viewers.column
 
 
 class ViewerFactory:
@@ -36,6 +35,8 @@ class ColumnFeederFactory:
             column feeder for the specified `column_type`.
                 
         """
+        import nlweb.viewers.column
+
         if column_type == neurolang.regions.ExplicitVBR:
             return nlweb.viewers.column.ExplicitVBRColumn(result_tab)
         elif column_type == neurolang.frontend.neurosynth_utils.StudyID:
