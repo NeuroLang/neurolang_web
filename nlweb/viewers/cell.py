@@ -4,7 +4,7 @@ import neurolang
 
 from nlweb.viewers import CellWidget, PapayaViewerWidget
 
-from neurolang_ipywidgets import NlLink, NlProgress, NlCheckbox, NlIconTab
+from neurolang_ipywidgets import NlLink, NlProgress, NlCheckbox
 
 
 class StudyIdWidget(NlLink, CellWidget):
