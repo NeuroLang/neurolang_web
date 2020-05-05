@@ -172,7 +172,7 @@ class QueryWidget(VBox):
         self.children = [HBox([self.query, self.button]), self.result_viewer]
 
     def run_query(self, query):
-        with self.neurolang_engine.scope as s:
+        with self.neurolang_engine.scope:
             self.neurolang_engine.execute_nat_datalog_program(query)
             return self.neurolang_engine.solve_all()
 

@@ -99,18 +99,11 @@ class ExplicitVBRColumn(ColumnFeeder):
         return images
 
     def _on_unselect_clicked(self, b):
-        images = []
         for e_widget in self.__evbr_widget_list:
             if e_widget.is_region_selected:
                 e_widget.unselect_region()
 
     def _on_turn_on_off_btn_clicked(self, b):
-        turn_off = (
-            True
-            if self._turn_on_off_btn.icon == ExplicitVBRColumn.__ICON_OFF
-            else False
-        )
-
         images = []
         for e_widget in self.__evbr_widget_list:
             e_widget.disable_region(self._column_on)

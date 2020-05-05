@@ -6,4 +6,4 @@ class ColumnViewer:
     pass
 
 
-from .papaya import PapayaViewerWidget
+from .papaya import PapayaViewerWidget  # noqa: F401
