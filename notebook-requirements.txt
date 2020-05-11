@@ -1,7 +1,0 @@
-jupyter
-jupytext
-ipysheet
-nilearn
-ipywidgets
-traitlets
-pandas==0.23.4
