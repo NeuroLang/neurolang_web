@@ -45,7 +45,7 @@ class TfIDfWidget(NlProgress, CellWidget):
 
 class LabelCellWidget(Label, CellWidget):
     """A cell widget for data type `str` that simply displays the given string.
-    
+
     Requires no additional viewer.
     """
 
@@ -65,18 +65,20 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
         **kwargs,
     ):
         """Initializes the widget with the specified `obj`.
-        
+
         Parameters
         ----------
         obj: neurolang.regions.ExplicitVBR
-        
+
         viewer : PapayaViewerWidget
-            
+
         """
         super().__init__(*args, **kwargs)
 
         # viewer that visualizes the spatial image when checkbox is checked.
         self._viewer = viewer
+
+        self._can_select = True
 
         self.__image = obj.spatial_image()
 
@@ -119,11 +121,17 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
     def unselect_region(self):
         self._region_checkbox.value = False
 
+    def unselect_region_without_remove(self):
+        self._can_select = False
+        self._region_checkbox.value = False
+        self._can_select = True
+
     def _selection_changed(self, change, image):
-        if change["new"]:
-            self._viewer.add([image])
-        else:
-            self._viewer.remove([image])
+        if self._can_select:
+            if change["new"]:
+                self._viewer.add(self, [image])
+            else:
+                self._viewer.remove(self, [image])
 
     def center_region(self, is_centered):
         self._centered = is_centered
