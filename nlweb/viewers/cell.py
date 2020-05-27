@@ -101,10 +101,7 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
 
         self.layout.align_items = "center"
 
-        self.children = [
-            self._region_checkbox,
-            self._center_btn,
-        ]
+        self.children = [self._region_checkbox, self._center_btn]
 
     @property
     def image(self):
