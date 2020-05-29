@@ -118,7 +118,7 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
     def unselect_region(self):
         self._region_checkbox.value = False
 
-    def unselect_region_without_remove(self):
+    def undo_select(self):
         self._can_select = False
         self._region_checkbox.value = False
         self._can_select = True
@@ -126,9 +126,15 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
     def _selection_changed(self, change, image):
         if self._can_select:
             if change["new"]:
-                self._viewer.add(self, [image])
+                if self._viewer.can_add([image]):
+                    self._viewer.add([image])
+                else:
+                    self.undo_select()
+                    self._viewer.set_error(
+                        "Papaya viewer does not allow more than 8 overlays. \nPlease unselect region to be able to add  new ones!"
+                    )
             else:
-                self._viewer.remove(self, [image])
+                self._viewer.remove([image])
 
     def center_region(self, is_centered):
         self._centered = is_centered

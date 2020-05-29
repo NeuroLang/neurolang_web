@@ -21,7 +21,7 @@ class ColumnFeeder:
     @property
     def viewer(self):
         """Returns the special viewer widget for this column.
-        
+
         Returns
         -------
              the special viewer widget for this column, `None` if no special viewer is required.
@@ -31,21 +31,21 @@ class ColumnFeeder:
     @property
     def controls(self):
         """Returns list of widgets that are used to control the widgets of this column.
-        
+
         Returns
         -------
-        list 
-            
+        list
+
         """
         return self._controls
 
     def get_widget(self, obj):
         """Returns a Label widget for the specified `obj`.
-        
+
         Returns
         -------
         ipywidgets.widgets.Label
-            
+
         """
         return LabelCellWidget(str(obj))
 
@@ -99,9 +99,12 @@ class ExplicitVBRColumn(ColumnFeeder):
         return images
 
     def _on_unselect_clicked(self, b):
+        images = []
         for e_widget in self.__evbr_widget_list:
             if e_widget.is_region_selected:
-                e_widget.unselect_region()
+                images.append(e_widget.image)
+                e_widget.undo_select()
+        self._viewer.remove(images)
 
     def _on_turn_on_off_btn_clicked(self, b):
         images = []
@@ -116,10 +119,17 @@ class ExplicitVBRColumn(ColumnFeeder):
             self._unselect_btn.disabled = True
             self._viewer.remove(images)
         else:
-            self._viewer.add(images)
-            self._column_on = True
-            self._turn_on_off_btn.icon = ExplicitVBRColumn.__ICON_ON
-            self._unselect_btn.disabled = False
+            if self._viewer.can_add(images):
+                self._viewer.add(images)
+                self._column_on = True
+                self._turn_on_off_btn.icon = ExplicitVBRColumn.__ICON_ON
+                self._unselect_btn.disabled = False
+            else:
+                for e_widget in self.__evbr_widget_list:
+                    e_widget.disable_region(True)
+                self._viewer.set_error(
+                    "Papaya viewer does not allow more than 8 overlays. \nPlease unselect region to be able to add  new ones!"
+                )
 
         self.result_tab.icon = self._turn_on_off_btn.icon
 

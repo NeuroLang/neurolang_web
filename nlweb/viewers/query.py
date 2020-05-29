@@ -1,12 +1,5 @@
 from ipysheet import row, sheet  # type: ignore
-from ipywidgets import (
-    Button,
-    HBox,
-    HTML,
-    Layout,
-    Textarea,
-    VBox,
-)  # type: ignore
+from ipywidgets import Button, HBox, HTML, Layout, Textarea, VBox  # type: ignore
 
 from neurolang.datalog.wrapped_collections import (
     WrappedRelationalAlgebraSet,
@@ -90,6 +83,9 @@ class ResultWidget(VBox):
     def show_results(self, res: Dict[str, WrappedRelationalAlgebraSet]):
         self.reset()
         names, tablesets, viewers, icons = self._create_tablesets(res)
+
+        for viewer in viewers:
+            viewer.reset()
 
         self.children = (self.tab,) + tuple(viewers)
 
@@ -178,7 +174,7 @@ class QueryWidget(VBox):
 
     def _on_query_button_clicked(self, b):
         """Runs the query in the query text area and diplays the results.
-        
+
         Parameters
         ----------
         b: ipywidgets.Button

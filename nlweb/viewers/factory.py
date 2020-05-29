@@ -2,11 +2,12 @@ from ipywidgets import Layout
 
 import neurolang
 
-from nlweb.viewers import PapayaViewerWidget
+# from nlweb.viewers import PapayaViewerWidget
+from neurolang_ipywidgets import NlPapayaViewer
 
 
 class ViewerFactory:
-    papaya_viewer = PapayaViewerWidget(
+    papaya_viewer = NlPapayaViewer(
         layout=Layout(width="700px", height="600px", border="1px solid black")
     )
 
@@ -21,19 +22,19 @@ class ColumnFeederFactory:
     @staticmethod
     def get_column(result_tab, column_type):
         """Creates and returns a `ColumnFeeder` for the specified `column_type`.
-        
+
         Parameters
         ----------
         result_tab: ResultTabWidget
             the result tab that views the required column.
         column_type: str
             type of the column for the required `ColumnFeeder`.
-            
+
         Returns
         -------
         ColumnFeeder
             column feeder for the specified `column_type`.
-                
+
         """
         import nlweb.viewers.column
 
@@ -61,14 +62,14 @@ class ColumnsManager:
 
     def get_cell_widget(self, index, obj):
         """Creates and returns the cell widget for the column specified by `index` and the object `obj` for that column.
-        
+
         Parameters
         ----------
         index : int
             index of the column.
         obj : 
             object of column type at the specified `index` which will be used by the widget.
-            
+
         Returns
         -------
         CellWidget
@@ -78,7 +79,7 @@ class ColumnsManager:
 
     def get_viewers(self):
         """Iterates each column feeder to get their corresponding viewer widgets and returns the set of viewers.
-        
+
         Returns
         -------
         set
@@ -92,7 +93,7 @@ class ColumnsManager:
 
     def get_controls(self):
         """Iterates each column feeder to get their corresponding control widgets and returns the list of controls.
-        
+
         Returns
         -------
         list
