@@ -135,18 +135,32 @@ class ResultWidget(VBox):
 
 
 class QueryWidget(VBox):
-    """"""
+    """
+    A widget to input queries
+
+    Parameters
+    ----------
+
+    neurolang_engine: NeurolangDL
+                      Engine to query
+    default_query: str
+                   Default query text, will be shown in textarea
+    reraise: bool
+             re-raise exceptions thrown during query execution
+    """
 
     def __init__(
         self,
         neurolang_engine,
         default_query="ans(region_union(r)) :- destrieux(..., r)",
+        reraise=False,
     ):
         super().__init__()
 
         # TODO check if neurolang_engine is None.
 
         self.neurolang_engine = neurolang_engine
+        self.reraise = reraise
 
         self.query = Textarea(
             value=default_query,
@@ -162,12 +176,17 @@ class QueryWidget(VBox):
         )
         self.button = Button(description="Run query")
         self.button.on_click(self._on_query_button_clicked)
+        self.error_display = HTML(layout=Layout(visibility="hidden"))
 
         self.result_viewer = ResultWidget()
 
-        self.children = [HBox([self.query, self.button]), self.result_viewer]
+        self.children = [
+            HBox([self.query, self.button]),
+            self.error_display,
+            self.result_viewer,
+        ]
 
-    def run_query(self, query):
+    def run_query(self, query: str):
         with self.neurolang_engine.scope:
             self.neurolang_engine.execute_nat_datalog_program(query)
             return self.neurolang_engine.solve_all()
@@ -183,5 +202,19 @@ class QueryWidget(VBox):
 
         self.result_viewer.reset()
 
-        qresult = self.run_query(self.query.value)
-        self.result_viewer.show_results(qresult)
+        try:
+            self.result_viewer.layout.visibility = "hidden"
+            self.error_display.layout.visibility = "hidden"
+            qresult = self.run_query(self.query.value)
+        except Exception as e:
+            self.error_display.layout.visibility = "visible"
+            self.error_display.value = _format_exc(e)
+            if self.reraise:
+                raise e
+        else:
+            self.result_viewer.layout.visibility = "visible"
+            self.result_viewer.show_results(qresult)
+
+
+def _format_exc(e: Exception):
+    return f"<pre style='background-color:#faaba5; border: 1px solid red; padding: 0.4em'>{e}</pre>"
