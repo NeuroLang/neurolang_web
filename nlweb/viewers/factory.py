@@ -1,8 +1,6 @@
 from ipywidgets import Layout
 
 import neurolang
-
-# from nlweb.viewers import PapayaViewerWidget
 from neurolang_ipywidgets import NlPapayaViewer
 
 
@@ -58,7 +56,8 @@ class ColumnsManager:
         self.columns = []
 
         for column_type in column_types.__args__:
-            self.columns.append(ColumnFeederFactory.get_column(result_tab, column_type))
+            self.columns.append(
+                ColumnFeederFactory.get_column(result_tab, column_type))
 
     def get_cell_widget(self, index, obj):
         """Creates and returns the cell widget for the column specified by `index` and the object `obj` for that column.

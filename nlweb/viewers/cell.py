@@ -4,9 +4,9 @@ from ipywidgets import Button, HBox, Label, Layout
 
 import neurolang
 
-from nlweb.viewers import CellWidget, PapayaViewerWidget
+from nlweb.viewers import CellWidget
 
-from neurolang_ipywidgets import NlLink, NlProgress, NlCheckbox
+from neurolang_ipywidgets import NlLink, NlProgress, NlCheckbox, NlPapayaViewer
 
 
 class StudyIdWidget(NlLink, CellWidget):
@@ -60,7 +60,7 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
     def __init__(
         self,
         obj: neurolang.regions.ExplicitVBR,
-        viewer: PapayaViewerWidget,
+        viewer: NlPapayaViewer,
         *args,
         **kwargs,
     ):
@@ -70,7 +70,7 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
         ----------
         obj: neurolang.regions.ExplicitVBR
 
-        viewer : PapayaViewerWidget
+        viewer : NlPapayaViewer
 
         """
         super().__init__(*args, **kwargs)
