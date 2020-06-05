@@ -54,7 +54,7 @@ class LabelCellWidget(Label, CellWidget):
 
 
 class ExplicitVBRCellWidget(HBox, CellWidget):
-    """ A cell widget for data type `ExplicitVBR` that displays a checkbox connected to a viewer that visualizes spatial image of `ExplicitVBR`.
+    """A cell widget for data type `ExplicitVBR` that enables displaying the spatial image in an associated viewer or center on the spatial image's coordinates.
     """
 
     def __init__(
@@ -71,7 +71,7 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
         obj: neurolang.regions.ExplicitVBR
 
         viewer : NlPapayaViewer
-
+            associated viewer to visualize the spatial image.
         """
         super().__init__(*args, **kwargs)
 
