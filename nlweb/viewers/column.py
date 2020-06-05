@@ -53,6 +53,11 @@ class ColumnFeeder:
 class ExplicitVBRColumn(ColumnFeeder):
     __ICON_ON = "eye"
     __ICON_OFF = "eye-slash"
+    __ICON_UNSELECT = "times"
+    __TOOLTIP_ON = "Turn off selected regions. This will keep regions selected, but remove them from the viewer."
+    __TOOLTIP_OFF = (
+        "Turn on selected regions. This will add selected regions to the viewer."
+    )
 
     def __init__(self, result_tab):
         super().__init__()
@@ -61,7 +66,7 @@ class ExplicitVBRColumn(ColumnFeeder):
         self._viewer = ViewerFactory.get_region_viewer()
 
         self._turn_on_off_btn = Button(
-            tooltip="Turn on/off selected regions",
+            tooltip=ExplicitVBRColumn.__TOOLTIP_ON,
             icon=ExplicitVBRColumn.__ICON_ON,
             layout=Layout(width="30px", padding_top="20px"),
         )
@@ -72,8 +77,8 @@ class ExplicitVBRColumn(ColumnFeeder):
 
         self._unselect_btn = Button(
             tooltip="Unselect all selected regions",
-            description="Unselect All",
-            layout=Layout(width="100px", padding_top="20px"),
+            icon=ExplicitVBRColumn.__ICON_UNSELECT,
+            layout=Layout(width="30px", padding_top="20px"),
         )
         self._unselect_btn.on_click(self._on_unselect_clicked)
         self._controls.append(self._unselect_btn)
@@ -116,6 +121,7 @@ class ExplicitVBRColumn(ColumnFeeder):
         if self._column_on:
             self._column_on = False
             self._turn_on_off_btn.icon = ExplicitVBRColumn.__ICON_OFF
+            self._turn_on_off_btn.tooltip = ExplicitVBRColumn.__TOOLTIP_OFF
             self._unselect_btn.disabled = True
             self._viewer.remove(images)
         else:
@@ -123,6 +129,7 @@ class ExplicitVBRColumn(ColumnFeeder):
                 self._viewer.add(images)
                 self._column_on = True
                 self._turn_on_off_btn.icon = ExplicitVBRColumn.__ICON_ON
+                self._turn_on_off_btn.tooltip = ExplicitVBRColumn.__TOOLTIP_ON
                 self._unselect_btn.disabled = False
             else:
                 for e_widget in self.__evbr_widget_list:
