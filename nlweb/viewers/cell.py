@@ -78,28 +78,34 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
         # viewer that visualizes the spatial image when checkbox is checked.
         self._viewer = viewer
 
+        self._centered = False
         self._can_select = True
+
+        self.layout.width = "160px"
+        self.layout.flex_flow = "row"
+        self.layout.display = "flex"
 
         self.__image = obj.spatial_image()
 
+        # add widgets
         self._region_checkbox = NlCheckbox(
             value=False,
             description="show region",
+            indent=False,
             layout=Layout(
                 width="120px", margin="5px 15px 5px 0", padding="5px 15px 5px 15px"
             ),
         )
+        self._center_btn = Button(
+            tooltip="Center on region", icon="map-marker", layout=Layout(width="30px")
+        )
+
+        # add handlers
         self._region_checkbox.observe(
             partial(self._selection_changed, image=self.__image), names="value"
         )
 
-        self._center_btn = Button(
-            tooltip="Center on region", icon="map-marker", layout=Layout(width="30px")
-        )
         self._center_btn.on_click(self._center_btn_clicked)
-        self._centered = False
-
-        self.layout.align_items = "center"
 
         self.children = [self._region_checkbox, self._center_btn]
 
