@@ -4,7 +4,7 @@ from ipywidgets import Button, HBox, Label, Layout
 
 import neurolang
 
-from nlweb.viewers import CellWidget
+from nlweb.viewers import CellWidget, PapayaImage
 
 from neurolang_ipywidgets import NlLink, NlProgress, NlCheckbox, NlPapayaViewer
 
@@ -75,17 +75,17 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
         """
         super().__init__(*args, **kwargs)
 
-        # viewer that visualizes the spatial image when checkbox is checked.
         self._viewer = viewer
+        self._image = PapayaImage(obj.spatial_image())
 
+        # default config for images
+        self._image.config = dict(min=0, max=10, lut="Red Overlay")
         self._centered = False
         self._can_select = True
 
         self.layout.width = "160px"
         self.layout.flex_flow = "row"
         self.layout.display = "flex"
-
-        self.__image = obj.spatial_image()
 
         # add widgets
         self._region_checkbox = NlCheckbox(
@@ -102,7 +102,7 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
 
         # add handlers
         self._region_checkbox.observe(
-            partial(self._selection_changed, image=self.__image), names="value"
+            partial(self._selection_changed, image=self._image), names="value"
         )
 
         self._center_btn.on_click(self._center_btn_clicked)
@@ -111,7 +111,7 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
 
     @property
     def image(self):
-        return self.__image
+        return self._image
 
     @property
     def is_region_selected(self):
