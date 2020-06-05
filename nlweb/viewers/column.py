@@ -4,6 +4,7 @@ import neurolang
 
 from nlweb.viewers.cell import (
     ExplicitVBRCellWidget,
+    ExplicitVBROverlayCellWidget,
     LabelCellWidget,
     StudyIdWidget,
     TfIDfWidget,
@@ -85,27 +86,27 @@ class ExplicitVBRColumn(ColumnFeeder):
 
         self._column_on = True
 
-        self.__evbr_widget_list = []
+        self._evbr_widget_list = []
 
     def get_widget(self, obj):
         """"""
         if isinstance(obj, neurolang.regions.ExplicitVBR):
             e_widget = ExplicitVBRCellWidget(obj, self._viewer)
-            self.__evbr_widget_list.append(e_widget)
+            self._evbr_widget_list.append(e_widget)
             return e_widget
         else:
             return LabelCellWidget(str(obj))
 
     def _selected_images(self):
         images = []
-        for e_widget in self.__evbr_widget_list:
+        for e_widget in self._evbr_widget_list:
             if e_widget.is_region_selected:
                 images.append(e_widget.image)
         return images
 
     def _on_unselect_clicked(self, b):
         images = []
-        for e_widget in self.__evbr_widget_list:
+        for e_widget in self._evbr_widget_list:
             if e_widget.is_region_selected:
                 images.append(e_widget.image)
                 e_widget.undo_select()
@@ -113,7 +114,7 @@ class ExplicitVBRColumn(ColumnFeeder):
 
     def _on_turn_on_off_btn_clicked(self, b):
         images = []
-        for e_widget in self.__evbr_widget_list:
+        for e_widget in self._evbr_widget_list:
             e_widget.disable_region(self._column_on)
             if e_widget.is_region_selected:
                 images.append(e_widget.image)
@@ -132,13 +133,27 @@ class ExplicitVBRColumn(ColumnFeeder):
                 self._turn_on_off_btn.tooltip = ExplicitVBRColumn.__TOOLTIP_ON
                 self._unselect_btn.disabled = False
             else:
-                for e_widget in self.__evbr_widget_list:
+                for e_widget in self._evbr_widget_list:
                     e_widget.disable_region(True)
                 self._viewer.set_error(
                     "Papaya viewer does not allow more than 8 overlays. \nPlease unselect region to be able to add  new ones!"
                 )
 
         self.result_tab.icon = self._turn_on_off_btn.icon
+
+
+class ExplicitVBROverlayColumn(ExplicitVBRColumn):
+    def __init__(self, result_tab):
+        super().__init__(result_tab)
+
+    def get_widget(self, obj):
+        """"""
+        if isinstance(obj, neurolang.regions.ExplicitVBROverlay):
+            e_widget = ExplicitVBROverlayCellWidget(obj, self._viewer)
+            self._evbr_widget_list.append(e_widget)
+            return e_widget
+        else:
+            return LabelCellWidget(str(obj))
 
 
 class StudIdColumn(ColumnFeeder):

@@ -38,6 +38,8 @@ class ColumnFeederFactory:
 
         if column_type == neurolang.regions.ExplicitVBR:
             return nlweb.viewers.column.ExplicitVBRColumn(result_tab)
+        elif column_type == neurolang.regions.ExplicitVBROverlay:
+            return nlweb.viewers.column.ExplicitVBROverlayColumn(result_tab)
         elif column_type == neurolang.frontend.neurosynth_utils.StudyID:
             return nlweb.viewers.column.StudIdColumn()
         elif (

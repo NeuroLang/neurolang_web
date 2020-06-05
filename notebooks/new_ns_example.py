@@ -158,3 +158,10 @@ plotting.plot_roi(r.spatial_image())
 
 r = next(iter(res["region_prob"].unwrap()))[0]
 plotting.plot_stat_map(r.spatial_image())
+
+# +
+from nlweb.viewers.query import QueryWidget
+
+qw = QueryWidget(nl, datalog_script)
+qw
+# -
