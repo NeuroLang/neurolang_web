@@ -201,10 +201,10 @@ class QueryWidget(VBox):
         """
 
         self.result_viewer.reset()
+        self.result_viewer.layout.visibility = "hidden"
+        self.error_display.layout.visibility = "hidden"
 
         try:
-            self.result_viewer.layout.visibility = "hidden"
-            self.error_display.layout.visibility = "hidden"
             qresult = self.run_query(self.query.value)
         except Exception as e:
             self.error_display.layout.visibility = "visible"
@@ -217,4 +217,7 @@ class QueryWidget(VBox):
 
 
 def _format_exc(e: Exception):
+    """
+    Format an exception for display
+    """
     return f"<pre style='background-color:#faaba5; border: 1px solid red; padding: 0.4em'>{e}</pre>"
