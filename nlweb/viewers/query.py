@@ -18,8 +18,8 @@ class ResultTabWidget(VBox):
 
     icon = Unicode()
 
-    def __init__(self, name: str, wras: WrappedRelationalAlgebraSet, *args, **kwargs,):
-        super().__init__(*args, **kwargs,)
+    def __init__(self, name: str, wras: WrappedRelationalAlgebraSet, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
         self.wras = wras
 
@@ -56,7 +56,8 @@ class ResultTabWidget(VBox):
             columns=wras.arity,
             column_headers=column_headers,
             layout=Layout(
-                width="auto", height=f"{(50 * rows_visible) + 30}px", overflow="visible"),
+                width="auto", height=f"{(50 * rows_visible) + 30}px", overflow="visible"
+            ),
         )
 
         for i, tuple_ in enumerate(wras.unwrapped_iter()):
@@ -79,8 +80,7 @@ class ResultWidget(VBox):
 
     def __init__(self):
         super().__init__()
-        self.tab = NlIconTab(layout=Layout(
-            height="400px", overflow="visible"))
+        self.tab = NlIconTab(layout=Layout(height="400px", overflow="visible"))
 
     def show_results(self, res: Dict[str, WrappedRelationalAlgebraSet]):
         self.reset()
@@ -109,7 +109,10 @@ class ResultWidget(VBox):
 
         for name, result_set in res.items():
             tableset_widget = ResultTabWidget(
-                name, result_set, layout=Layout(height="340px", overflow="-moz-hidden-unscrollable"))
+                name,
+                result_set,
+                layout=Layout(height="340px", overflow="-moz-hidden-unscrollable"),
+            )
 
             if name == answer:
                 tablesets.insert(0, tableset_widget)
