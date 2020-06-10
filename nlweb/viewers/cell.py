@@ -17,7 +17,25 @@ import neurolang
 
 from nlweb.viewers import CellWidget, PapayaImage
 
-from neurolang_ipywidgets import NlLink, NlProgress, NlCheckbox, NlPapayaViewer
+from neurolang_ipywidgets import (
+    NlLink,
+    NlProgress,
+    NlCheckbox,
+    NlPapayaViewer,
+    NlVBoxOverlay,
+)
+
+
+lut_options = [
+    "Grayscale",
+    "Red Overlay",
+    "Green Overlay",
+    "Blue Overlay",
+    "Gold",
+    "Spectrum",
+    "Overlay (Positives)",
+    "Overlay (Negatives)",
+]
 
 
 class StudyIdWidget(NlLink, CellWidget):
@@ -95,8 +113,9 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
         self._can_select = True
 
         self.layout.width = "160px"
-        self.layout.flex_flow = "row"
+        self.layout.align_items = "flex-start"
         self.layout.display = "flex"
+        self.layout.flex_flow = "row"
 
         # add widgets
         self._region_checkbox = NlCheckbox(
@@ -104,11 +123,17 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
             description="show region",
             indent=False,
             layout=Layout(
-                width="120px", margin="5px 15px 5px 0", padding="5px 15px 5px 15px"
+                width="120px",
+                margin="5px 15px 5px 0",
+                padding="5px 15px 5px 15px",
+                flex="70 0 auto",
+                align_self="flex-start",
             ),
         )
         self._center_btn = Button(
-            tooltip="Center on region", icon="map-marker", layout=Layout(width="30px")
+            tooltip="Center on region",
+            icon="map-marker",
+            layout=Layout(width="30px", flex="20 0 auto"),
         )
 
         # add handlers
@@ -193,14 +218,17 @@ class ExplicitVBROverlayCellWidget(ExplicitVBRCellWidget):
         """
         super().__init__(obj, viewer, *args, **kwargs)
 
-        self.layout.width = "220px"
+        self.layout.width = "205px"
+        self.layout.flex = "flex-start"
+        self._region_checkbox.layout.flex = "60 0 auto"
+        self._center_btn.layout.flex = "20 0 auto"
 
         self._image.config = {}
 
         self._config = PapayaConfigWidget(self)
 
         self._config_btn = Button(
-            tooltip="Configure", icon="cog", layout=Layout(width="30px")
+            tooltip="Configure", icon="cog", layout=self._center_btn.layout
         )
 
         self._config_btn.on_click(self._config_btn_clicked)
@@ -209,18 +237,18 @@ class ExplicitVBROverlayCellWidget(ExplicitVBRCellWidget):
 
     def _config_btn_clicked(self, event):
         if self.children[-1] != self._config:
-            self.layout.width = "600px"
             self.children = self.children + (self._config,)
+            self.layout.overflow = "visible"
         else:
-            self.layout.width = "220px"
             self.children = self.children[:-1]
+            self.layout.overflow = "auto"
 
     def update_config(self):
         if self._region_checkbox.value:
             self._viewer.set_images()
 
 
-class PapayaConfigWidget(VBox):
+class PapayaConfigWidget(NlVBoxOverlay):
     """A widget that displays widgets to adjust NLPapayaViewer image parameters."""
 
     def __init__(self, parent: ExplicitVBROverlayCellWidget, *args, **kwargs):
@@ -233,12 +261,49 @@ class PapayaConfigWidget(VBox):
         super().__init__(*args, **kwargs)
 
         self._parent = parent
-        self.layout.align_items = "center"
 
-        # add widgets
+        self.layout.display = "flex"
+        self.layout.flex_flow = "column"
+        self.layout.align_items = "flex-start"
+        self.layout.width = "250px"
+        self.layout.align_self = "flex-end"
+        self.layout.left = "5px"
+
+        self._create_widgets(parent.image)
+        print(self.layout.get_state())
+
+        self.children = (
+            self._alpha,
+            self._lut,
+            self._nlut,
+            HBox(
+                [self._min, self._minp],
+                layout=Layout(
+                    width="200px",
+                    display="flex",
+                    flex="flex-start",
+                    align_items="flex-start",
+                    align_self="flex-start",
+                ),
+            ),
+            HBox(
+                [self._max, self._maxp],
+                layout=Layout(
+                    width="200px",
+                    display="flex",
+                    flex="flex-start",
+                    align_items="flex-start",
+                    align_self="flex-start",
+                ),
+            ),
+            self._sym,
+        )
+
+    def _create_widgets(self, image):
+        config = image.config
         # sets alpha value
         self._alpha = FloatSlider(
-            value=1,
+            value=config.get("alpha", 1),
             min=0,
             max=1.0,
             step=0.1,
@@ -254,162 +319,117 @@ class PapayaConfigWidget(VBox):
 
         # sets lut value
         self._lut = Dropdown(
-            options=[
-                ("Grayscale", 1),
-                ("Red Overlay", 2),
-                ("Green Overlay", 3),
-                ("Blue Overlay", 4),
-                ("Gold", 5),
-                ("Spectrum", 6),
-                ("Overlay (Positives)", 7),
-                ("Overlay (Negatives)", 8),
-                ("Hot-and-Cold", 9),
-            ],
-            value=2,
+            options=lut_options,
+            value=config.get("lut", "Red Overlay"),
             description="lut:",
             description_tooltip="The color table name.",
-            layout=Layout(width="200px"),
+            layout=Layout(width="80px", align_self="flex-start"),
         )
 
         # sets negative_lut value
         self._nlut = Dropdown(
-            options=[
-                ("Grayscale", 1),
-                ("Red Overlay", 2),
-                ("Green Overlay", 3),
-                ("Blue Overlay", 4),
-                ("Gold", 5),
-                ("Spectrum", 6),
-                ("Overlay (Positives)", 7),
-                ("Overlay (Negatives)", 8),
-                ("Hot-and-Cold", 9),
-            ],
-            value=2,
+            options=lut_options,
+            value=config.get("negative_lut", "Red Overlay"),
             description="negative-lut:",
             description_tooltip="The color table name used by the negative side of the parametric pair.",
-            layout=Layout(width="10px"),
+            layout=Layout(width="80px", align_self="flex-start"),
         )
 
         # sets min value
         self._min = IntText(
-            value=None,
+            value=config.get("min", None),
             description="min:",
             description_tooltip="The display range minimum.",
             disabled=False,
-            layout=Layout(width="100px"),
+            style={"width": "initial"},
+            layout=Layout(width="50px", align_self="flex-start"),
         )
 
         # sets minPercent value
         self._minp = BoundedIntText(
-            value=None,
+            value=config.get("minPercent", None),
             min=100,
             max=100,
             step=1,
             description="min %:",
             description_tooltip="The display range minimum as a percentage of image max.",
             disabled=False,
-            layout=Layout(width="100px"),
+            layout=Layout(width="50px", align_self="flex-start"),
         )
 
         # sets max value
         self._max = IntText(
-            value=None,
+            value=config.get("max", None),
             description="max:",
             description_tooltip="The display range maximum.",
             disabled=False,
-            layout=Layout(width="100px"),
+            layout=Layout(width="50px", align_self="flex-start"),
         )
 
         # sets maxPercent value
         self._maxp = BoundedIntText(
-            value=None,
+            value=config.get("maxPercent", None),
             min=100,
             max=100,
             step=1,
             description="max %:",
             description_tooltip="The display range minimum as a percentage of image max.",
             disabled=False,
-            layout=Layout(width="100px"),
+            layout=Layout(width="50px", align_self="flex-start"),
         )
 
         # sets symmetric value
         self._sym = Checkbox(
-            value=False,
+            value=config.get("symmetric", "false") == "true",
             description="symmetric",
             description_tooltip="When selected, sets the negative range of a parametric pair to the same size as the positive range.",
             disabled=False,
             #            indent=False,
-            layout=Layout(width="50px"),
+            layout=Layout(width="50px", align_self="flex-start"),
         )
 
         # add handlers
         self._alpha.observe(
-            partial(self._config_changed, image=self._parent.image, name="alpha"),
-            names="value",
+            partial(self._config_changed, image=image, name="alpha"), names="value"
         )
 
         self._lut.observe(
-            partial(self._lut_changed, image=self._parent.image, name="lut"),
-            names="value",
+            partial(self._config_changed, image=image, name="lut"), names="value"
         )
 
         self._nlut.observe(
-            partial(self._lut_changed, image=self._parent.image, name="negative_lut"),
+            partial(self._config_changed, image=image, name="negative_lut"),
             names="value",
         )
 
         self._min.observe(
-            partial(self._config_changed, image=self._parent.image, name="min"),
-            names="value",
+            partial(self._config_changed, image=image, name="min"), names="value"
         )
 
         self._minp.observe(
-            partial(self._config_changed, image=self._parent.image, name="minPercent"),
-            names="value",
+            partial(self._config_changed, image=image, name="minPercent"), names="value"
         )
 
         self._max.observe(
-            partial(self._config_changed, image=self._parent.image, name="max"),
-            names="value",
+            partial(self._config_changed, image=image, name="max"), names="value"
         )
 
         self._maxp.observe(
-            partial(self._config_changed, image=self._parent.image, name="maxPercent"),
-            names="value",
+            partial(self._config_changed, image=image, name="maxPercent"), names="value"
         )
 
         self._sym.observe(
-            partial(self._sym_changed, image=self._parent.image), names="value"
-        )
-
-        self.children = (
-            self._alpha,
-            self._lut,
-            self._nlut,
-            HBox([self._min, self._minp], layout=Layout(width="300px")),
-            HBox([self._max, self._maxp], layout=Layout(width="300px")),
-            self._sym,
+            partial(self._config_bool_changed, image=image, name="symmetric"),
+            names="value",
         )
 
     def _config_changed(self, change, image, name):
         image.config[name] = change.new
         self._parent.update_config()
 
-    def _lut_changed(self, change, image, name):
-        image.config[name] = change.owner.label
-        self._parent.update_config()
-
-    def _sym_changed(self, change, image):
-        """Updates `symmetric` config value when `_sym` checkbox is checked.
-
-        Parameters
-        ----------
-        change:
-            change in `_sym` checkbox.
-        image: PapayaImage
-        """
+    def _config_bool_changed(self, change, image, name):
         value = "false"
         if change.new:
             value = "true"
-        image.config["symmetric"] = value
+        image.config[name] = value
         self._parent.update_config()
