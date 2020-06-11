@@ -223,7 +223,12 @@ class QueryWidget(VBox):
         self.error_display.layout.visibility = "hidden"
 
     def _set_error_marker(self, pe: FailedParse):
-        line_info = pe.tokenizer.line_info(pe.pos)
+        try:
+            line_info = pe.tokenizer.line_info(pe.pos)
+        except AttributeError:
+            # support tasu 4.x
+            line_info = pe.buf.line_info(pe.pos)
+
         self.query.marks = [{"line": line_info.line, "text": pe.message}]
         self.query.text_marks = [
             {
