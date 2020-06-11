@@ -227,6 +227,7 @@ class ExplicitVBROverlayCellWidget(ExplicitVBRCellWidget):
         super().__init__(obj, viewer, *args, **kwargs)
 
 #        self.layout.width = "205px"
+        self._image.config = {}
 
         self._config = PapayaConfigWidget(self)
 
