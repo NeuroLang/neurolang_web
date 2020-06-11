@@ -10,7 +10,6 @@ from ipywidgets import (
     IntText,
     Label,
     Layout,
-    VBox,
 )
 
 import neurolang
@@ -106,16 +105,15 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
 
         self._viewer = viewer
         self._image = PapayaImage(obj.spatial_image())
-
         # default config for images
         self._image.config = dict(min=0, max=10, lut="Red Overlay")
+
         self._centered = False
         self._can_select = True
 
-        self.layout.width = "160px"
-        self.layout.align_items = "flex-start"
-        self.layout.display = "flex"
-        self.layout.flex_flow = "row"
+        # adjust layout
+        self.layout.justify_content = "center"
+#        self.layout.width = "160px"
 
         # add widgets
         self._region_checkbox = NlCheckbox(
@@ -123,17 +121,27 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
             description="show region",
             indent=False,
             layout=Layout(
-                width="120px",
+                width="100px",
+                max_width="100px",
+                min_width="100px",
                 margin="5px 15px 5px 0",
                 padding="5px 15px 5px 15px",
-                flex="70 0 auto",
+                flex="0 0 auto",
                 align_self="flex-start",
             ),
         )
         self._center_btn = Button(
             tooltip="Center on region",
             icon="map-marker",
-            layout=Layout(width="30px", flex="20 0 auto"),
+            layout=Layout(
+                width="40px",
+                max_width="40px",
+                min_width="40px",
+                margin="5px 15px 5px 0",
+                padding="5px 15px 5px 15px",
+                flex="0 0 auto",
+                align_self="flex-start",
+            ),
         )
 
         # add handlers
@@ -218,12 +226,7 @@ class ExplicitVBROverlayCellWidget(ExplicitVBRCellWidget):
         """
         super().__init__(obj, viewer, *args, **kwargs)
 
-        self.layout.width = "205px"
-        self.layout.flex = "flex-start"
-        self._region_checkbox.layout.flex = "60 0 auto"
-        self._center_btn.layout.flex = "20 0 auto"
-
-        self._image.config = {}
+#        self.layout.width = "205px"
 
         self._config = PapayaConfigWidget(self)
 
@@ -262,15 +265,9 @@ class PapayaConfigWidget(NlVBoxOverlay):
 
         self._parent = parent
 
-        self.layout.display = "flex"
-        self.layout.flex_flow = "column"
-        self.layout.align_items = "flex-start"
-        self.layout.width = "250px"
-        self.layout.align_self = "flex-end"
-        self.layout.left = "5px"
+        self.layout.width = "200px"
 
         self._create_widgets(parent.image)
-        print(self.layout.get_state())
 
         self.children = (
             self._alpha,
@@ -279,7 +276,8 @@ class PapayaConfigWidget(NlVBoxOverlay):
             HBox(
                 [self._min, self._minp],
                 layout=Layout(
-                    width="200px",
+                    width="140px",
+                    max_width="140px",
                     display="flex",
                     flex="flex-start",
                     align_items="flex-start",
@@ -289,7 +287,8 @@ class PapayaConfigWidget(NlVBoxOverlay):
             HBox(
                 [self._max, self._maxp],
                 layout=Layout(
-                    width="200px",
+                    width="140px",
+                    max_width="140px",
                     display="flex",
                     flex="flex-start",
                     align_items="flex-start",
