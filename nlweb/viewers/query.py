@@ -226,7 +226,7 @@ class QueryWidget(VBox):
         try:
             line_info = pe.tokenizer.line_info(pe.pos)
         except AttributeError:
-            # support tasu 4.x
+            # support tatsu 4.x
             line_info = pe.buf.line_info(pe.pos)
 
         self.query.marks = [{"line": line_info.line, "text": pe.message}]
