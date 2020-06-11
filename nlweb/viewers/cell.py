@@ -113,7 +113,7 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
 
         # adjust layout
         self.layout.justify_content = "center"
-#        self.layout.width = "160px"
+        #        self.layout.width = "160px"
 
         # add widgets
         self._region_checkbox = NlCheckbox(
@@ -226,7 +226,7 @@ class ExplicitVBROverlayCellWidget(ExplicitVBRCellWidget):
         """
         super().__init__(obj, viewer, *args, **kwargs)
 
-#        self.layout.width = "205px"
+        #        self.layout.width = "205px"
         self._image.config = {}
 
         self._config = PapayaConfigWidget(self)
