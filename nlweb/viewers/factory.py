@@ -42,10 +42,7 @@ class ColumnFeederFactory:
             return nlweb.viewers.column.ExplicitVBROverlayColumn(result_tab)
         elif column_type == neurolang.frontend.neurosynth_utils.StudyID:
             return nlweb.viewers.column.StudIdColumn()
-        elif (
-            column_type == neurolang.frontend.neurosynth_utils.TfIDf
-            or column_type == float
-        ):
+        elif column_type == neurolang.frontend.neurosynth_utils.TfIDf:
             return nlweb.viewers.column.TfIDfColumn()
         else:
             return nlweb.viewers.column.ColumnFeeder()
@@ -58,7 +55,8 @@ class ColumnsManager:
         self.columns = []
 
         for column_type in column_types.__args__:
-            self.columns.append(ColumnFeederFactory.get_column(result_tab, column_type))
+            self.columns.append(
+                ColumnFeederFactory.get_column(result_tab, column_type))
 
     def get_cell_widget(self, index, obj):
         """Creates and returns the cell widget for the column specified by `index` and the object `obj` for that column.
