@@ -4,9 +4,9 @@ from ipywidgets import Button, HBox, Label, Layout
 
 import neurolang
 
-from nlweb.viewers import CellWidget, PapayaImage
+from nlweb.viewers import CellWidget
 
-from neurolang_ipywidgets import NlLink, NlProgress, NlCheckbox, NlPapayaViewer
+from neurolang_ipywidgets import NlLink, NlProgress, NlCheckbox, NlPapayaViewer, PapayaImage
 
 
 class StudyIdWidget(NlLink, CellWidget):
