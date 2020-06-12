@@ -14,16 +14,15 @@ from ipywidgets import (
 
 import neurolang
 
-from nlweb.viewers import CellWidget, PapayaImage
-
 from neurolang_ipywidgets import (
     NlLink,
     NlProgress,
     NlCheckbox,
     NlPapayaViewer,
-    NlVBoxOverlay,
+    PapayaImage,
 )
 
+from nlweb.viewers import CellWidget
 
 lut_options = [
     "Grayscale",

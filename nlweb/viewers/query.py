@@ -1,12 +1,16 @@
 from ipysheet import row, sheet  # type: ignore
-from ipywidgets import Button, HBox, HTML, Layout, Textarea, VBox  # type: ignore
+from ipywidgets import Button, HBox, HTML, Layout, VBox  # type: ignore
 
 from neurolang.datalog.wrapped_collections import (
     WrappedRelationalAlgebraSet,
 )  # type: ignore
 
-from neurolang_ipywidgets import NlIconTab
+from neurolang_ipywidgets import NlCodeEditor, NlIconTab
 from nlweb.viewers.factory import ColumnsManager
+
+# This should be changed when neurolang gets
+# a unified exceptions hierarchy
+from tatsu.exceptions import FailedParse
 
 from traitlets import Unicode  # type: ignore
 
@@ -141,22 +145,35 @@ class ResultWidget(VBox):
 
 
 class QueryWidget(VBox):
-    """"""
+    """
+    A widget to input queries
+
+    Parameters
+    ----------
+
+    neurolang_engine: NeurolangDL
+                      Engine to query
+    default_query: str
+                   Default query text, will be shown in textarea
+    reraise: bool
+             re-raise exceptions thrown during query execution
+    """
 
     def __init__(
         self,
         neurolang_engine,
         default_query="ans(region_union(r)) :- destrieux(..., r)",
+        reraise=False,
     ):
         super().__init__()
 
         # TODO check if neurolang_engine is None.
 
         self.neurolang_engine = neurolang_engine
+        self.reraise = reraise
 
-        self.query = Textarea(
-            value=default_query,
-            placeholder="Type something",
+        self.query = NlCodeEditor(
+            default_query,
             disabled=False,
             layout=Layout(
                 display="flex",
@@ -168,14 +185,19 @@ class QueryWidget(VBox):
         )
         self.button = Button(description="Run query")
         self.button.on_click(self._on_query_button_clicked)
+        self.error_display = HTML(layout=Layout(visibility="hidden"))
 
         self.result_viewer = ResultWidget()
 
-        self.children = [HBox([self.query, self.button]), self.result_viewer]
+        self.children = [
+            HBox([self.query, self.button]),
+            self.error_display,
+            self.result_viewer,
+        ]
 
-    def run_query(self, query):
+    def run_query(self, query: str):
         with self.neurolang_engine.scope:
-            self.neurolang_engine.execute_nat_datalog_program(query)
+            self.neurolang_engine.execute_datalog_program(query)
             return self.neurolang_engine.solve_all()
 
     def _on_query_button_clicked(self, b):
@@ -187,7 +209,49 @@ class QueryWidget(VBox):
             button clicked.
         """
 
-        self.result_viewer.reset()
+        self._reset_output()
 
-        qresult = self.run_query(self.query.value)
-        self.result_viewer.show_results(qresult)
+        try:
+            qresult = self.run_query(self.query.text)
+        except FailedParse as fp:
+            self._set_error_marker(fp)
+            self._handle_generic_error(fp)
+        except Exception as e:
+            self.handle_generic_error(e)
+        else:
+            self.result_viewer.layout.visibility = "visible"
+            self.result_viewer.show_results(qresult)
+
+    def _reset_output(self):
+        self.query.clear_marks()
+        self.result_viewer.reset()
+        self.result_viewer.layout.visibility = "hidden"
+        self.error_display.layout.visibility = "hidden"
+
+    def _set_error_marker(self, pe: FailedParse):
+        try:
+            line_info = pe.tokenizer.line_info(pe.pos)
+        except AttributeError:
+            # support tatsu 4.x
+            line_info = pe.buf.line_info(pe.pos)
+
+        self.query.marks = [{"line": line_info.line, "text": pe.message}]
+        self.query.text_marks = [
+            {
+                "from": {"line": line_info.line, "ch": line_info.col},
+                "to": {"line": line_info.line, "ch": line_info.col + 1},
+            }
+        ]
+
+    def _handle_generic_error(self, e: Exception):
+        self.error_display.layout.visibility = "visible"
+        self.error_display.value = _format_exc(e)
+        if self.reraise:
+            raise e
+
+
+def _format_exc(e: Exception):
+    """
+    Format an exception for display
+    """
+    return f"<pre style='background-color:#faaba5; border: 1px solid red; padding: 0.4em'>{e}</pre>"
