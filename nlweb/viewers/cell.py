@@ -348,7 +348,7 @@ class PapayaConfigWidget(NlVBoxOverlay):
         # sets minPercent value
         self._minp = BoundedIntText(
             value=config.get("minPercent", None),
-            min=100,
+            min=0,
             max=100,
             step=1,
             description="min %:",
@@ -369,7 +369,7 @@ class PapayaConfigWidget(NlVBoxOverlay):
         # sets maxPercent value
         self._maxp = BoundedIntText(
             value=config.get("maxPercent", None),
-            min=100,
+            min=0,
             max=100,
             step=1,
             description="max %:",
