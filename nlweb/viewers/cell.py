@@ -6,8 +6,8 @@ from ipywidgets import (
     Checkbox,
     Dropdown,
     FloatSlider,
+    FloatText,
     HBox,
-    IntText,
     Label,
     Layout,
 )
@@ -336,7 +336,7 @@ class PapayaConfigWidget(NlVBoxOverlay):
         )
 
         # sets min value
-        self._min = IntText(
+        self._min = FloatText(
             value=config.get("min", None),
             description="min:",
             description_tooltip="The display range minimum.",
@@ -358,7 +358,7 @@ class PapayaConfigWidget(NlVBoxOverlay):
         )
 
         # sets max value
-        self._max = IntText(
+        self._max = FloatText(
             value=config.get("max", None),
             description="max:",
             description_tooltip="The display range maximum.",
