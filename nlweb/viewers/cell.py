@@ -19,7 +19,8 @@ from neurolang_ipywidgets import (
     NlProgress,
     NlCheckbox,
     NlPapayaViewer,
-    PapayaImage,
+    NlVBoxOverlay,
+    PapayaSpatialImage,
 )
 
 from nlweb.viewers import CellWidget
@@ -103,7 +104,7 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
         super().__init__(*args, **kwargs)
 
         self._viewer = viewer
-        self._image = PapayaImage(obj.spatial_image())
+        self._image = PapayaSpatialImage(obj.spatial_image())
         # default config for images
         self._image.config = dict(min=0, max=10, lut="Red Overlay")
 
