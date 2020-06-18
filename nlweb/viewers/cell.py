@@ -1,6 +1,6 @@
 from functools import partial
 
-from ipywidgets import Button, Checkbox, Dropdown, HBox, Label, Layout, VBox
+from ipywidgets import Button, HBox, Label, Layout
 
 import neurolang
 
