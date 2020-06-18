@@ -38,11 +38,11 @@ def init():
 class PapayaConfigWidget(NlVBoxOverlay):
     """A widget that displays widgets to adjust NLPapayaViewer image parameters."""
 
-    def __init__(self, image, *args, **kwargs):
+    def __init__(self, parent, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.layout.width = "720px"
 
-        self._create_widgets(image)
+        self._create_widgets(parent.image)
 
         self.children = [
             HBox(

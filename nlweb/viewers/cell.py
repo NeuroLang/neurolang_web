@@ -13,7 +13,7 @@ from neurolang_ipywidgets import (
 )
 
 from nlweb.viewers import CellWidget
-from .config_widget import PapayaConfigWidget, init
+from .config_widget import PapayaConfigWidget
 
 
 class StudyIdWidget(NlLink, CellWidget):
@@ -214,7 +214,7 @@ class ExplicitVBROverlayCellWidget(ExplicitVBRCellWidget):
         self.layout.width = "200px"
         self._image.config = {}
 
-        self._config = init()
+        self._config = PapayaConfigWidget(self)
 
         self._config_btn = Button(
             tooltip="Configure", icon="cog", layout=self._center_btn.layout
