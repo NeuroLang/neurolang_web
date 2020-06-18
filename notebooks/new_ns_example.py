@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.4.2
+#       jupytext_version: 1.5.0
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -156,8 +156,17 @@ with nl.scope as e:
 r = next(iter(res["thr_prob"].unwrap()))[0]
 plotting.plot_roi(r.spatial_image())
 
-r = next(iter(res["region_prob"].unwrap()))[0]
-plotting.plot_stat_map(r.spatial_image())
+r2 = next(iter(res["region_prob"].unwrap()))[0]
+plotting.plot_stat_map(r2.spatial_image())
+
+# ## View ExplicitVBROverlayCellWidget
+
+from nlweb.viewers.cell import ExplicitVBROverlayCellWidget
+from ipywidgets import Layout
+
+cl2 = ExplicitVBROverlayCellWidget(r, None, layout = Layout(overflow = "visible"))
+cl2
+
 
 # +
 from nlweb.viewers.query import QueryWidget
@@ -165,3 +174,5 @@ from nlweb.viewers.query import QueryWidget
 qw = QueryWidget(nl, datalog_script)
 qw
 # -
+
+

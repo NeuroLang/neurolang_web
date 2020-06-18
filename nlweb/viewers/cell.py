@@ -1,15 +1,13 @@
 from functools import partial
 
 from ipywidgets import (
-    BoundedIntText,
     Button,
     Checkbox,
     Dropdown,
-    FloatSlider,
-    FloatText,
     HBox,
     Label,
     Layout,
+    VBox,
 )
 
 import neurolang
@@ -19,22 +17,11 @@ from neurolang_ipywidgets import (
     NlProgress,
     NlCheckbox,
     NlPapayaViewer,
-    NlVBoxOverlay,
     PapayaSpatialImage,
 )
 
 from nlweb.viewers import CellWidget
-
-lut_options = [
-    "Grayscale",
-    "Red Overlay",
-    "Green Overlay",
-    "Blue Overlay",
-    "Gold",
-    "Spectrum",
-    "Overlay (Positives)",
-    "Overlay (Negatives)",
-]
+from .config_widget import PapayaConfigWidget, init
 
 
 class StudyIdWidget(NlLink, CellWidget):
@@ -112,20 +99,28 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
         self._can_select = True
 
         # adjust layout
-        self.layout.justify_content = "center"
-        #        self.layout.width = "160px"
+        self.layout.justify_content = "flex-start"
+        self.layout.width = "160px"
+        self.layout.display = "flex"
+        self.layout.flex_direction = "row"
+        self.layout.flex = "0 0 auto"
 
+        self._init_widgets(self._image)
+
+        self.children = [self._region_checkbox, self._center_btn]
+
+    def _init_widgets(self, image):
         # add widgets
         self._region_checkbox = NlCheckbox(
             value=False,
             description="show region",
             indent=False,
             layout=Layout(
-                width="100px",
-                max_width="100px",
-                min_width="100px",
-                margin="5px 15px 5px 0",
-                padding="5px 15px 5px 15px",
+                width="120px",
+                max_width="120px",
+                min_width="120px",
+                margin="5px 5px 5px 0",
+                padding="0px 0px 0px 0px",
                 flex="0 0 auto",
                 align_self="flex-start",
             ),
@@ -134,11 +129,11 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
             tooltip="Center on region",
             icon="map-marker",
             layout=Layout(
-                width="40px",
-                max_width="40px",
-                min_width="40px",
-                margin="5px 15px 5px 0",
-                padding="5px 15px 5px 15px",
+                width="30px",
+                max_width="30px",
+                min_width="30px",
+                margin="5px 5px 5px 0",
+                padding="0 0 0 0",
                 flex="0 0 auto",
                 align_self="flex-start",
             ),
@@ -146,12 +141,10 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
 
         # add handlers
         self._region_checkbox.observe(
-            partial(self._selection_changed, image=self._image), names="value"
+            partial(self._selection_changed, image=image), names="value"
         )
 
         self._center_btn.on_click(self._center_btn_clicked)
-
-        self.children = [self._region_checkbox, self._center_btn]
 
     @property
     def image(self):
@@ -226,10 +219,10 @@ class ExplicitVBROverlayCellWidget(ExplicitVBRCellWidget):
         """
         super().__init__(obj, viewer, *args, **kwargs)
 
-        #        self.layout.width = "205px"
+        self.layout.width = "200px"
         self._image.config = {}
 
-        self._config = PapayaConfigWidget(self)
+        self._config = init()
 
         self._config_btn = Button(
             tooltip="Configure", icon="cog", layout=self._center_btn.layout
@@ -241,195 +234,14 @@ class ExplicitVBROverlayCellWidget(ExplicitVBRCellWidget):
 
     def _config_btn_clicked(self, event):
         if self.children[-1] != self._config:
-            self.children = self.children + (self._config,)
+            self.layout.width = "900px"
             self.layout.overflow = "visible"
+            self.children = self.children + (self._config,)
         else:
+            self.layout.width = "200px"
             self.children = self.children[:-1]
             self.layout.overflow = "auto"
 
     def update_config(self):
         if self._region_checkbox.value:
             self._viewer.set_images()
-
-
-class PapayaConfigWidget(NlVBoxOverlay):
-    """A widget that displays widgets to adjust NLPapayaViewer image parameters."""
-
-    def __init__(self, parent: ExplicitVBROverlayCellWidget, *args, **kwargs):
-        """
-        Parameters
-        ----------
-        parent : ExplicitVBROverlayCellWidget
-            parent widget that will display this widget.
-        """
-        super().__init__(*args, **kwargs)
-
-        self._parent = parent
-
-        self.layout.width = "200px"
-
-        self._create_widgets(parent.image)
-
-        self.children = (
-            self._alpha,
-            self._lut,
-            self._nlut,
-            HBox(
-                [self._min, self._minp],
-                layout=Layout(
-                    width="140px",
-                    max_width="140px",
-                    display="flex",
-                    flex="flex-start",
-                    align_items="flex-start",
-                    align_self="flex-start",
-                ),
-            ),
-            HBox(
-                [self._max, self._maxp],
-                layout=Layout(
-                    width="140px",
-                    max_width="140px",
-                    display="flex",
-                    flex="flex-start",
-                    align_items="flex-start",
-                    align_self="flex-start",
-                ),
-            ),
-            self._sym,
-        )
-
-    def _create_widgets(self, image):
-        config = image.config
-        # sets alpha value
-        self._alpha = FloatSlider(
-            value=config.get("alpha", 1),
-            min=0,
-            max=1.0,
-            step=0.1,
-            description="alpha:",
-            description_tooltip="Overlay image alpha level (0 to 1).",
-            disabled=False,
-            continuous_update=False,
-            orientation="horizontal",
-            readout=True,
-            readout_format=".1f",
-            layout=Layout(width="200px"),
-        )
-
-        # sets lut value
-        self._lut = Dropdown(
-            options=lut_options,
-            value=config.get("lut", "Red Overlay"),
-            description="lut:",
-            description_tooltip="The color table name.",
-            layout=Layout(width="80px", align_self="flex-start"),
-        )
-
-        # sets negative_lut value
-        self._nlut = Dropdown(
-            options=lut_options,
-            value=config.get("negative_lut", "Red Overlay"),
-            description="negative-lut:",
-            description_tooltip="The color table name used by the negative side of the parametric pair.",
-            layout=Layout(width="80px", align_self="flex-start"),
-        )
-
-        # sets min value
-        self._min = FloatText(
-            value=config.get("min", None),
-            description="min:",
-            description_tooltip="The display range minimum.",
-            disabled=False,
-            style={"width": "initial"},
-            layout=Layout(width="50px", align_self="flex-start"),
-        )
-
-        # sets minPercent value
-        self._minp = BoundedIntText(
-            value=config.get("minPercent", None),
-            min=0,
-            max=100,
-            step=1,
-            description="min %:",
-            description_tooltip="The display range minimum as a percentage of image max.",
-            disabled=False,
-            layout=Layout(width="50px", align_self="flex-start"),
-        )
-
-        # sets max value
-        self._max = FloatText(
-            value=config.get("max", None),
-            description="max:",
-            description_tooltip="The display range maximum.",
-            disabled=False,
-            layout=Layout(width="50px", align_self="flex-start"),
-        )
-
-        # sets maxPercent value
-        self._maxp = BoundedIntText(
-            value=config.get("maxPercent", None),
-            min=0,
-            max=100,
-            step=1,
-            description="max %:",
-            description_tooltip="The display range minimum as a percentage of image max.",
-            disabled=False,
-            layout=Layout(width="50px", align_self="flex-start"),
-        )
-
-        # sets symmetric value
-        self._sym = Checkbox(
-            value=config.get("symmetric", "false") == "true",
-            description="symmetric",
-            description_tooltip="When selected, sets the negative range of a parametric pair to the same size as the positive range.",
-            disabled=False,
-            #            indent=False,
-            layout=Layout(width="50px", align_self="flex-start"),
-        )
-
-        # add handlers
-        self._alpha.observe(
-            partial(self._config_changed, image=image, name="alpha"), names="value"
-        )
-
-        self._lut.observe(
-            partial(self._config_changed, image=image, name="lut"), names="value"
-        )
-
-        self._nlut.observe(
-            partial(self._config_changed, image=image, name="negative_lut"),
-            names="value",
-        )
-
-        self._min.observe(
-            partial(self._config_changed, image=image, name="min"), names="value"
-        )
-
-        self._minp.observe(
-            partial(self._config_changed, image=image, name="minPercent"), names="value"
-        )
-
-        self._max.observe(
-            partial(self._config_changed, image=image, name="max"), names="value"
-        )
-
-        self._maxp.observe(
-            partial(self._config_changed, image=image, name="maxPercent"), names="value"
-        )
-
-        self._sym.observe(
-            partial(self._config_bool_changed, image=image, name="symmetric"),
-            names="value",
-        )
-
-    def _config_changed(self, change, image, name):
-        image.config[name] = change.new
-        self._parent.update_config()
-
-    def _config_bool_changed(self, change, image, name):
-        value = "false"
-        if change.new:
-            value = "true"
-        image.config[name] = value
-        self._parent.update_config()
