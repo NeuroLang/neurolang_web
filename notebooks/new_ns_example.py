@@ -164,7 +164,7 @@ plotting.plot_stat_map(r2.spatial_image())
 from nlweb.viewers.cell import ExplicitVBROverlayCellWidget
 from ipywidgets import Layout
 
-cl2 = ExplicitVBROverlayCellWidget(r, None, layout = Layout(overflow = "visible"))
+cl2 = ExplicitVBROverlayCellWidget(r, None, layout=Layout(overflow="visible"))
 cl2
 
 
@@ -174,5 +174,3 @@ from nlweb.viewers.query import QueryWidget
 qw = QueryWidget(nl, datalog_script)
 qw
 # -
-
-

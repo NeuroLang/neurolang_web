@@ -1,4 +1,14 @@
-from ipywidgets import BoundedIntText, Button, Checkbox, Dropdown, FloatSlider, FloatText, HBox, Layout, VBox
+from ipywidgets import (
+    BoundedIntText,
+    Button,
+    Checkbox,
+    Dropdown,
+    FloatSlider,
+    FloatText,
+    HBox,
+    Layout,
+    VBox,
+)
 from neurolang_ipywidgets import NlVBoxOverlay, PapayaNiftiImage
 
 import nibabel as nib
@@ -36,21 +46,29 @@ class PapayaConfigWidget(NlVBoxOverlay):
         self._create_widgets(image)
 
         self.children = [
-            HBox([
-                VBox([
-                    self._alpha,
-                    self._lut,
-                    self._nlut,
-                    self._min,
-                    self._minp,
-                    self._max,
-                    self._maxp,
-                    self._sym
-                ], layout=Layout(width="220px")),
-                VBox([
-                    self._hist
-                ], layout=Layout(width="500px", height="250px", margin="5px 5px 5px 5px"))
-            ])
+            HBox(
+                [
+                    VBox(
+                        [
+                            self._alpha,
+                            self._lut,
+                            self._nlut,
+                            self._min,
+                            self._minp,
+                            self._max,
+                            self._maxp,
+                            self._sym,
+                        ],
+                        layout=Layout(width="220px"),
+                    ),
+                    VBox(
+                        [self._hist],
+                        layout=Layout(
+                            width="500px", height="250px", margin="5px 5px 5px 5px"
+                        ),
+                    ),
+                ]
+            )
         ]
 
     def _create_widgets(self, image):
@@ -71,7 +89,7 @@ class PapayaConfigWidget(NlVBoxOverlay):
             orientation="horizontal",
             readout=True,
             readout_format=".1f",
-            layout=layout
+            layout=layout,
         )
 
         self._lut = Dropdown(
@@ -79,7 +97,7 @@ class PapayaConfigWidget(NlVBoxOverlay):
             value=config.get("lut", "Red Overlay"),
             description="lut:",
             description_tooltip="The color table name.",
-            layout=layout
+            layout=layout,
         )
 
         self._nlut = Dropdown(
@@ -87,7 +105,7 @@ class PapayaConfigWidget(NlVBoxOverlay):
             value=config.get("lut", "Red Overlay"),
             description="negative-lut:",
             description_tooltip="The color table name used by the negative side of the parametric pair.",
-            layout=layout
+            layout=layout,
         )
 
         self._min = FloatText(
@@ -95,7 +113,7 @@ class PapayaConfigWidget(NlVBoxOverlay):
             description="min:",
             description_tooltip="The display range minimum.",
             disabled=False,
-            layout=layout
+            layout=layout,
         )
 
         self._minp = BoundedIntText(
@@ -106,7 +124,7 @@ class PapayaConfigWidget(NlVBoxOverlay):
             description="min %:",
             description_tooltip="The display range minimum as a percentage of image max.",
             disabled=False,
-            layout=layout
+            layout=layout,
         )
 
         self._max = FloatText(
@@ -114,7 +132,7 @@ class PapayaConfigWidget(NlVBoxOverlay):
             description="max:",
             description_tooltip="The display range maximum.",
             disabled=False,
-            layout=layout
+            layout=layout,
         )
 
         self._maxp = BoundedIntText(
@@ -125,7 +143,7 @@ class PapayaConfigWidget(NlVBoxOverlay):
             description="max %:",
             description_tooltip="The display range minimum as a percentage of image max.",
             disabled=False,
-            layout=layout
+            layout=layout,
         )
 
         self._sym = Checkbox(
@@ -133,7 +151,7 @@ class PapayaConfigWidget(NlVBoxOverlay):
             description="symmetric",
             description_tooltip="When selected, sets the negative range of a parametric pair to the same size as the positive range.",
             disabled=False,
-            layout=layout
+            layout=layout,
         )
 
         self._hist = self._create_hist(image)
@@ -195,15 +213,6 @@ class PapayaConfigWidget(NlVBoxOverlay):
         fig.add_trace(Histogram(x=data, name="Image data"))
         fig.add_trace(Histogram(x=data0, name="Without 0s"))
 
-        fig.update_layout(
-            width=500,
-            height=250,
-            margin=dict(
-                l=15,
-                t=15,
-                b=15,
-                r=15
-            )
-        )
+        fig.update_layout(width=500, height=250, margin=dict(l=15, t=15, b=15, r=15))
 
         return FigureWidget(fig)
