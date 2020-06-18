@@ -187,7 +187,9 @@ def _format_help_message(symbol: str, help: Optional[str]) -> str:
     markup = f"""
     {_help_message_style}
     <div class="help-section">
-      <p class="help-header">help for symbol <b>{symbol}</b></p>
+      <p class="help-header">
+        <i class="fa fa-question-circle" aria-hidden="true"></i>help for <b>{symbol}</b>
+      </p>
       {body}
     </div>
     """
