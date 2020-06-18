@@ -1,6 +1,5 @@
 from ipywidgets import (
     BoundedIntText,
-    Button,
     Checkbox,
     Dropdown,
     FloatSlider,
