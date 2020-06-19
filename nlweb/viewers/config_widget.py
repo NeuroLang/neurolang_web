@@ -16,7 +16,7 @@ import nibabel as nib
 from functools import partial
 
 
-from plotly.graph_objects import Figure, FigureWidget, Histogram
+from plotly.graph_objects import Figure, Histogram
 
 lut_options = [
     "Grayscale",
@@ -64,7 +64,10 @@ class PapayaConfigWidget(NlVBoxOverlay):
                     VBox(
                         [self._hist],
                         layout=Layout(
-                            width="500px", height="250px", margin="0px 0px 0px 0px", padding="0px 0px 0px 0px"
+                            width="500px",
+                            height="250px",
+                            margin="0px 0px 0px 0px",
+                            padding="0px 0px 0px 0px",
                         ),
                     ),
                 ]
@@ -213,14 +216,12 @@ class PapayaConfigWidget(NlVBoxOverlay):
         fig.add_trace(Histogram(x=data, name="All image data"))
         fig.add_trace(Histogram(x=data0, name="Image data without 0s"))
 
-        fig.update_layout(width=480, height=230,
-                          margin=dict(l=15, t=15, b=15, r=15))
+        fig.update_layout(width=480, height=230, margin=dict(l=15, t=15, b=15, r=15))
 
         # FigureWidget cannot be rendered inside ipysheet cell,
         # it is solved by displaying it first inside Output widget,
         # adding the output widget
-        out = Output(layout=Layout(
-            margin="0px 0px 0px 0px", padding="0px 5px 0px 0px"))
+        out = Output(layout=Layout(margin="0px 0px 0px 0px", padding="0px 5px 0px 0px"))
 
         with out:
             fig.show()
