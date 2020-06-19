@@ -4,6 +4,3 @@ class CellWidget:
 
 class ColumnViewer:
     pass
-
-
-from .papaya import PapayaViewerWidget  # noqa: F401

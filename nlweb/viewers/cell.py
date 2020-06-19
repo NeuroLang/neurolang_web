@@ -4,9 +4,15 @@ from ipywidgets import Button, HBox, Label, Layout
 
 import neurolang
 
-from nlweb.viewers import CellWidget, PapayaViewerWidget
+from nlweb.viewers import CellWidget
 
-from neurolang_ipywidgets import NlLink, NlProgress, NlCheckbox
+from neurolang_ipywidgets import (
+    NlLink,
+    NlProgress,
+    NlCheckbox,
+    NlPapayaViewer,
+    PapayaImage,
+)
 
 
 class StudyIdWidget(NlLink, CellWidget):
@@ -54,13 +60,13 @@ class LabelCellWidget(Label, CellWidget):
 
 
 class ExplicitVBRCellWidget(HBox, CellWidget):
-    """ A cell widget for data type `ExplicitVBR` that displays a checkbox connected to a viewer that visualizes spatial image of `ExplicitVBR`.
+    """A cell widget for data type `ExplicitVBR` that enables displaying the spatial image in an associated viewer or center on the spatial image's coordinates.
     """
 
     def __init__(
         self,
         obj: neurolang.regions.ExplicitVBR,
-        viewer: PapayaViewerWidget,
+        viewer: NlPapayaViewer,
         *args,
         **kwargs,
     ):
@@ -70,42 +76,48 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
         ----------
         obj: neurolang.regions.ExplicitVBR
 
-        viewer : PapayaViewerWidget
-
+        viewer : NlPapayaViewer
+            associated viewer to visualize the spatial image.
         """
         super().__init__(*args, **kwargs)
 
-        # viewer that visualizes the spatial image when checkbox is checked.
         self._viewer = viewer
+        self._image = PapayaImage(obj.spatial_image())
 
+        # default config for images
+        self._image.config = dict(min=0, max=10, lut="Red Overlay")
+        self._centered = False
         self._can_select = True
 
-        self.__image = obj.spatial_image()
+        self.layout.width = "160px"
+        self.layout.flex_flow = "row"
+        self.layout.display = "flex"
 
+        # add widgets
         self._region_checkbox = NlCheckbox(
             value=False,
             description="show region",
+            indent=False,
             layout=Layout(
                 width="120px", margin="5px 15px 5px 0", padding="5px 15px 5px 15px"
             ),
         )
-        self._region_checkbox.observe(
-            partial(self._selection_changed, image=self.__image), names="value"
-        )
-
         self._center_btn = Button(
             tooltip="Center on region", icon="map-marker", layout=Layout(width="30px")
         )
-        self._center_btn.on_click(self._center_btn_clicked)
-        self._centered = False
 
-        self.layout.align_items = "center"
+        # add handlers
+        self._region_checkbox.observe(
+            partial(self._selection_changed, image=self._image), names="value"
+        )
+
+        self._center_btn.on_click(self._center_btn_clicked)
 
         self.children = [self._region_checkbox, self._center_btn]
 
     @property
     def image(self):
-        return self.__image
+        return self._image
 
     @property
     def is_region_selected(self):

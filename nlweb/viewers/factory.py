@@ -1,8 +1,6 @@
 from ipywidgets import Layout
 
 import neurolang
-
-# from nlweb.viewers import PapayaViewerWidget
 from neurolang_ipywidgets import NlPapayaViewer
 
 
