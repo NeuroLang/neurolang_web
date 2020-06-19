@@ -209,8 +209,8 @@ class PapayaConfigWidget(NlVBoxOverlay):
         data0 = data[data != 0]
 
         fig = Figure()
-        fig.add_trace(Histogram(x=data, name="Image data"))
-        fig.add_trace(Histogram(x=data0, name="Without 0s"))
+        fig.add_trace(Histogram(x=data, name="All image data"))
+        fig.add_trace(Histogram(x=data0, name="Image data without 0s"))
 
         fig.update_layout(width=500, height=250, margin=dict(l=15, t=15, b=15, r=15))
 
