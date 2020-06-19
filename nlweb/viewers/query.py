@@ -155,6 +155,8 @@ class SymbolsWidget(HBox):
 
         self.children = [self.list, self.help]
 
+        self.help.layout = Layout(flex="1 1 65%")
+
     def on_change(self, change):
         help = self.nl.symbols[self.list.value].help()
         self.help.value = _format_help_message(self.list.value, help)
@@ -168,10 +170,16 @@ _help_message_style = """
 
   .help-header {
     background: lightGray;
+    border-bottom: 1px solid black;
+  }
+
+  .help-body {
+    padding-left: 5px;
+    padding-top: 5px;
   }
 
   .unavailable {
-    background: yellow;
+    background: lightyellow;
   }
 </style>
 """
@@ -188,9 +196,11 @@ def _format_help_message(symbol: str, help: Optional[str]) -> str:
     {_help_message_style}
     <div class="help-section">
       <p class="help-header">
-        <i class="fa fa-question-circle" aria-hidden="true"></i>help for <b>{symbol}</b>
+        <i class="fa fa-fw fa-question-circle" aria-hidden="true"></i>help for <b>{symbol}</b>
       </p>
-      {body}
+      <div class="help-body">
+        {body}
+      </div>
     </div>
     """
     return markup
