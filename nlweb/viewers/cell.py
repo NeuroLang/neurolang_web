@@ -13,7 +13,6 @@ from neurolang_ipywidgets import (
 )
 
 from nlweb.viewers import CellWidget
-from .config_widget import PapayaConfigWidget
 
 
 class StudyIdWidget(NlLink, CellWidget):
@@ -85,7 +84,14 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
         self._viewer = viewer
         self._image = PapayaSpatialImage(obj.spatial_image())
         # default config for images
-        self._image.config = dict(min=0, max=10, lut="Red Overlay")
+        self._image.config = dict(
+            min=0,
+            max=10,
+            lut="Red Overlay",
+            symmetric="false",
+            minPercent=100,
+            maxPercent=100,
+        )
 
         self._centered = False
         self._can_select = True
@@ -211,13 +217,17 @@ class ExplicitVBROverlayCellWidget(ExplicitVBRCellWidget):
         """
         super().__init__(obj, viewer, *args, **kwargs)
 
-        self.layout.width = "200px"
-        self._image.config = {}
+        self._image.config["max"] = 0.1
 
-        self._config = PapayaConfigWidget(self)
+        self.layout.width = "200px"
+
+        self._show_config = False
 
         self._config_btn = Button(
-            tooltip="Configure", icon="cog", layout=self._center_btn.layout
+            tooltip="Configure",
+            icon="cog",
+            layout=self._center_btn.layout,
+            disabled=True,
         )
 
         self._config_btn.on_click(self._config_btn_clicked)
@@ -225,15 +235,19 @@ class ExplicitVBROverlayCellWidget(ExplicitVBRCellWidget):
         self.children = self.children + (self._config_btn,)
 
     def _config_btn_clicked(self, event):
-        if self.children[-1] != self._config:
-            self.layout.width = "900px"
-            self.layout.overflow = "visible"
-            self.children = self.children + (self._config,)
-        else:
-            self.layout.width = "200px"
-            self.children = self.children[:-1]
-            self.layout.overflow = "auto"
+        self._show_config = not self._show_config
+        self._config_btn.button_style = "warning" if self._show_config else ""
+        self._viewer.show_image_config(self, self._show_config)
 
-    def update_config(self):
-        if self._region_checkbox.value:
-            self._viewer.set_images()
+    def _selection_changed(self, change, image):
+        super()._selection_changed(change, image)
+        self._config_btn.disabled = not self._region_checkbox.value
+
+        if not change["new"]:
+            self._show_config = False
+            self._config_btn.button_style = ""
+            self._viewer.show_image_config(self, False)
+
+    def reset_config(self):
+        self._config_btn.button_style = ""
+        self._show_config = False

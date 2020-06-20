@@ -1,13 +1,12 @@
 from ipywidgets import Layout
 
 import neurolang
-from neurolang_ipywidgets import NlPapayaViewer
+
+from .papaya_widget import PapayaWidget
 
 
 class ViewerFactory:
-    papaya_viewer = NlPapayaViewer(
-        layout=Layout(width="700px", height="600px", border="1px solid black")
-    )
+    papaya_viewer = PapayaWidget(layout=Layout(width="auto", height="560px"))
 
     @staticmethod
     def get_region_viewer():

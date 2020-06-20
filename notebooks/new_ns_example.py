@@ -159,15 +159,6 @@ plotting.plot_roi(r.spatial_image())
 r2 = next(iter(res["region_prob"].unwrap()))[0]
 plotting.plot_stat_map(r2.spatial_image())
 
-# ## View ExplicitVBROverlayCellWidget
-
-from nlweb.viewers.cell import ExplicitVBROverlayCellWidget
-from ipywidgets import Layout
-
-cl2 = ExplicitVBROverlayCellWidget(r2, None, layout=Layout(overflow="visible"))
-cl2
-
-
 # +
 from nlweb.viewers.query import QueryWidget
 
