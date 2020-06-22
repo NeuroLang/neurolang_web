@@ -34,11 +34,13 @@ class PapayaWidget(HBox):
 
         self._current_widget = None
 
-        self._viewer = NlPapayaViewer(layout=Layout(width="70%", height="auto"))
+        self._viewer = NlPapayaViewer(
+            layout=Layout(width="70%", height="auto"))
 
         self._config = PapayaConfigWidget(
             self._viewer,
-            layout=Layout(width="30%", height="auto", border="1px solid black"),
+            layout=Layout(width="30%", height="auto",
+                          border="1px solid black"),
         )
 
         self._config.layout.visibility = kwargs.get("config_visible", "hidden")
@@ -46,13 +48,14 @@ class PapayaWidget(HBox):
         self.children = [self._viewer, self._config]
 
     def show_image_config(self, cell_widget, show=True):
-        self._config.layout.visibility = "visible" if show else "hidden"
         if show:
+            self._config.layout.visibility = "visible"
             if self._current_widget is not None:
                 self._current_widget.reset_config()
             self._config.set_image(cell_widget.image)
             self._current_widget = cell_widget
         else:
+            self._config.layout.visibility = "hidden"
             self._config.set_image(None)
             self._current_widget = None
 
@@ -257,7 +260,8 @@ class PapayaConfigWidget(NlVBoxOverlay):
         """
         self._alpha.value = config.get("alpha", 1)
         self._lut.value = config.get("lut", PapayaConfigWidget.lut_options[1])
-        self._nlut.value = config.get("lut", PapayaConfigWidget.lut_options[1])
+        self._nlut.value = config.get(
+            "negative_lut", PapayaConfigWidget.lut_options[1])
         self._min.value = config.get("min", 0)
         self._minp.value = config.get("minPercent", 100)
         self._max.value = config.get("max", 0.1)
@@ -267,7 +271,8 @@ class PapayaConfigWidget(NlVBoxOverlay):
         # set histogram data
         self._hist.data[0].x = data
         # leave out 0 values
-        self._hist.data[1].x = [] if (data == [] or data is None) else data[data != 0]
+        self._hist.data[1].x = [] if (
+            data == [] or data is None) else data[data != 0]
 
     def _add_handlers(self, image):
         """Add config widget event handlers to change the config values for the specified `image`.
@@ -277,7 +282,6 @@ class PapayaConfigWidget(NlVBoxOverlay):
         image: neurolang_ipywidgets.PapayaImage
             image whose config values will be viewed/modified using this config widget.
         """
-        print("adding handlers")
 
         # Dropdown does not support resetting event handlers after Dropdown.unobserve_all is called
         # So handlers are stored to be removed individually
@@ -286,15 +290,18 @@ class PapayaConfigWidget(NlVBoxOverlay):
         self._handlers["alpha"] = partial(
             self._config_changed, image=image, name="alpha"
         )
-        self._handlers["lut"] = partial(self._config_changed, image=image, name="lut")
+        self._handlers["lut"] = partial(
+            self._config_changed, image=image, name="lut")
         self._handlers["nlut"] = partial(
             self._config_changed, image=image, name="negative_lut"
         )
-        self._handlers["min"] = partial(self._config_changed, image=image, name="min")
+        self._handlers["min"] = partial(
+            self._config_changed, image=image, name="min")
         self._handlers["minp"] = partial(
             self._config_changed, image=image, name="minPercent"
         )
-        self._handlers["max"] = partial(self._config_changed, image=image, name="max")
+        self._handlers["max"] = partial(
+            self._config_changed, image=image, name="max")
         self._handlers["maxp"] = partial(
             self._config_changed, image=image, name="maxPercent"
         )
@@ -321,20 +328,19 @@ class PapayaConfigWidget(NlVBoxOverlay):
     def _remove_handlers(self):
         """Removes all event handlers set for the config widgets.
         """
-        print("removing handlers")
         if len(self._handlers):
-            self._alpha.unobserve_all()
-            self._lut.unobserve(self._handlers["lut"])
-            self._nlut.unobserve(self._handlers["nlut"])
-            self._min.unobserve(self._handlers["min"])
-            self._minp.unobserve(self._handlers["minp"])
-            self._max.unobserve(self._handlers["max"])
-            self._maxp.unobserve(self._handlers["maxp"])
-            self._sym.unobserve(self._handlers["sym"])
+            self._alpha.unobserve(self._handlers["alpha"], names="value")
+            self._lut.unobserve(self._handlers["lut"], names="value")
+            self._nlut.unobserve(self._handlers["nlut"], names="value")
+            self._min.unobserve(self._handlers["min"], names="value")
+            self._minp.unobserve(self._handlers["minp"], names="value")
+            self._max.unobserve(self._handlers["max"], names="value")
+            self._maxp.unobserve(self._handlers["maxp"], names="value")
+            self._sym.unobserve(self._handlers["sym"], names="value")
+
             self._handlers = defaultdict()
 
     def _config_changed(self, change, image, name):
-        print("entered")
         image.config[name] = change.new
         self._viewer.set_images()
 
@@ -364,5 +370,5 @@ class PapayaConfigWidget(NlVBoxOverlay):
     def reset(self):
         """Resets values for all config widgets.
         """
-        self._set_values({}, [])
         self._remove_handlers()
+        self._set_values({}, [])
