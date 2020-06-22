@@ -1,5 +1,7 @@
+import html
+
 from ipysheet import row, sheet  # type: ignore
-from ipywidgets import Button, HBox, HTML, Layout, VBox  # type: ignore
+from ipywidgets import Button, HBox, HTML, Layout, Select, Tab, Text, VBox  # type: ignore
 
 from neurolang.datalog.wrapped_collections import (
     WrappedRelationalAlgebraSet,
@@ -14,7 +16,7 @@ from tatsu.exceptions import FailedParse
 
 from traitlets import Unicode  # type: ignore
 
-from typing import Dict
+from typing import Dict, Optional
 
 
 class ResultTabWidget(VBox):
@@ -140,6 +142,85 @@ class ResultWidget(VBox):
         self.tab = NlIconTab(layout=Layout(height="400px"))
 
 
+class SymbolsWidget(HBox):
+    """
+    A list of symbols, plus a filtering search box
+    """
+
+    def __init__(self, nl, **kwargs):
+        self.nl = nl
+        self.list = Select(options=self.nl.symbols)
+        self.search_box = Text(placeholder="search")
+        self.help = HTML()
+        super().__init__(**kwargs)
+
+        self.children = [VBox([self.search_box, self.list]), self.help]
+
+        self.help.layout = Layout(flex="1 1 65%")
+
+        self.list.observe(self.on_select_change, names="value")
+        self.on_select_change(None)
+
+        self.search_box.observe(self.on_search_change, names="value")
+
+    def on_select_change(self, change):
+        help = self.nl.symbols[self.list.value].help()
+        self.help.value = _format_help_message(self.list.value, help)
+
+    def on_search_change(self, change):
+        if self.search_box.value == "":
+            self.list.options = self.nl.symbols
+        else:
+            filtered_options = [
+                item for item in self.nl.symbols if self.search_box.value in item
+            ]
+            self.list.options = filtered_options
+
+
+_help_message_style = """
+<style>
+  .help-section {
+    margin-left: 5px;
+  }
+
+  .help-header {
+    background: lightGray;
+    border-bottom: 1px solid black;
+  }
+
+  .help-body {
+    padding-left: 5px;
+    padding-top: 5px;
+  }
+
+  .unavailable {
+    background: lightyellow;
+  }
+</style>
+"""
+
+
+def _format_help_message(symbol: str, help: Optional[str]) -> str:
+    body = (
+        f"<pre>{html.escape(help)}</pre>"
+        if help is not None
+        else "<p class='unavailable'>help unavailable</p>"
+    )
+
+    markup = f"""
+    {_help_message_style}
+    <div class="help-section">
+      <p class="help-header">
+        <i class="fa fa-fw fa-question-circle" aria-hidden="true"></i>help for <b>{symbol}</b>
+      </p>
+      <div class="help-body">
+        {body}
+      </div>
+    </div>
+    """
+    return markup
+
+
 class QueryWidget(VBox):
     """
     A widget to input queries
@@ -182,12 +263,19 @@ class QueryWidget(VBox):
         self.button = Button(description="Run query")
         self.button.on_click(self._on_query_button_clicked)
         self.error_display = HTML(layout=Layout(visibility="hidden"))
+        self.query_section = Tab(
+            children=[
+                VBox([HBox([self.query, self.button]), self.error_display,]),
+                SymbolsWidget(self.neurolang_engine),
+            ]
+        )
+        for i, tab_title in enumerate(["query", "symbols"]):
+            self.query_section.set_title(i, tab_title)
 
         self.result_viewer = ResultWidget()
 
         self.children = [
-            HBox([self.query, self.button]),
-            self.error_display,
+            self.query_section,
             self.result_viewer,
         ]
 
