@@ -13,6 +13,10 @@
 #     name: python3
 # ---
 
+import warnings  # type: ignore
+
+warnings.filterwarnings("ignore")
+
 # +
 from typing import Iterable
 
