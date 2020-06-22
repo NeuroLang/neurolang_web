@@ -1,7 +1,7 @@
 import html
 
 from ipysheet import row, sheet  # type: ignore
-from ipywidgets import Button, HBox, HTML, Layout, Select, Tab, VBox  # type: ignore
+from ipywidgets import Button, HBox, HTML, Layout, Select, Tab, Text, VBox  # type: ignore
 
 from neurolang.datalog.wrapped_collections import (
     WrappedRelationalAlgebraSet,
@@ -148,18 +148,31 @@ class SymbolsWidget(HBox):
     def __init__(self, nl, **kwargs):
         self.nl = nl
         self.list = Select(options=self.nl.symbols)
+        self.search_box = Text(placeholder="search")
         self.help = HTML()
         super().__init__(**kwargs)
 
-        self.list.observe(self.on_change)
-
-        self.children = [self.list, self.help]
+        self.children = [VBox([self.search_box, self.list]), self.help]
 
         self.help.layout = Layout(flex="1 1 65%")
 
-    def on_change(self, change):
+        self.list.observe(self.on_select_change, names="value")
+        self.on_select_change(None)
+
+        self.search_box.observe(self.on_search_change, names="value")
+
+    def on_select_change(self, change):
         help = self.nl.symbols[self.list.value].help()
         self.help.value = _format_help_message(self.list.value, help)
+
+    def on_search_change(self, change):
+        if self.search_box.value == "":
+            self.list.options = self.nl.symbols
+        else:
+            filtered_options = [
+                item for item in self.nl.symbols if self.search_box.value in item
+            ]
+            self.list.options = filtered_options
 
 
 _help_message_style = """
