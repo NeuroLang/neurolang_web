@@ -34,13 +34,11 @@ class PapayaWidget(HBox):
 
         self._current_widget = None
 
-        self._viewer = NlPapayaViewer(
-            layout=Layout(width="70%", height="auto"))
+        self._viewer = NlPapayaViewer(layout=Layout(width="70%", height="auto"))
 
         self._config = PapayaConfigWidget(
             self._viewer,
-            layout=Layout(width="30%", height="auto",
-                          border="1px solid black"),
+            layout=Layout(width="30%", height="auto", border="1px solid black"),
         )
 
         self._config.layout.visibility = kwargs.get("config_visible", "hidden")
@@ -260,8 +258,7 @@ class PapayaConfigWidget(NlVBoxOverlay):
         """
         self._alpha.value = config.get("alpha", 1)
         self._lut.value = config.get("lut", PapayaConfigWidget.lut_options[1])
-        self._nlut.value = config.get(
-            "negative_lut", PapayaConfigWidget.lut_options[1])
+        self._nlut.value = config.get("negative_lut", PapayaConfigWidget.lut_options[1])
         self._min.value = config.get("min", 0)
         self._minp.value = config.get("minPercent", 100)
         self._max.value = config.get("max", 0.1)
@@ -271,8 +268,7 @@ class PapayaConfigWidget(NlVBoxOverlay):
         # set histogram data
         self._hist.data[0].x = data
         # leave out 0 values
-        self._hist.data[1].x = [] if (
-            data == [] or data is None) else data[data != 0]
+        self._hist.data[1].x = [] if (data == [] or data is None) else data[data != 0]
 
     def _add_handlers(self, image):
         """Add config widget event handlers to change the config values for the specified `image`.
@@ -290,18 +286,15 @@ class PapayaConfigWidget(NlVBoxOverlay):
         self._handlers["alpha"] = partial(
             self._config_changed, image=image, name="alpha"
         )
-        self._handlers["lut"] = partial(
-            self._config_changed, image=image, name="lut")
+        self._handlers["lut"] = partial(self._config_changed, image=image, name="lut")
         self._handlers["nlut"] = partial(
             self._config_changed, image=image, name="negative_lut"
         )
-        self._handlers["min"] = partial(
-            self._config_changed, image=image, name="min")
+        self._handlers["min"] = partial(self._config_changed, image=image, name="min")
         self._handlers["minp"] = partial(
             self._config_changed, image=image, name="minPercent"
         )
-        self._handlers["max"] = partial(
-            self._config_changed, image=image, name="max")
+        self._handlers["max"] = partial(self._config_changed, image=image, name="max")
         self._handlers["maxp"] = partial(
             self._config_changed, image=image, name="maxPercent"
         )

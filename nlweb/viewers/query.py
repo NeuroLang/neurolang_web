@@ -1,7 +1,16 @@
 import html
 
 from ipysheet import row, sheet  # type: ignore
-from ipywidgets import Button, HBox, HTML, Layout, Select, Tab, Text, VBox  # type: ignore
+from ipywidgets import (
+    Button,
+    HBox,
+    HTML,
+    Layout,
+    Select,
+    Tab,
+    Text,
+    VBox,
+)  # type: ignore
 
 from neurolang.datalog.wrapped_collections import (
     WrappedRelationalAlgebraSet,
@@ -265,7 +274,7 @@ class QueryWidget(VBox):
         self.error_display = HTML(layout=Layout(visibility="hidden"))
         self.query_section = Tab(
             children=[
-                VBox([HBox([self.query, self.button]), self.error_display,]),
+                VBox([HBox([self.query, self.button]), self.error_display]),
                 SymbolsWidget(self.neurolang_engine),
             ]
         )
@@ -274,10 +283,7 @@ class QueryWidget(VBox):
 
         self.result_viewer = ResultWidget()
 
-        self.children = [
-            self.query_section,
-            self.result_viewer,
-        ]
+        self.children = [self.query_section, self.result_viewer]
 
     def run_query(self, query: str):
         with self.neurolang_engine.scope:
