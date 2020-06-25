@@ -6,7 +6,7 @@ from .papaya_widget import PapayaWidget
 
 
 class ViewerFactory:
-    papaya_viewer = PapayaWidget(layout=Layout(width="auto", height="560px"))
+    papaya_viewer = PapayaWidget(layout=Layout(width="auto", height="600px"))
 
     @staticmethod
     def get_region_viewer():
@@ -54,7 +54,8 @@ class ColumnsManager:
         self.columns = []
 
         for column_type in column_types.__args__:
-            self.columns.append(ColumnFeederFactory.get_column(result_tab, column_type))
+            self.columns.append(
+                ColumnFeederFactory.get_column(result_tab, column_type))
 
     def get_cell_widget(self, index, obj):
         """Creates and returns the cell widget for the column specified by `index` and the object `obj` for that column.
