@@ -14,13 +14,16 @@ from neurolang_ipywidgets import NlPapayaViewer, NlVBoxOverlay
 
 from plotly.graph_objects import Figure, FigureWidget, Histogram
 
+from traitlets import Any
+
 
 class PapayaWidget(HBox):
     """A widget class that displays a papaya viewer (NlPapayaViewer) and config widget (PapayaConfigWidget) side by side.
 
-
-    Implements all methods of NlPapayaViewer.
     """
+
+    current_config = Any()
+    current_colorbar = Any()
 
     def __init__(self, *args, **kwargs):
         """
@@ -32,30 +35,31 @@ class PapayaWidget(HBox):
         """
         super().__init__(*args, **kwargs)
 
-        self._current_widget = None
-
-        self._viewer = NlPapayaViewer(layout=Layout(width="70%", height="auto"))
+        self._viewer = NlPapayaViewer(colorbar=True,
+                                      layout=Layout(width="70%", height="auto"))
 
         self._config = PapayaConfigWidget(
             self._viewer,
-            layout=Layout(width="30%", height="auto", border="1px solid black"),
+            layout=Layout(width="30%", height="auto",
+                          border="1px solid black"),
         )
 
         self._config.layout.visibility = kwargs.get("config_visible", "hidden")
 
         self.children = [self._viewer, self._config]
 
-    def show_image_config(self, cell_widget, show=True):
+    def show_image_config(self, image, show=True):
         if show:
             self._config.layout.visibility = "visible"
-            if self._current_widget is not None:
-                self._current_widget.reset_config()
-            self._config.set_image(cell_widget.image)
-            self._current_widget = cell_widget
+            self.current_config = image
+            self._config.set_image(image)
         else:
             self._config.layout.visibility = "hidden"
             self._config.set_image(None)
-            self._current_widget = None
+
+    def show_image_colorbar(self, image):
+        self.current_colorbar = image
+        self._viewer.show_image_colorbar(image)
 
     def can_add(self, images):
         return self._viewer.can_add(images)
@@ -174,6 +178,7 @@ class PapayaConfigWidget(NlVBoxOverlay):
             value=None,
             description="min:",
             description_tooltip="The display range minimum.",
+            step=0.01,
             disabled=False,
             layout=layout,
         )
@@ -193,6 +198,7 @@ class PapayaConfigWidget(NlVBoxOverlay):
             value=None,
             description="max:",
             description_tooltip="The display range maximum.",
+            step=0.01,
             disabled=False,
             layout=layout,
         )
@@ -258,7 +264,8 @@ class PapayaConfigWidget(NlVBoxOverlay):
         """
         self._alpha.value = config.get("alpha", 1)
         self._lut.value = config.get("lut", PapayaConfigWidget.lut_options[1])
-        self._nlut.value = config.get("negative_lut", PapayaConfigWidget.lut_options[1])
+        self._nlut.value = config.get(
+            "negative_lut", PapayaConfigWidget.lut_options[1])
         self._min.value = config.get("min", 0)
         self._minp.value = config.get("minPercent", 100)
         self._max.value = config.get("max", 0.1)
@@ -268,7 +275,8 @@ class PapayaConfigWidget(NlVBoxOverlay):
         # set histogram data
         self._hist.data[0].x = data
         # leave out 0 values
-        self._hist.data[1].x = [] if (data == [] or data is None) else data[data != 0]
+        self._hist.data[1].x = [] if (
+            data == [] or data is None) else data[data != 0]
 
     def _add_handlers(self, image):
         """Add config widget event handlers to change the config values for the specified `image`.
@@ -286,15 +294,18 @@ class PapayaConfigWidget(NlVBoxOverlay):
         self._handlers["alpha"] = partial(
             self._config_changed, image=image, name="alpha"
         )
-        self._handlers["lut"] = partial(self._config_changed, image=image, name="lut")
+        self._handlers["lut"] = partial(
+            self._config_changed, image=image, name="lut")
         self._handlers["nlut"] = partial(
             self._config_changed, image=image, name="negative_lut"
         )
-        self._handlers["min"] = partial(self._config_changed, image=image, name="min")
+        self._handlers["min"] = partial(
+            self._config_changed, image=image, name="min")
         self._handlers["minp"] = partial(
             self._config_changed, image=image, name="minPercent"
         )
-        self._handlers["max"] = partial(self._config_changed, image=image, name="max")
+        self._handlers["max"] = partial(
+            self._config_changed, image=image, name="max")
         self._handlers["maxp"] = partial(
             self._config_changed, image=image, name="maxPercent"
         )
