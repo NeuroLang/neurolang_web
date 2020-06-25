@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.5.0
+#       jupytext_version: 1.4.2
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -129,6 +129,8 @@ ns_vox_id_MNI = nl.add_tuple_set(vox_id_MNI, name="ns_vox_id_MNI")
 datalog_script = """
 term_docs(term, pmid) :- ns_pmid_term_tfidf(pmid, term, tfidf),\
     term == 'auditory', tfidf > .003
+term_docs(term, pmid) :- ns_pmid_term_tfidf(pmid, term, tfidf),\
+    term == 'fear', tfidf > .003
 
 act_term_counts(term, voxid, agg_count(pmid)) :- \
     ns_activations_by_id(pmid, voxid) &\
@@ -145,10 +147,10 @@ p_act_given_term(voxid, x, y, z, term, prob) :- \
     prob == (act_term_count / term_count)
 
 
-region_prob(agg_create_region_overlay(x, y, z, prob)) :- \
+region_prob(agg_create_region_overlay(x, y, z, prob), term) :- \
     p_act_given_term(voxid, x, y, z, term, prob)
 
-thr_prob(agg_create_region(x, y, z)) :- \
+thr_prob(agg_create_region(x, y, z), term) :- \
     p_act_given_term(voxid, x, y, z, term, prob) & \
     prob > 0.1
 """
@@ -168,3 +170,5 @@ from nlweb.viewers.query import QueryWidget
 
 qw = QueryWidget(nl, datalog_script)
 qw
+# -
+
