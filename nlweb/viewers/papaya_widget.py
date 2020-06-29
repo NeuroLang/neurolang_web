@@ -181,6 +181,7 @@ class PapayaConfigWidget(NlVBoxOverlay):
             description="min:",
             description_tooltip="The display range minimum.",
             step=0.01,
+            continuous_update=True,
             disabled=False,
             layout=layout,
         )
@@ -190,6 +191,7 @@ class PapayaConfigWidget(NlVBoxOverlay):
             min=0,
             max=100,
             step=1,
+            continuous_update=True,
             description="min %:",
             description_tooltip="The display range minimum as a percentage of image max.",
             disabled=False,
@@ -201,6 +203,7 @@ class PapayaConfigWidget(NlVBoxOverlay):
             description="max:",
             description_tooltip="The display range maximum.",
             step=0.01,
+            continuous_update=True,
             disabled=False,
             layout=layout,
         )
@@ -210,6 +213,7 @@ class PapayaConfigWidget(NlVBoxOverlay):
             min=0,
             max=100,
             step=1,
+            continuous_update=True,
             description="max %:",
             description_tooltip="The display range minimum as a percentage of image max.",
             disabled=False,
