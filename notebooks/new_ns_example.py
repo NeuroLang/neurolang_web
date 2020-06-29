@@ -171,4 +171,3 @@ from nlweb.viewers.query import QueryWidget
 qw = QueryWidget(nl, datalog_script)
 qw
 # -
-
