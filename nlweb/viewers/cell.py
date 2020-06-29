@@ -263,7 +263,7 @@ class ExplicitVBROverlayCellWidget(ExplicitVBRCellWidget):
         if not change["new"]:
             self._reset_config(None)
             self._reset_colorbar(None)
-            self._viewer.show_image_config(self, False)
+            self._viewer.show_image_config(self.image, False)
         else:
             self._colorbar_btn_clicked(None)
 

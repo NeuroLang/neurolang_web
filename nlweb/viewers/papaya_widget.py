@@ -54,8 +54,9 @@ class PapayaWidget(HBox):
             self.current_config = image
             self._config.set_image(image)
         else:
-            self._config.layout.visibility = "hidden"
-            self._config.set_image(None)
+            if image.id == self.current_config.id:
+                self._config.layout.visibility = "hidden"
+                self._config.set_image(None)
 
     def show_image_colorbar(self, image):
         self.current_colorbar = image
