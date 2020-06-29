@@ -233,11 +233,14 @@ class PapayaConfigWidget(NlVBoxOverlay):
         fig.update_layout(
             height=300,
             margin=dict(l=15, t=15, b=15, r=15, pad=4),
+            showlegend=True,
             legend_orientation="h",
         )
 
         self._hist = FigureWidget(fig)
-        self._hist.add_trace(Histogram(x=[], name="All image data"))
+        self._hist.add_trace(
+            Histogram(x=[], name="All image data", visible="legendonly")
+        )
         self._hist.add_trace(Histogram(x=[], name="Image data without 0s"))
 
         self._handlers = defaultdict()
