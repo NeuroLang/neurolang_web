@@ -247,7 +247,7 @@ class ExplicitVBROverlayCellWidget(ExplicitVBRCellWidget):
             self._viewer.observe(self._reset_config, names=["current_config"])
         else:
             self._reset_config(None)
-            self._viewer.show_image_config(self, False)
+            self._viewer.show_image_config(self.image, False)
 
     def _colorbar_btn_clicked(self, event):
         if self._colorbar_btn.button_style == "":
