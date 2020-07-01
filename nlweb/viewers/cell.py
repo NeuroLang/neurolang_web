@@ -227,6 +227,7 @@ class ExplicitVBROverlayCellWidget(ExplicitVBRCellWidget):
             layout=self._center_btn.layout,
             disabled=True,
         )
+        self._viewer.observe(self._reset_colorbar, names=["current_colorbar"])
 
         self._config_btn = Button(
             tooltip="Configure",
@@ -251,9 +252,7 @@ class ExplicitVBROverlayCellWidget(ExplicitVBRCellWidget):
 
     def _colorbar_btn_clicked(self, event):
         if self._colorbar_btn.button_style == "":
-            self._colorbar_btn.button_style = "warning"
             self._viewer.show_image_colorbar(self.image)
-            self._viewer.observe(self._reset_colorbar, names=["current_colorbar"])
 
     def _selection_changed(self, change, image):
         super()._selection_changed(change, image)
@@ -262,10 +261,10 @@ class ExplicitVBROverlayCellWidget(ExplicitVBRCellWidget):
 
         if not change["new"]:
             self._reset_config(None)
-            self._reset_colorbar(None)
+            self._colorbar_btn.button_style = ""
             self._viewer.show_image_config(self.image, False)
         else:
-            self._colorbar_btn_clicked(None)
+            self._viewer.show_image_colorbar(self.image)
 
     def _reset_config(self, change):
         self._config_btn.button_style = ""
@@ -275,8 +274,7 @@ class ExplicitVBROverlayCellWidget(ExplicitVBRCellWidget):
             pass
 
     def _reset_colorbar(self, change):
-        self._colorbar_btn.button_style = ""
-        try:
-            self._viewer.unobserve(self._reset_colorbar, names=["current_colorbar"])
-        except ValueError:
-            pass
+        if self.image.id == change.new.id:
+            self._colorbar_btn.button_style = "warning"
+        else:
+            self._colorbar_btn.button_style = ""
