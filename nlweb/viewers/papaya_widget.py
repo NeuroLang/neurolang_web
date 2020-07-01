@@ -67,7 +67,6 @@ class PapayaWidget(HBox):
 
     def add(self, images):
         self._viewer.add(images)
-        self.current_colorbar = self._viewer.images[-1]
 
     def remove(self, images):
         self._viewer.remove(images)
