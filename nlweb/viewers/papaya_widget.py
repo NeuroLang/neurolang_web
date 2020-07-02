@@ -1,7 +1,7 @@
 from collections import defaultdict
 from functools import partial
 from ipywidgets import (
-    BoundedIntText,
+    BoundedFloatText,
     Checkbox,
     Dropdown,
     FloatSlider,
@@ -35,9 +35,7 @@ class PapayaWidget(HBox):
         """
         super().__init__(*args, **kwargs)
 
-        self._viewer = NlPapayaViewer(
-            colorbar=True, layout=Layout(width="70%", height="auto")
-        )
+        self._viewer = NlPapayaViewer(layout=Layout(width="70%", height="auto"))
 
         self._config = PapayaConfigWidget(
             self._viewer,
@@ -45,6 +43,9 @@ class PapayaWidget(HBox):
         )
 
         self._config.layout.visibility = kwargs.get("config_visible", "hidden")
+
+        self.current_config = None
+        self.current_colorbar = None
 
         self.children = [self._viewer, self._config]
 
@@ -54,7 +55,7 @@ class PapayaWidget(HBox):
             self.current_config = image
             self._config.set_image(image)
         else:
-            if image.id == self.current_config.id:
+            if self.current_config is not None and image.id == self.current_config.id:
                 self._config.layout.visibility = "hidden"
                 self._config.set_image(None)
 
@@ -187,7 +188,7 @@ class PapayaConfigWidget(NlVBoxOverlay):
             layout=layout,
         )
 
-        self._minp = BoundedIntText(
+        self._minp = BoundedFloatText(
             value=None,
             min=0,
             max=100,
@@ -209,7 +210,7 @@ class PapayaConfigWidget(NlVBoxOverlay):
             layout=layout,
         )
 
-        self._maxp = BoundedIntText(
+        self._maxp = BoundedFloatText(
             value=None,
             min=0,
             max=100,
@@ -246,7 +247,7 @@ class PapayaConfigWidget(NlVBoxOverlay):
 
         self._handlers = defaultdict()
 
-    def _set_values(self, config, data):
+    def _set_values(self, config, range, data):
         """Sets config values from the specified `config` and creates histogram for `data`.
 
         Parameters
@@ -269,6 +270,8 @@ class PapayaConfigWidget(NlVBoxOverlay):
                 the display range minimum as a percentage of image min.
            symmetric : bool
                 if true, sets the negative range of a parametric pair to the same size as the positive range.
+        range: float
+            range of image values.
         data: []
            flattened image data.
         """
@@ -276,9 +279,9 @@ class PapayaConfigWidget(NlVBoxOverlay):
         self._lut.value = config.get("lut", PapayaConfigWidget.lut_options[1])
         self._nlut.value = config.get("negative_lut", PapayaConfigWidget.lut_options[1])
         self._min.value = config.get("min", 0)
-        self._minp.value = config.get("minPercent", 100)
+        self._minp.value = self._get_per_from_value(range, config.get("min", 0))
         self._max.value = config.get("max", 0.1)
-        self._maxp.value = config.get("maxPercent", 100)
+        self._maxp.value = self._get_per_from_value(range, config.get("max", 0.1))
         self._sym.value = config.get("symmetric", "false") == "true"
 
         # set histogram data
@@ -308,11 +311,11 @@ class PapayaConfigWidget(NlVBoxOverlay):
         )
         self._handlers["min"] = partial(self._config_changed, image=image, name="min")
         self._handlers["minp"] = partial(
-            self._config_changed, image=image, name="minPercent"
+            self._set_min_max, image=image, name="minPercent"
         )
         self._handlers["max"] = partial(self._config_changed, image=image, name="max")
         self._handlers["maxp"] = partial(
-            self._config_changed, image=image, name="maxPercent"
+            self._set_min_max, image=image, name="maxPercent"
         )
         self._handlers["sym"] = partial(
             self._config_bool_changed, image=image, name="symmetric"
@@ -350,15 +353,44 @@ class PapayaConfigWidget(NlVBoxOverlay):
             self._handlers = defaultdict()
 
     def _config_changed(self, change, image, name):
-        image.config[name] = change.new
-        self._viewer.set_images()
+        if name == "min":
+            self._minp.unobserve(self._handlers["minp"], names="value")
+            self._minp.value = self._get_per_from_value(image.range, change.new)
+            self._minp.observe(self._handlers["minp"], names="value")
+        elif name == "max":
+            self._maxp.unobserve(self._handlers["maxp"], names="value")
+            self._maxp.value = self._get_per_from_value(image.range, change.new)
+            self._maxp.observe(self._handlers["maxp"], names="value")
+
+        self._set_config(image, name, change.new)
+
+    def _set_min_max(self, change, image, name):
+        if name == "minPercent":
+            self._min.unobserve(self._handlers["min"], names="value")
+            self._min.value = self._get_value_from_per(image.range, change.new)
+            self._set_config(image, "min", self._min.value)
+            self._min.observe(self._handlers["min"], names="value")
+        elif name == "maxPercent":
+            self._max.unobserve(self._handlers["max"], names="value")
+            self._max.value = self._get_value_from_per(image.range, change.new)
+            self._set_config(image, "max", self._max.value)
+            self._max.observe(self._handlers["max"], names="value")
 
     def _config_bool_changed(self, change, image, name):
         value = "false"
         if change.new:
             value = "true"
-        image.config[name] = value
+        self._set_config(image, name, value)
+
+    def _set_config(self, image, key, value):
+        image.config[key] = value
         self._viewer.set_images()
+
+    def _get_per_from_value(self, range, value):
+        return round(value * 100 / range, 0)
+
+    def _get_value_from_per(self, range, per):
+        return round(per * range / 100, 2)
 
     def set_image(self, image):
         """Sets the image whose config values will be viewed/modified using this config widget.
@@ -371,7 +403,9 @@ class PapayaConfigWidget(NlVBoxOverlay):
         """
         if image:
             self._remove_handlers()
-            self._set_values(image.config, image.image.get_fdata().flatten())
+            self._set_values(
+                image.config, image.range, image.image.get_fdata().flatten()
+            )
             self._add_handlers(image)
         else:
             self.reset()
@@ -380,4 +414,4 @@ class PapayaConfigWidget(NlVBoxOverlay):
         """Resets values for all config widgets.
         """
         self._remove_handlers()
-        self._set_values({}, [])
+        self._set_values({}, 100, [])
