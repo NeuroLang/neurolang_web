@@ -84,15 +84,6 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
         self._viewer = viewer
         self._image = PapayaSpatialImage(obj.spatial_image())
 
-        self._image.config = dict(
-            min=0,
-            max=10,
-            lut="Red Overlay",
-            symmetric="false",
-            minPercent=100,
-            maxPercent=100,
-        )
-
         self._centered = False
         self._can_select = True
 
@@ -216,8 +207,6 @@ class ExplicitVBROverlayCellWidget(ExplicitVBRCellWidget):
             associated viewer to visualize the spatial image.
         """
         super().__init__(obj, viewer, *args, **kwargs)
-
-        self._image.config["max"] = 0.1
 
         self.layout.width = "200px"
 
