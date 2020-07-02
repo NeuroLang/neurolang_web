@@ -83,7 +83,7 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
 
         self._viewer = viewer
         self._image = PapayaSpatialImage(obj.spatial_image())
-        # default config for images
+
         self._image.config = dict(
             min=0,
             max=10,
@@ -274,7 +274,7 @@ class ExplicitVBROverlayCellWidget(ExplicitVBRCellWidget):
             pass
 
     def _reset_colorbar(self, change):
-        if self.image.id == change.new.id:
-            self._colorbar_btn.button_style = "warning"
-        else:
+        if change.new is None or self.image.id != change.new.id:
             self._colorbar_btn.button_style = ""
+        else:
+            self._colorbar_btn.button_style = "warning"
