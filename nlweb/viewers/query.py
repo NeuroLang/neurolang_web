@@ -272,6 +272,7 @@ class QueryWidget(VBox):
                 align_items="stretch",
                 width="75%",
                 height="100px",
+                border="solid 1px silver",
             ),
         )
         self.button = Button(description="Run query")
