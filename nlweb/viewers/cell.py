@@ -4,15 +4,15 @@ from ipywidgets import Button, HBox, Label, Layout
 
 import neurolang
 
-from nlweb.viewers import CellWidget
-
 from neurolang_ipywidgets import (
     NlLink,
     NlProgress,
     NlCheckbox,
     NlPapayaViewer,
-    PapayaImage,
+    PapayaSpatialImage,
 )
+
+from nlweb.viewers import CellWidget
 
 
 class StudyIdWidget(NlLink, CellWidget):
@@ -82,38 +82,58 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
         super().__init__(*args, **kwargs)
 
         self._viewer = viewer
-        self._image = PapayaImage(obj.spatial_image())
+        self._image = PapayaSpatialImage(obj.spatial_image())
 
-        # default config for images
-        self._image.config = dict(min=0, max=10, lut="Red Overlay")
         self._centered = False
         self._can_select = True
 
+        # adjust layout
+        self.layout.justify_content = "flex-start"
         self.layout.width = "160px"
-        self.layout.flex_flow = "row"
         self.layout.display = "flex"
+        self.layout.flex_direction = "row"
+        self.layout.flex = "0 0 auto"
 
+        self._init_widgets(self._image)
+
+        self.children = [self._region_checkbox, self._center_btn]
+
+    def _init_widgets(self, image):
         # add widgets
         self._region_checkbox = NlCheckbox(
             value=False,
             description="show region",
             indent=False,
             layout=Layout(
-                width="120px", margin="5px 15px 5px 0", padding="5px 15px 5px 15px"
+                width="120px",
+                max_width="120px",
+                min_width="120px",
+                margin="5px 5px 5px 0",
+                padding="0px 0px 0px 0px",
+                flex="0 0 auto",
+                align_self="flex-start",
             ),
         )
         self._center_btn = Button(
-            tooltip="Center on region", icon="map-marker", layout=Layout(width="30px")
+            tooltip="Center on region",
+            icon="map-marker",
+            layout=Layout(
+                width="30px",
+                max_width="30px",
+                min_width="30px",
+                margin="5px 5px 5px 0",
+                padding="0 0 0 0",
+                flex="0 0 auto",
+                align_self="flex-start",
+            ),
         )
 
         # add handlers
         self._region_checkbox.observe(
-            partial(self._selection_changed, image=self._image), names="value"
+            partial(self._selection_changed, image=image), names="value"
         )
 
         self._center_btn.on_click(self._center_btn_clicked)
-
-        self.children = [self._region_checkbox, self._center_btn]
 
     @property
     def image(self):
@@ -164,3 +184,86 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
 
     def remove_center(self):
         self.center_region(False)
+
+
+class ExplicitVBROverlayCellWidget(ExplicitVBRCellWidget):
+    """ A cell widget for data type `ExplicitVBROverlay` that enables displaying the spatial image in an associated viewer or center on the spatial image's coordinates, and manipulate image configuration parameters.
+    """
+
+    def __init__(
+        self,
+        obj: neurolang.regions.ExplicitVBROverlay,
+        viewer: NlPapayaViewer,
+        *args,
+        **kwargs,
+    ):
+        """Initializes the widget with the specified `obj`.
+
+        Parameters
+        ----------
+        obj: neurolang.regions.ExplicitVBROverlay
+
+        viewer : NlPapayaViewer
+            associated viewer to visualize the spatial image.
+        """
+        super().__init__(obj, viewer, *args, **kwargs)
+
+        self.layout.width = "200px"
+
+        self._colorbar_btn = Button(
+            tooltip="Show color bar",
+            icon="tint",
+            layout=self._center_btn.layout,
+            disabled=True,
+        )
+        self._viewer.observe(self._reset_colorbar, names=["current_colorbar"])
+
+        self._config_btn = Button(
+            tooltip="Configure",
+            icon="cog",
+            layout=self._center_btn.layout,
+            disabled=True,
+        )
+
+        self._config_btn.on_click(self._config_btn_clicked)
+        self._colorbar_btn.on_click(self._colorbar_btn_clicked)
+
+        self.children = self.children + (self._colorbar_btn, self._config_btn)
+
+    def _config_btn_clicked(self, event):
+        if self._config_btn.button_style == "":
+            self._config_btn.button_style = "warning"
+            self._viewer.show_image_config(self.image, True)
+            self._viewer.observe(self._reset_config, names=["current_config"])
+        else:
+            self._reset_config(None)
+            self._viewer.show_image_config(self.image, False)
+
+    def _colorbar_btn_clicked(self, event):
+        if self._colorbar_btn.button_style == "":
+            self._viewer.show_image_colorbar(self.image)
+
+    def _selection_changed(self, change, image):
+        super()._selection_changed(change, image)
+        self._config_btn.disabled = not self._region_checkbox.value
+        self._colorbar_btn.disabled = not self._region_checkbox.value
+
+        if not change["new"]:
+            self._reset_config(None)
+            self._colorbar_btn.button_style = ""
+            self._viewer.show_image_config(self.image, False)
+        else:
+            self._viewer.show_image_colorbar(self.image)
+
+    def _reset_config(self, change):
+        self._config_btn.button_style = ""
+        try:
+            self._viewer.unobserve(self._reset_config, names=["current_config"])
+        except ValueError:
+            pass
+
+    def _reset_colorbar(self, change):
+        if change.new is None or self.image.id != change.new.id:
+            self._colorbar_btn.button_style = ""
+        else:
+            self._colorbar_btn.button_style = "warning"

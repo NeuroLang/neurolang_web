@@ -1,7 +1,16 @@
 import html
 
 from ipysheet import row, sheet  # type: ignore
-from ipywidgets import Button, HBox, HTML, Layout, Select, Tab, Text, VBox  # type: ignore
+from ipywidgets import (
+    Button,
+    HBox,
+    HTML,
+    Layout,
+    Select,
+    Tab,
+    Text,
+    VBox,
+)  # type: ignore
 
 from neurolang.datalog.wrapped_collections import (
     WrappedRelationalAlgebraSet,
@@ -24,8 +33,8 @@ class ResultTabWidget(VBox):
 
     icon = Unicode()
 
-    def __init__(self, name: str, wras: WrappedRelationalAlgebraSet):
-        super().__init__()
+    def __init__(self, name: str, wras: WrappedRelationalAlgebraSet, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
         self.wras = wras
 
@@ -61,7 +70,7 @@ class ResultTabWidget(VBox):
             rows=nb_rows,
             columns=wras.arity,
             column_headers=column_headers,
-            layout=Layout(width="auto", height=f"{(50 * rows_visible) + 10}px"),
+            layout=Layout(width="auto", height=f"{(50 * rows_visible) + 30}px"),
         )
 
         for i, tuple_ in enumerate(wras.unwrapped_iter()):
@@ -84,16 +93,12 @@ class ResultWidget(VBox):
 
     def __init__(self):
         super().__init__()
+        self._viewers = None
         self.tab = NlIconTab(layout=Layout(height="400px"))
 
     def show_results(self, res: Dict[str, WrappedRelationalAlgebraSet]):
         self.reset()
-        names, tablesets, viewers, icons = self._create_tablesets(res)
-
-        for viewer in viewers:
-            viewer.reset()
-
-        self.children = (self.tab,) + tuple(viewers)
+        names, tablesets, self._viewers, icons = self._create_tablesets(res)
 
         for i, name in enumerate(names):
             self.tab.set_title(i, name)
@@ -101,6 +106,10 @@ class ResultWidget(VBox):
         self.tab.children = tablesets
 
         self.tab.title_icons = icons
+
+        self.tab.selected_index = 0
+
+        self.children = (self.tab,) + tuple(self._viewers)
 
     def _create_tablesets(self, res):
         answer = "ans"
@@ -112,7 +121,9 @@ class ResultWidget(VBox):
         viewers = set()
 
         for name, result_set in res.items():
-            tableset_widget = ResultTabWidget(name, result_set)
+            tableset_widget = ResultTabWidget(
+                name, result_set, layout=Layout(height="340px")
+            )
 
             if name == answer:
                 tablesets.insert(0, tableset_widget)
@@ -137,7 +148,12 @@ class ResultWidget(VBox):
         return names, tablesets, viewers, icons
 
     def reset(self):
-        self.tab = NlIconTab(layout=Layout(height="400px"))
+        if self._viewers is not None:
+            for viewer in self._viewers:
+                viewer.reset()
+        self._viewers = None
+
+        self.tab.reset()
 
 
 class SymbolsWidget(HBox):
@@ -263,7 +279,7 @@ class QueryWidget(VBox):
         self.error_display = HTML(layout=Layout(visibility="hidden"))
         self.query_section = Tab(
             children=[
-                VBox([HBox([self.query, self.button]), self.error_display,]),
+                VBox([HBox([self.query, self.button]), self.error_display]),
                 SymbolsWidget(self.neurolang_engine),
             ]
         )
@@ -272,10 +288,7 @@ class QueryWidget(VBox):
 
         self.result_viewer = ResultWidget()
 
-        self.children = [
-            self.query_section,
-            self.result_viewer,
-        ]
+        self.children = [self.query_section, self.result_viewer]
 
     def run_query(self, query: str):
         with self.neurolang_engine.scope:
@@ -301,8 +314,8 @@ class QueryWidget(VBox):
         except Exception as e:
             self.handle_generic_error(e)
         else:
-            self.result_viewer.layout.visibility = "visible"
             self.result_viewer.show_results(qresult)
+            self.result_viewer.layout.visibility = "visible"
 
     def _reset_output(self):
         self.query.clear_marks()

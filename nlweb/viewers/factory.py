@@ -1,13 +1,12 @@
 from ipywidgets import Layout
 
 import neurolang
-from neurolang_ipywidgets import NlPapayaViewer
+
+from .papaya_widget import PapayaWidget
 
 
 class ViewerFactory:
-    papaya_viewer = NlPapayaViewer(
-        layout=Layout(width="700px", height="600px", border="1px solid black")
-    )
+    papaya_viewer = PapayaWidget(layout=Layout(width="auto", height="600px"))
 
     @staticmethod
     def get_region_viewer():
@@ -38,12 +37,11 @@ class ColumnFeederFactory:
 
         if column_type == neurolang.regions.ExplicitVBR:
             return nlweb.viewers.column.ExplicitVBRColumn(result_tab)
+        elif column_type == neurolang.regions.ExplicitVBROverlay:
+            return nlweb.viewers.column.ExplicitVBROverlayColumn(result_tab)
         elif column_type == neurolang.frontend.neurosynth_utils.StudyID:
             return nlweb.viewers.column.StudIdColumn()
-        elif (
-            column_type == neurolang.frontend.neurosynth_utils.TfIDf
-            or column_type == float
-        ):
+        elif column_type == neurolang.frontend.neurosynth_utils.TfIDf:
             return nlweb.viewers.column.TfIDfColumn()
         else:
             return nlweb.viewers.column.ColumnFeeder()
