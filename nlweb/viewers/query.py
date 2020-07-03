@@ -93,16 +93,12 @@ class ResultWidget(VBox):
 
     def __init__(self):
         super().__init__()
+        self._viewers = None
         self.tab = NlIconTab(layout=Layout(height="400px"))
 
     def show_results(self, res: Dict[str, WrappedRelationalAlgebraSet]):
         self.reset()
-        names, tablesets, viewers, icons = self._create_tablesets(res)
-
-        for viewer in viewers:
-            viewer.reset()
-
-        self.children = (self.tab,) + tuple(viewers)
+        names, tablesets, self._viewers, icons = self._create_tablesets(res)
 
         for i, name in enumerate(names):
             self.tab.set_title(i, name)
@@ -110,6 +106,10 @@ class ResultWidget(VBox):
         self.tab.children = tablesets
 
         self.tab.title_icons = icons
+
+        self.tab.selected_index = 0
+
+        self.children = (self.tab,) + tuple(self._viewers)
 
     def _create_tablesets(self, res):
         answer = "ans"
@@ -148,7 +148,12 @@ class ResultWidget(VBox):
         return names, tablesets, viewers, icons
 
     def reset(self):
-        self.tab = NlIconTab(layout=Layout(height="400px"))
+        if self._viewers is not None:
+            for viewer in self._viewers:
+                viewer.reset()
+        self._viewers = None
+
+        self.tab.reset()
 
 
 class SymbolsWidget(HBox):
@@ -309,8 +314,8 @@ class QueryWidget(VBox):
         except Exception as e:
             self.handle_generic_error(e)
         else:
-            self.result_viewer.layout.visibility = "visible"
             self.result_viewer.show_results(qresult)
+            self.result_viewer.layout.visibility = "visible"
 
     def _reset_output(self):
         self.query.clear_marks()

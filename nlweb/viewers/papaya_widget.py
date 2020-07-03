@@ -88,7 +88,7 @@ class PapayaWidget(HBox):
         self._config.reset()
 
 
-class PapayaConfigWidget(NlVBoxOverlay):
+class PapayaConfigWidget(VBox):
     """A widget that displays widgets to adjust NLPapayaViewer image parameters."""
 
     lut_options = [
@@ -415,3 +415,4 @@ class PapayaConfigWidget(NlVBoxOverlay):
         """
         self._remove_handlers()
         self._set_values({}, 100, [])
+        self.layout.visibility = "hidden"
