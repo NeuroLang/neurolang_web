@@ -10,7 +10,7 @@ from ipywidgets import (
     Layout,
     VBox,
 )
-from neurolang_ipywidgets import NlPapayaViewer, NlVBoxOverlay
+from neurolang_ipywidgets import NlPapayaViewer
 
 from plotly.graph_objects import Figure, FigureWidget, Histogram
 
