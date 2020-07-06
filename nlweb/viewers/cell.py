@@ -154,18 +154,26 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
         self._can_select = False
         self._region_checkbox.value = False
         self._can_select = True
+        if self.image.is_label:
+            self._region_checkbox.bg_color = "white"
 
     def _selection_changed(self, change, image):
         if self._can_select:
             if change["new"]:
                 if self._viewer.can_add([image]):
                     self._viewer.add([image])
+                    if self.image.is_label:
+                        self._region_checkbox.bg_color = self._viewer.get_hex_for_lut(
+                            self.image.config["lut"]
+                        )
                 else:
                     self.undo_select()
                     self._viewer.set_error(
                         "Papaya viewer does not allow more than 8 overlays. \nPlease unselect region to be able to add  new ones!"
                     )
             else:
+                if self.image.is_label:
+                    self._region_checkbox.bg_color = "white"
                 self._viewer.remove([image])
 
     def center_region(self, is_centered):
