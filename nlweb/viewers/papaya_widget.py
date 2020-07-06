@@ -87,6 +87,9 @@ class PapayaWidget(HBox):
         self._viewer.reset()
         self._config.reset()
 
+    def get_hex_for_lut(self, lut):
+        return self._viewer.get_hex_for_lut(lut)
+
 
 class PapayaConfigWidget(VBox):
     """A widget that displays widgets to adjust NLPapayaViewer image parameters."""
