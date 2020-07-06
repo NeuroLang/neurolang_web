@@ -33,7 +33,9 @@ class ResultTabWidget(VBox):
 
     icon = Unicode()
 
-    def __init__(self, name: str, wras: WrappedRelationalAlgebraSet, *args, **kwargs):
+    def __init__(
+        self, name: str, wras: WrappedRelationalAlgebraSet, headers, *args, **kwargs
+    ):
         super().__init__(*args, **kwargs)
 
         self.wras = wras
@@ -43,7 +45,7 @@ class ResultTabWidget(VBox):
 
         columns_manager = ColumnsManager(self, wras.row_type)
 
-        self.sheet = self._init_sheet(self.wras, columns_manager)
+        self.sheet = self._init_sheet(self.wras, columns_manager, headers)
 
         self.cell_viewers = columns_manager.get_viewers()
 
@@ -61,8 +63,8 @@ class ResultTabWidget(VBox):
         else:
             self.children = [name_label, self.sheet]
 
-    def _init_sheet(self, wras, columns_manager):
-        column_headers = [str(i) for i in range(wras.arity)]
+    def _init_sheet(self, wras, columns_manager, headers):
+        column_headers = list(headers)
         rows_visible = min(len(wras), 5)
         # TODO this is to avoid performance problems until paging is implemented
         nb_rows = min(len(wras), 20)
@@ -96,9 +98,9 @@ class ResultWidget(VBox):
         self._viewers = None
         self.tab = NlIconTab(layout=Layout(height="400px"))
 
-    def show_results(self, res: Dict[str, WrappedRelationalAlgebraSet]):
+    def show_results(self, res: Dict[str, WrappedRelationalAlgebraSet], pnames: dict):
         self.reset()
-        names, tablesets, self._viewers, icons = self._create_tablesets(res)
+        names, tablesets, self._viewers, icons = self._create_tablesets(res, pnames)
 
         for i, name in enumerate(names):
             self.tab.set_title(i, name)
@@ -111,7 +113,7 @@ class ResultWidget(VBox):
 
         self.children = (self.tab,) + tuple(self._viewers)
 
-    def _create_tablesets(self, res):
+    def _create_tablesets(self, res, pnames):
         answer = "ans"
 
         tablesets = []
@@ -122,7 +124,7 @@ class ResultWidget(VBox):
 
         for name, result_set in res.items():
             tableset_widget = ResultTabWidget(
-                name, result_set, layout=Layout(height="340px")
+                name, result_set, pnames[name], layout=Layout(height="340px")
             )
 
             if name == answer:
@@ -294,7 +296,11 @@ class QueryWidget(VBox):
     def run_query(self, query: str):
         with self.neurolang_engine.scope:
             self.neurolang_engine.execute_datalog_program(query)
-            return self.neurolang_engine.solve_all()
+            res = self.neurolang_engine.solve_all()
+            predicate_names = {
+                k: self.neurolang_engine.predicate_parameter_names(k) for k in res
+            }
+            return res, predicate_names
 
     def _on_query_button_clicked(self, b):
         """Runs the query in the query text area and diplays the results.
@@ -308,14 +314,14 @@ class QueryWidget(VBox):
         self._reset_output()
 
         try:
-            qresult = self.run_query(self.query.text)
+            qresult, pnames = self.run_query(self.query.text)
         except FailedParse as fp:
             self._set_error_marker(fp)
             self._handle_generic_error(fp)
         except Exception as e:
             self.handle_generic_error(e)
         else:
-            self.result_viewer.show_results(qresult)
+            self.result_viewer.show_results(qresult, pnames)
             self.result_viewer.layout.visibility = "visible"
 
     def _reset_output(self):
