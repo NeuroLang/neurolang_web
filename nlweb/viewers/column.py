@@ -77,7 +77,7 @@ class ExplicitVBRColumn(ColumnFeeder):
         self._controls.append(self._turn_on_off_btn)
 
         self._unselect_btn = Button(
-            tooltip="Unselect all selected regions",
+            tooltip="Unselect all selected regions.",
             icon=ExplicitVBRColumn.__ICON_UNSELECT,
             layout=Layout(width="30px", padding_top="20px"),
         )
