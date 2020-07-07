@@ -28,50 +28,71 @@ from traitlets import Unicode  # type: ignore
 from typing import Dict, Optional
 
 
-class ResultTabWidget(VBox):
-    """"""
+class ResultTabPageWidget(VBox):
+    """Tab page widget that displays result table and controls for each column type in the result table.."""
 
     icon = Unicode()
 
     def __init__(
-        self, name: str, wras: WrappedRelationalAlgebraSet, headers, *args, **kwargs
+        self, title: str, wras: WrappedRelationalAlgebraSet, cheaders, *args, **kwargs
     ):
+        """
+
+        Parameters
+        ----------
+        title: str
+            title for the tab page.
+        wras: WrappedRelationalAlgebraSet
+            query result for the specified `title`.
+        cheaders: list
+            column header list for result table.
+        """
         super().__init__(*args, **kwargs)
 
         self.wras = wras
 
         # create widgets
-        name_label = HTML(f"<h2>{name}</h2>")
+        title_label = HTML(f"<h2>{title}</h2>")
 
         columns_manager = ColumnsManager(self, wras.row_type)
 
-        self.sheet = self._init_sheet(self.wras, columns_manager, headers)
+        self._sheet = self._init_sheet(self.wras, columns_manager, cheaders)
 
-        self.cell_viewers = columns_manager.get_viewers()
+        self._cell_viewers = columns_manager.get_viewers()
 
-        self.controls = columns_manager.get_controls()
+        self._controls = columns_manager.get_controls()
 
-        if self.controls is not None:
-            hbox_menu = HBox(self.controls)
+        if self._controls is not None:
+            hbox_menu = HBox(self._controls)
 
-            hbox = HBox([name_label, hbox_menu])
+            hbox = HBox([title_label, hbox_menu])
             hbox.layout.justify_content = "space-between"
             hbox.layout.align_items = "center"
 
-            list_widgets = [hbox] + [self.sheet]
+            list_widgets = [hbox] + [self._sheet]
             self.children = tuple(list_widgets)
         else:
-            self.children = [name_label, self.sheet]
+            self.children = [title_label, self._sheet]
 
-    def _init_sheet(self, wras, columns_manager, headers):
-        column_headers = list(headers)
+    def _init_sheet(self, wras, columns_manager, cheaders):
+        """
+        Parameters
+        ----------
+        wras: WrappedRelationalAlgebraSet
+            query result for the specified `title`.
+        columns_manager: ColumnsManager
+
+        cheaders: list
+            column header list for result table.
+        """
         rows_visible = min(len(wras), 5)
         # TODO this is to avoid performance problems until paging is implemented
         nb_rows = min(len(wras), 20)
+
         table = sheet(
             rows=nb_rows,
             columns=wras.arity,
-            column_headers=column_headers,
+            column_headers=cheaders,
             layout=Layout(width="auto", height=f"{(50 * rows_visible) + 30}px"),
         )
 
@@ -87,75 +108,119 @@ class ResultTabWidget(VBox):
         return table
 
     def get_viewers(self):
-        return self.cell_viewers
+        """Returns list of viewers for this tab page.
+
+        list
+            list of cell viewers for this tab page.
+        """
+        return self._cell_viewers
 
 
-class ResultWidget(VBox):
-    """"""
+class QResultWidget(VBox):
+    """A widget to display query results and corresponding viewers."""
 
     def __init__(self):
         super().__init__()
+        # tab widget that displays each resultset in an individual tab
+        self._tab = NlIconTab(layout=Layout(height="400px"))
+        # viewers necessary for each resultset, can be shared among resultsets
         self._viewers = None
-        self.tab = NlIconTab(layout=Layout(height="400px"))
 
-    def show_results(self, res: Dict[str, WrappedRelationalAlgebraSet], pnames: dict):
-        self.reset()
-        names, tablesets, self._viewers, icons = self._create_tablesets(res, pnames)
+    def _create_result_tabs(
+        self, res: Dict[str, WrappedRelationalAlgebraSet], pnames: Dict
+    ):
+        """Creates necessary tab pages and viewers for the specified query result `res`.
 
-        for i, name in enumerate(names):
-            self.tab.set_title(i, name)
+        Parameters
+        ----------
+        res: Dict[str, WrappedRelationalAlgebraSet]
+           dictionary of query results with keys as result name and values as result for corresponding key.
+        pnames: Dict[str, tuple]
+           dictionary of query result column names with keys as result name and values as tuple of column names for corresponding key.
 
-        self.tab.children = tablesets
-
-        self.tab.title_icons = icons
-
-        self.tab.selected_index = 0
-
-        self.children = (self.tab,) + tuple(self._viewers)
-
-    def _create_tablesets(self, res, pnames):
+        Returns
+        -------
+        result_tabs: list
+            list of tab pages to be added to tab as children. 
+        titles: list
+            list of titles for tab pages.
+        icons: list
+            list of icons for tab pages.
+        viewers: set
+            set of viewers for all tab pages.
+        """
+        # name for answer/main resultset
         answer = "ans"
 
-        tablesets = []
-        names = []
+        result_tabs = []
+        titles = []
         icons = []
 
+        # set of all viewers for each result_tab
         viewers = set()
 
+        def icon_changed(change):
+            icons = []
+
+            for result_tab in result_tabs:
+                icons.append(result_tab.icon)
+            self._tab.title_icons = icons
+
         for name, result_set in res.items():
-            tableset_widget = ResultTabWidget(
-                name, result_set, pnames[name], layout=Layout(height="340px")
+            result_tab = ResultTabPageWidget(
+                name, result_set, list(pnames[name]), layout=Layout(height="340px")
             )
 
             if name == answer:
-                tablesets.insert(0, tableset_widget)
-                names.insert(0, name)
-                icons.insert(0, tableset_widget.icon)
+                result_tabs.insert(0, result_tab)
+                titles.insert(0, name)
+                icons.insert(0, result_tab.icon)
             else:
-                tablesets.append(tableset_widget)
-                names.append(name)
-                icons.append(tableset_widget.icon)
+                result_tabs.append(result_tab)
+                titles.append(name)
+                icons.append(result_tab.icon)
 
-            viewers = viewers | tableset_widget.get_viewers()
+            result_tab.observe(icon_changed, names="icon")
 
-            def icon_changed(change):
-                icons = []
+            viewers = viewers | result_tab.get_viewers()
 
-                for tableset in tablesets:
-                    icons.append(tableset.icon)
-                self.tab.title_icons = icons
+        return result_tabs, titles, icons, viewers
 
-            tableset_widget.observe(icon_changed, names="icon")
+    def show_results(self, res: Dict[str, WrappedRelationalAlgebraSet], pnames: Dict):
+        """Creates and displays necessary tab pages and viewers for the specified query result `res`.
 
-        return names, tablesets, viewers, icons
+        Parameters
+        ----------
+        res: Dict[str, WrappedRelationalAlgebraSet]
+           dictionary of query results with keys as result name and values as result for corresponding key.
+        pnames: Dict[str, tuple]
+           dictionary of query result column names with keys as result name and values as tuple of column names for corresponding key.
+        """
+        self.reset()
+
+        result_tabs, titles, icons, self._viewers = self._create_result_tabs(
+            res, pnames
+        )
+
+        self._tab.children = result_tabs
+
+        for i, title in enumerate(titles):
+            self._tab.set_title(i, title)
+
+        self._tab.title_icons = icons
+
+        self._tab.selected_index = 0
+
+        self.children = (self._tab,) + tuple(self._viewers)
 
     def reset(self):
+        """Resets this query result widget removing all tabs in tab widget and resetting and removing all viewers."""
         if self._viewers is not None:
             for viewer in self._viewers:
                 viewer.reset()
         self._viewers = None
 
-        self.tab.reset()
+        self._tab.reset()
 
 
 class SymbolsWidget(HBox):
@@ -289,7 +354,7 @@ class QueryWidget(VBox):
         for i, tab_title in enumerate(["query", "symbols"]):
             self.query_section.set_title(i, tab_title)
 
-        self.result_viewer = ResultWidget()
+        self.result_viewer = QResultWidget()
 
         self.children = [self.query_section, self.result_viewer]
 
