@@ -1,6 +1,6 @@
 import html
 
-from ipysheet import row, sheet  # type: ignore
+from ipysheet import hold_cells, row, sheet  # type: ignore
 from ipywidgets import (
     Button,
     HBox,
@@ -100,15 +100,16 @@ class ResultTabPageWidget(VBox):
             layout=Layout(width="auto", height=f"{(50 * rows_visible) + 30}px"),
         )
 
-        for i, tuple_ in enumerate(wras.unwrapped_iter()):
-            row_temp = []
-            for j, el in enumerate(tuple_):
-                cell_widget = columns_manager.get_cell_widget(j, el)
-                row_temp.append(cell_widget)
-            row(i, row_temp)
-            # TODO this is to avoid performance problems until paging is implemented
-            if i == nb_rows - 1:
-                break
+        with hold_cells():
+            for i, tuple_ in enumerate(wras.unwrapped_iter()):
+                row_temp = []
+                for j, el in enumerate(tuple_):
+                    cell_widget = columns_manager.get_cell_widget(j, el)
+                    row_temp.append(cell_widget)
+                row(i, row_temp)
+                # TODO this is to avoid performance problems until paging is implemented
+                if i == nb_rows - 1:
+                    break
         return table
 
     def get_viewers(self):
