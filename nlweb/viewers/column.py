@@ -48,7 +48,13 @@ class ColumnFeeder:
         ipywidgets.widgets.Label
 
         """
-        return LabelCellWidget(str(obj))
+        obj_converted = obj
+        if isinstance(obj, float):
+            obj_converted = round(float(obj), 3)
+        elif isinstance(obj, int):
+            obj_converted = int(obj)
+
+        return LabelCellWidget(str(obj_converted))
 
 
 class ExplicitVBRColumn(ColumnFeeder):
