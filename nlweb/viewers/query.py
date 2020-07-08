@@ -101,10 +101,10 @@ class ResultTabPageWidget(VBox):
         )
 
         with hold_cells():
-            for i, tuple_ in enumerate(wras.unwrapped_iter()):
+            for i, wras_row in enumerate(wras.unwrapped_iter()):
                 row_temp = []
-                for j, el in enumerate(tuple_):
-                    cell_widget = columns_manager.get_cell_widget(j, el)
+                for j, wras_col in enumerate(wras_row):
+                    cell_widget = columns_manager.get_cell_widget(j, wras_col)
                     row_temp.append(cell_widget)
                 row(i, row_temp)
                 # TODO this is to avoid performance problems until paging is implemented
