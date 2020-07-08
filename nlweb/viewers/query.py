@@ -52,7 +52,9 @@ class ResultTabPageWidget(VBox):
         self.wras = wras
 
         # create widgets
-        title_label = HTML(f"<h2>{title}</h2>")
+        title_label = HTML(
+            f"<h3>{title}</h3>", layout=Layout(padding="0px 5px 5px 0px")
+        )
 
         columns_manager = ColumnsManager(self, wras.row_type)
 
@@ -62,17 +64,19 @@ class ResultTabPageWidget(VBox):
 
         self._controls = columns_manager.get_controls()
 
+        hbox_title = HBox()
+        hbox_title.layout.justify_content = "space-between"
+        hbox_title.layout.align_items = "center"
+
         if self._controls is not None:
             hbox_menu = HBox(self._controls)
+            hbox_title.children = [title_label, hbox_menu]
 
-            hbox = HBox([title_label, hbox_menu])
-            hbox.layout.justify_content = "space-between"
-            hbox.layout.align_items = "center"
-
-            list_widgets = [hbox] + [self._sheet]
-            self.children = tuple(list_widgets)
         else:
-            self.children = [title_label, self._sheet]
+            hbox_title.children = [title_label]
+
+        list_widgets = [hbox_title] + [self._sheet]
+        self.children = tuple(list_widgets)
 
     def _init_sheet(self, wras, columns_manager, cheaders):
         """
@@ -85,9 +89,9 @@ class ResultTabPageWidget(VBox):
         cheaders: list
             column header list for result table.
         """
-        rows_visible = min(len(wras), 5)
+        rows_visible = min(len(wras), 10)
         # TODO this is to avoid performance problems until paging is implemented
-        nb_rows = min(len(wras), 20)
+        nb_rows = min(len(wras), 10)
 
         table = sheet(
             rows=nb_rows,
@@ -122,7 +126,7 @@ class QResultWidget(VBox):
     def __init__(self):
         super().__init__()
         # tab widget that displays each resultset in an individual tab
-        self._tab = NlIconTab(layout=Layout(height="400px"))
+        self._tab = NlIconTab(layout=Layout(height="460px"))
         # viewers necessary for each resultset, can be shared among resultsets
         self._viewers = None
 
@@ -168,7 +172,7 @@ class QResultWidget(VBox):
 
         for name, result_set in res.items():
             result_tab = ResultTabPageWidget(
-                name, result_set, list(pnames[name]), layout=Layout(height="340px")
+                name, result_set, list(pnames[name]), layout=Layout(height="100%")
             )
 
             if name == answer:

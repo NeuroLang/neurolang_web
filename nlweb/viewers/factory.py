@@ -6,7 +6,7 @@ from .papaya_widget import PapayaWidget
 
 
 class ViewerFactory:
-    papaya_viewer = PapayaWidget(layout=Layout(width="auto", height="600px"))
+    papaya_viewer = PapayaWidget(layout=Layout(width="auto", height="570px"))
 
     @staticmethod
     def get_region_viewer():
