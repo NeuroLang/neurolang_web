@@ -1,6 +1,6 @@
 import html
 
-from ipysheet import hold_cells, row, sheet  # type: ignore
+from ipysheet import cell, hold_cells, sheet  # type: ignore
 from ipywidgets import (
     Button,
     HBox,
@@ -25,7 +25,7 @@ from tatsu.exceptions import FailedParse
 
 from traitlets import Unicode  # type: ignore
 
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 
 class ResultTabPageWidget(VBox):
@@ -78,7 +78,12 @@ class ResultTabPageWidget(VBox):
         list_widgets = [hbox_title] + [self._sheet]
         self.children = tuple(list_widgets)
 
-    def _init_sheet(self, wras, columns_manager, cheaders):
+    def _init_sheet(
+        self,
+        wras: WrappedRelationalAlgebraSet,
+        columns_manager: ColumnsManager,
+        cheaders: List,
+    ):
         """
         Parameters
         ----------
@@ -102,11 +107,8 @@ class ResultTabPageWidget(VBox):
 
         with hold_cells():
             for i, wras_row in enumerate(wras.unwrapped_iter()):
-                row_temp = []
                 for j, wras_col in enumerate(wras_row):
-                    cell_widget = columns_manager.get_cell_widget(j, wras_col)
-                    row_temp.append(cell_widget)
-                row(i, row_temp)
+                    cell(i, j, columns_manager.get_cell_widget(j, wras_col))
                 # TODO this is to avoid performance problems until paging is implemented
                 if i == nb_rows - 1:
                     break
