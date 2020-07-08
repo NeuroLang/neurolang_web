@@ -116,7 +116,8 @@ class ExplicitVBRColumn(ColumnFeeder):
             if e_widget.is_region_selected:
                 images.append(e_widget.image)
                 e_widget.undo_select()
-        self._viewer.remove(images)
+        if len(images) != 0:
+            self._viewer.remove(images)
 
     def _on_turn_on_off_btn_clicked(self, b):
         images = []
@@ -130,10 +131,12 @@ class ExplicitVBRColumn(ColumnFeeder):
             self._turn_on_off_btn.icon = ExplicitVBRColumn.__ICON_OFF
             self._turn_on_off_btn.tooltip = ExplicitVBRColumn.__TOOLTIP_OFF
             self._unselect_btn.disabled = True
-            self._viewer.remove(images)
+            if len(images) != 0:
+                self._viewer.remove(images)
         else:
             if self._viewer.can_add(images):
-                self._viewer.add(images)
+                if len(images) != 0:
+                    self._viewer.add(images)
                 self._column_on = True
                 self._turn_on_off_btn.icon = ExplicitVBRColumn.__ICON_ON
                 self._turn_on_off_btn.tooltip = ExplicitVBRColumn.__TOOLTIP_ON
