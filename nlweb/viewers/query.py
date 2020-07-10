@@ -48,49 +48,48 @@ class ResultTabPageWidget(VBox):
             column header list for result table.
         """
         super().__init__(*args, **kwargs)
-
         self.loaded = False
-
         self._df = wras.as_pandas_dataframe()
+
         # initialize columns manager that generates widgets for each column, column viewers, and controls
         self._columns_manager = ColumnsManager(self, wras.row_type)
         self._limit = 20
 
-        self._total_nb_rows = len(wras)
+        self._title = title
+        self._total_nb_rows = self._df.shape[0]
         self._nb_cols = wras.arity
         self._cheaders = cheaders
-
-        # initialize widgets
-        # set tab page title
-        title_label = HTML(
-            f"<h3>{title}</h3>", layout=Layout(padding="0px 5px 5px 0px")
-        )
-
-        # this creates the ipysheet with key title and sets it as current
-        self._table = self._init_table()
-        self._load_table_cols(1, self._limit)
-
-        hbox_title = HBox()
-        hbox_title.layout.justify_content = "space-between"
-        hbox_title.layout.align_items = "center"
-
-        self._controls = self._columns_manager.get_controls()
-        if self._controls is not None:
-            hbox_menu = HBox(self._controls)
-            hbox_title.children = [title_label, hbox_menu]
-
-        else:
-            hbox_title.children = [title_label]
-
-        self.children = [hbox_title, self._table]
-
         self._cell_viewers = self._columns_manager.get_viewers()
+        self._controls = self._columns_manager.get_controls()
+
+        self.load()
 
     def load(self):
         if not self.loaded:
             self.loaded = True
 
+            # initialize widgets
+            # set tab page title
+            title_label = HTML(
+                f"<h3>{self._title}</h3>", layout=Layout(padding="0px 5px 5px 0px")
+            )
+
+            # this creates the ipysheet with key title and sets it as current
+            self._table = self._init_table()
             self._load_table_cols(1, self._limit)
+
+            hbox_title = HBox()
+            hbox_title.layout.justify_content = "space-between"
+            hbox_title.layout.align_items = "center"
+
+            if self._controls is not None:
+                hbox_menu = HBox(self._controls)
+                hbox_title.children = [title_label, hbox_menu]
+
+            else:
+                hbox_title.children = [title_label]
+
+            self.children = [hbox_title, self._table]
 
     def _init_table(self):
         """
