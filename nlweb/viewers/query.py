@@ -184,9 +184,6 @@ class QResultWidget(VBox):
         viewers: set
             set of viewers for all tab pages.
         """
-        # name for answer/main resultset
-        answer = "ans"
-
         result_tabs = []
         titles = []
         icons = []
@@ -207,14 +204,9 @@ class QResultWidget(VBox):
                 name, result_set, list(pnames[name]), layout=Layout(height="100%")
             )
 
-            if name == answer:
-                result_tabs.insert(0, result_tab)
-                titles.insert(0, name)
-                icons.insert(0, result_tab.icon)
-            else:
-                result_tabs.append(result_tab)
-                titles.append(name)
-                icons.append(result_tab.icon)
+            result_tabs.append(result_tab)
+            titles.append(name)
+            icons.append(result_tab.icon)
 
             result_tab.observe(icon_changed, names="icon")
 
