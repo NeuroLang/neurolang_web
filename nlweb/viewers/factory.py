@@ -100,3 +100,18 @@ class ColumnsManager:
             if column.controls is not None:
                 controls.extend(column.controls)
         return controls
+
+    def get_column_feeder(self, index):
+        """Returns column feeder at the specified `index`.
+
+        Parameters
+        ----------
+        index: int
+            index of column feeder.
+
+        Returns
+        -------
+        ColumnFeeder
+            the column feeder at the specified `index`.
+        """
+        return self.columns[index]
