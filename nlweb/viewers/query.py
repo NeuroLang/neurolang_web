@@ -62,8 +62,6 @@ class ResultTabPageWidget(VBox):
         self._cell_viewers = self._columns_manager.get_viewers()
         self._controls = self._columns_manager.get_controls()
 
-        self.load()
-
     def load(self):
         if not self.loaded:
             self.loaded = True
