@@ -212,6 +212,12 @@ class QResultWidget(VBox):
 
         return result_tabs, titles, icons, viewers
 
+    def _tab_index_changed(self, change):
+        tab_page = self._tab.children[self._tab.selected_index]
+
+        if not tab_page.loaded:
+            tab_page.load()
+
     def show_results(self, res: Dict[str, WrappedRelationalAlgebraSet], pnames: Dict):
         """Creates and displays necessary tab pages and viewers for the specified query result `res`.
 
@@ -235,7 +241,11 @@ class QResultWidget(VBox):
 
         self._tab.title_icons = icons
 
+        # observe to load each table upon tab selection
+        self._tab.observe(self._tab_index_changed, names="selected_index")
+
         self._tab.selected_index = 0
+        self._tab_index_changed(None)
 
         self.children = (self._tab,) + tuple(self._viewers)
 
