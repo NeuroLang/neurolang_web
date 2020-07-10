@@ -25,7 +25,7 @@ from tatsu.exceptions import FailedParse
 
 from traitlets import Unicode  # type: ignore
 
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 
 class ResultTabPageWidget(VBox):
@@ -49,12 +49,16 @@ class ResultTabPageWidget(VBox):
         """
         super().__init__(*args, **kwargs)
 
-        df = wras.as_pandas_dataframe()
+        self.loaded = False
+
+        self._df = wras.as_pandas_dataframe()
         # initialize columns manager that generates widgets for each column, column viewers, and controls
-        columns_manager = ColumnsManager(self, wras.row_type)
+        self._columns_manager = ColumnsManager(self, wras.row_type)
         self._limit = 20
-        total_nb_rows = len(wras)
-        nb_cols = wras.arity
+
+        self._total_nb_rows = len(wras)
+        self._nb_cols = wras.arity
+        self._cheaders = cheaders
 
         # initialize widgets
         # set tab page title
@@ -63,16 +67,14 @@ class ResultTabPageWidget(VBox):
         )
 
         # this creates the ipysheet with key title and sets it as current
-        self._table = self._init_table(
-            title, min(total_nb_rows, self._limit), nb_cols, cheaders
-        )
-        self._load_cols(df, columns_manager, 1, self._limit)
+        self._table = self._init_table()
+        self._load_table_cols(1, self._limit)
 
         hbox_title = HBox()
         hbox_title.layout.justify_content = "space-between"
         hbox_title.layout.align_items = "center"
 
-        self._controls = columns_manager.get_controls()
+        self._controls = self._columns_manager.get_controls()
         if self._controls is not None:
             hbox_menu = HBox(self._controls)
             hbox_title.children = [title_label, hbox_menu]
@@ -82,16 +84,20 @@ class ResultTabPageWidget(VBox):
 
         self.children = [hbox_title, self._table]
 
-        self._cell_viewers = columns_manager.get_viewers()
+        self._cell_viewers = self._columns_manager.get_viewers()
 
-    def _init_table(self, title: str, nb_rows: int, nb_cols: int, cheaders: List):
+    def load(self):
+        if not self.loaded:
+            self.loaded = True
+
+            self._load_table_cols(1, self._limit)
+
+    def _init_table(self):
         """
         Creates and returns the table to view the contents of wras.
 
         Parameters
         ----------
-        title: str
-            title of this table.
         nb_rows: int
             number of rows for the table.
         nb_cols: int
@@ -105,24 +111,17 @@ class ResultTabPageWidget(VBox):
             table to view the contents of the wras.
         """
 
-        visible_rows = 10
-
         return sheet(
-            key=title,
-            rows=nb_rows,
-            columns=nb_cols,
-            column_headers=cheaders,
-            layout=Layout(width="auto", height=f"{(30 * (visible_rows + 1))}px"),
+            rows=min(self._total_nb_rows, self._limit),
+            columns=self._nb_cols,
+            column_headers=self._cheaders,
+            layout=Layout(width="auto", height="330px"),
         )
 
-    def _load_cols(self, df, columns_manager, page, limit):
+    def _load_table_cols(self, page, limit):
         """
         Parameters
         ----------
-        df: pandas.DataFrame
-            query result.
-        columns_manager: ColumnsManager
-            columns manager for the specified `wras`.
         page: int
             page number to view.
         limit: int
@@ -130,12 +129,12 @@ class ResultTabPageWidget(VBox):
         """
 
         start = (page - 1) * limit
-        end = min(start + limit, len(df))
+        end = min(start + limit, len(self._df))
 
         with hold_cells():
-            for col_index, column_id in enumerate(df.columns):
-                column_data = df[column_id]
-                column_feeder = columns_manager.get_column_feeder(col_index)
+            for col_index, column_id in enumerate(self._df.columns):
+                column_data = self._df[column_id]
+                column_feeder = self._columns_manager.get_column_feeder(col_index)
                 rows = []
 
                 for row_index in range(start, end):
