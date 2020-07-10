@@ -63,7 +63,7 @@ class ResultTabPageWidget(VBox):
         )
 
         # this creates the ipysheet with key title and sets it as current
-        table = self._init_table(
+        self._table = self._init_table(
             title, min(total_nb_rows, self._limit), nb_cols, cheaders
         )
         self._load_cols(df, columns_manager, 1, self._limit)
@@ -80,7 +80,7 @@ class ResultTabPageWidget(VBox):
         else:
             hbox_title.children = [title_label]
 
-        self.children = [hbox_title, table]
+        self.children = [hbox_title, self._table]
 
         self._cell_viewers = columns_manager.get_viewers()
 
