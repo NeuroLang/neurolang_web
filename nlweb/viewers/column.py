@@ -54,7 +54,7 @@ class ColumnFeeder:
         elif isinstance(obj, int):
             obj_converted = int(obj)
 
-        return LabelCellWidget(str(obj_converted))
+        return str(obj_converted)
 
 
 class ExplicitVBRColumn(ColumnFeeder):
