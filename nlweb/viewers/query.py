@@ -1,6 +1,6 @@
 import html
 
-from ipysheet import cell, hold_cells, sheet  # type: ignore
+from ipysheet import column, hold_cells, sheet  # type: ignore
 from ipywidgets import (
     Button,
     HBox,
@@ -25,7 +25,7 @@ from tatsu.exceptions import FailedParse
 
 from traitlets import Unicode  # type: ignore
 
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 
 class ResultTabPageWidget(VBox):
@@ -48,71 +48,95 @@ class ResultTabPageWidget(VBox):
             column header list for result table.
         """
         super().__init__(*args, **kwargs)
+        self.loaded = False
+        self._df = wras.as_pandas_dataframe()
 
-        self.wras = wras
+        # initialize columns manager that generates widgets for each column, column viewers, and controls
+        self._columns_manager = ColumnsManager(self, wras.row_type)
+        self._limit = 20
 
-        # create widgets
-        title_label = HTML(
-            f"<h3>{title}</h3>", layout=Layout(padding="0px 5px 5px 0px")
+        self._title = title
+        self._total_nb_rows = self._df.shape[0]
+        self._nb_cols = wras.arity
+        self._cheaders = cheaders
+        self._cell_viewers = self._columns_manager.get_viewers()
+        self._controls = self._columns_manager.get_controls()
+
+    def load(self):
+        if not self.loaded:
+            self.loaded = True
+
+            # initialize widgets
+            # set tab page title
+            title_label = HTML(
+                f"<h3>{self._title}</h3>", layout=Layout(padding="0px 5px 5px 0px")
+            )
+
+            # this creates the ipysheet with key title and sets it as current
+            self._table = self._init_table()
+            self._load_table_cols(1, self._limit)
+
+            hbox_title = HBox()
+            hbox_title.layout.justify_content = "space-between"
+            hbox_title.layout.align_items = "center"
+
+            if self._controls is not None:
+                hbox_menu = HBox(self._controls)
+                hbox_title.children = [title_label, hbox_menu]
+
+            else:
+                hbox_title.children = [title_label]
+
+            self.children = [hbox_title, self._table]
+
+    def _init_table(self):
+        """
+        Creates and returns the table to view the contents of wras.
+
+        Parameters
+        ----------
+        nb_rows: int
+            number of rows for the table.
+        nb_cols: int
+            number of columns for the table.
+        cheaders: list
+            list of columns headers.
+
+        Returns
+        -------
+        ipysheet.sheet
+            table to view the contents of the wras.
+        """
+
+        return sheet(
+            rows=min(self._total_nb_rows, self._limit),
+            columns=self._nb_cols,
+            column_headers=self._cheaders,
+            layout=Layout(width="auto", height="330px"),
         )
 
-        columns_manager = ColumnsManager(self, wras.row_type)
-
-        self._sheet = self._init_sheet(self.wras, columns_manager, cheaders)
-
-        self._cell_viewers = columns_manager.get_viewers()
-
-        self._controls = columns_manager.get_controls()
-
-        hbox_title = HBox()
-        hbox_title.layout.justify_content = "space-between"
-        hbox_title.layout.align_items = "center"
-
-        if self._controls is not None:
-            hbox_menu = HBox(self._controls)
-            hbox_title.children = [title_label, hbox_menu]
-
-        else:
-            hbox_title.children = [title_label]
-
-        list_widgets = [hbox_title] + [self._sheet]
-        self.children = tuple(list_widgets)
-
-    def _init_sheet(
-        self,
-        wras: WrappedRelationalAlgebraSet,
-        columns_manager: ColumnsManager,
-        cheaders: List,
-    ):
+    def _load_table_cols(self, page, limit):
         """
         Parameters
         ----------
-        wras: WrappedRelationalAlgebraSet
-            query result for the specified `title`.
-        columns_manager: ColumnsManager
-
-        cheaders: list
-            column header list for result table.
+        page: int
+            page number to view.
+        limit: int
+            number of rows to display.
         """
-        rows_visible = min(len(wras), 10)
-        # TODO this is to avoid performance problems until paging is implemented
-        nb_rows = min(len(wras), 10)
 
-        table = sheet(
-            rows=nb_rows,
-            columns=wras.arity,
-            column_headers=cheaders,
-            layout=Layout(width="auto", height=f"{(50 * rows_visible) + 30}px"),
-        )
+        start = (page - 1) * limit
+        end = min(start + limit, len(self._df))
 
         with hold_cells():
-            for i, wras_row in enumerate(wras.unwrapped_iter()):
-                for j, wras_col in enumerate(wras_row):
-                    cell(i, j, columns_manager.get_cell_widget(j, wras_col))
-                # TODO this is to avoid performance problems until paging is implemented
-                if i == nb_rows - 1:
-                    break
-        return table
+            for col_index, column_id in enumerate(self._df.columns):
+                column_data = self._df[column_id]
+                column_feeder = self._columns_manager.get_column_feeder(col_index)
+                rows = []
+
+                for row_index in range(start, end):
+                    rows.append(column_feeder.get_widget(column_data[row_index]))
+                    column(col_index, rows, row_start=0)
 
     def get_viewers(self):
         """Returns list of viewers for this tab page.
@@ -148,7 +172,7 @@ class QResultWidget(VBox):
         Returns
         -------
         result_tabs: list
-            list of tab pages to be added to tab as children. 
+            list of tab pages to be added to tab as children.
         titles: list
             list of titles for tab pages.
         icons: list
@@ -156,9 +180,6 @@ class QResultWidget(VBox):
         viewers: set
             set of viewers for all tab pages.
         """
-        # name for answer/main resultset
-        answer = "ans"
-
         result_tabs = []
         titles = []
         icons = []
@@ -173,25 +194,27 @@ class QResultWidget(VBox):
                 icons.append(result_tab.icon)
             self._tab.title_icons = icons
 
-        for name, result_set in res.items():
+        for name in sorted(res.keys()):
+            result_set = res[name]
             result_tab = ResultTabPageWidget(
                 name, result_set, list(pnames[name]), layout=Layout(height="100%")
             )
 
-            if name == answer:
-                result_tabs.insert(0, result_tab)
-                titles.insert(0, name)
-                icons.insert(0, result_tab.icon)
-            else:
-                result_tabs.append(result_tab)
-                titles.append(name)
-                icons.append(result_tab.icon)
+            result_tabs.append(result_tab)
+            titles.append(name)
+            icons.append(result_tab.icon)
 
             result_tab.observe(icon_changed, names="icon")
 
             viewers = viewers | result_tab.get_viewers()
 
         return result_tabs, titles, icons, viewers
+
+    def _tab_index_changed(self, change):
+        tab_page = self._tab.children[self._tab.selected_index]
+
+        if not tab_page.loaded:
+            tab_page.load()
 
     def show_results(self, res: Dict[str, WrappedRelationalAlgebraSet], pnames: Dict):
         """Creates and displays necessary tab pages and viewers for the specified query result `res`.
@@ -216,7 +239,11 @@ class QResultWidget(VBox):
 
         self._tab.title_icons = icons
 
+        # observe to load each table upon tab selection
+        self._tab.observe(self._tab_index_changed, names="selected_index")
+
         self._tab.selected_index = 0
+        self._tab_index_changed(None)
 
         self.children = (self._tab,) + tuple(self._viewers)
 
@@ -266,25 +293,23 @@ class SymbolsWidget(HBox):
 
 
 _help_message_style = """
-<style>
+
+
+<style >
   .help-section {
-    margin-left: 5px;
-  }
+    margin-left: 5px;}
 
   .help-header {
     background: lightGray;
-    border-bottom: 1px solid black;
-  }
+    border-bottom: 1px solid black;}
 
   .help-body {
     padding-left: 5px;
-    padding-top: 5px;
-  }
+    padding-top: 5px;}
 
   .unavailable {
-    background: lightyellow;
-  }
-</style>
+    background: lightyellow;}
+</style >
 """
 
 
@@ -297,14 +322,14 @@ def _format_help_message(symbol: str, help: Optional[str]) -> str:
 
     markup = f"""
     {_help_message_style}
-    <div class="help-section">
-      <p class="help-header">
-        <i class="fa fa-fw fa-question-circle" aria-hidden="true"></i>help for <b>{symbol}</b>
-      </p>
-      <div class="help-body">
+    <div class = "help-section" >
+      <p class = "help-header" >
+        <i class = "fa fa-fw fa-question-circle" aria-hidden = "true" > </i > help for < b > {symbol} < /b >
+      </p >
+      <div class = "help-body" >
         {body}
-      </div>
-    </div>
+      </div >
+    </div >
     """
     return markup
 
