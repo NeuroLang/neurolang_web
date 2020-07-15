@@ -53,7 +53,14 @@ class ColumnsManager:
     def __init__(self, result_tab, column_types: tuple):
         self.columns = []
 
+        self._hasVBRColumn = False
+
         for column_type in column_types.__args__:
+            if (
+                column_type == neurolang.regions.ExplicitVBR
+                or column_type == neurolang.regions.ExplicitVBROverlay
+            ):
+                self._hasVBRColumn = True
             self.columns.append(ColumnFeederFactory.get_column(result_tab, column_type))
 
     def get_cell_widget(self, index, obj):
@@ -115,3 +122,8 @@ class ColumnsManager:
             the column feeder at the specified `index`.
         """
         return self.columns[index]
+
+    @property
+    def hasVBRColumn(self):
+        """Returns `True` if this column manager contains a `neurolang.regions.ExplicitVBR` or `neurolang.regions.ExplicitVBROverlay` column; False otherwise. """
+        return self._hasVBRColumn

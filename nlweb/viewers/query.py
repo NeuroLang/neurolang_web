@@ -2,15 +2,19 @@ import html
 
 from ipysheet import column, hold_cells, sheet  # type: ignore
 from ipywidgets import (
+    BoundedIntText,
     Button,
     HBox,
     HTML,
+    Label,
     Layout,
     Select,
     Tab,
     Text,
     VBox,
 )  # type: ignore
+
+from math import ceil  # type:ignore
 
 from neurolang.datalog.wrapped_collections import (
     WrappedRelationalAlgebraSet,
@@ -23,9 +27,108 @@ from nlweb.viewers.factory import ColumnsManager
 # a unified exceptions hierarchy
 from tatsu.exceptions import FailedParse
 
-from traitlets import Unicode  # type: ignore
+from traitlets import Int, Unicode  # type: ignore
 
 from typing import Dict, Optional
+
+
+class PaginationWidget(HBox):
+    """A pagination widget that enables setting page number and the number of rows per page.
+    """
+
+    # number of rows in a page by default
+    DEFAULT_LIMIT = 50
+    # max number of rows to avoid performance problems
+    MAX_LIMIT = 100
+
+    # current page number
+    page = Int()
+    # number of rows per page.
+    limit = Int()
+
+    def __init__(self, nb_rows, limit=50, *args, **kwargs):
+        """
+        Parameters
+        ----------
+        nb_rows: int
+            total number of rows in the result set.
+        limit: int
+            number of rows to display in a page.
+
+        """
+        super().__init__(*args, **kwargs)
+
+        self.__nb_rows = nb_rows if nb_rows else 1
+        self.page = 1
+        self.limit = (
+            limit
+            if limit and limit > 0 and limit < PaginationWidget.MAX_LIMIT
+            else PaginationWidget.DEFAULT_LIMIT
+        )
+
+        self.layout.width = "400px"
+
+        if nb_rows > limit:
+            self.layout.visibility = "visible"
+        else:
+            self.layout.visibility = "hidden"
+
+        nb_pages = self._get_nb_pages(self.limit)
+
+        # widget to set page number
+        self.__page_widget = BoundedIntText(
+            value=self.page,
+            min=1,
+            max=nb_pages,
+            step=1,
+            description="page",
+            description_tooltip="Current page",
+            disabled=False,
+            style={"description_width": "30px"},
+            layout=Layout(width="90px", max_width="90px"),
+        )
+
+        # widget to display total number of pages.
+        self.__label_slash = Label(value=f"/ {nb_pages}", layout=Layout(width="60px"))
+
+        # widget to set limit
+        self.__limit_widget = BoundedIntText(
+            value=self.limit,
+            min=1,
+            max=PaginationWidget.MAX_LIMIT,
+            step=1,
+            description="rows",
+            description_tooltip=f"Number of rows per page. Max. possible: {PaginationWidget.MAX_LIMIT}",
+            disabled=False,
+            style={"description_width": "30px"},
+            layout=Layout(width="90px", max_width="90px"),
+        )
+
+        self.__page_widget.observe(self._page_widget_changed, names="value")
+        self.__limit_widget.observe(self._limit_widget_changed, names="value")
+
+        self.children = [self.__page_widget, self.__label_slash, self.__limit_widget]
+
+    def _get_nb_pages(self, limit):
+        return ceil(self.__nb_rows / self.limit)
+
+    def _page_widget_changed(self, change):
+        self.page = change.new
+
+    def _limit_widget_changed(self, change):
+        new_limit = change.new
+        # update limit
+        self.limit = new_limit
+        self.page = 1
+
+        nb_pages = self._get_nb_pages(new_limit)
+
+        # update page widget
+        self.__page_widget.max = nb_pages
+        self.__page_widget.value = 1
+
+        # update label slash widget
+        self.__label_slash.value = f"/ {nb_pages}"
 
 
 class ResultTabPageWidget(VBox):
@@ -50,72 +153,66 @@ class ResultTabPageWidget(VBox):
         super().__init__(*args, **kwargs)
         self.loaded = False
         self._df = wras.as_pandas_dataframe()
-
-        # initialize columns manager that generates widgets for each column, column viewers, and controls
-        self._columns_manager = ColumnsManager(self, wras.row_type)
-        self._limit = 20
-
         self._title = title
         self._total_nb_rows = self._df.shape[0]
         self._nb_cols = wras.arity
         self._cheaders = cheaders
+
+        # initialize columns manager that generates widgets for each column, column viewers, and controls
+        self._columns_manager = ColumnsManager(self, wras.row_type)
+
         self._cell_viewers = self._columns_manager.get_viewers()
         self._controls = self._columns_manager.get_controls()
+
+        self._create_title()
+
+    def _create_title(self):
+        # initialize widgets
+        # set tab page title
+        title_label = HTML(
+            f"<h3>{self._title}</h3>", layout=Layout(padding="0px 5px 5px 0px")
+        )
+
+        self._hbox_title = HBox(
+            layout=Layout(justify_content="space-between", align_items="center")
+        )
+
+        self._hbox_title.children = [title_label]
+
+        # add paginator is there exist no ExplicitVBR or ExplicitVBROverlay column
+        if not self._columns_manager.hasVBRColumn:
+            paginator = PaginationWidget(self._df.shape[0])
+            self._limit = paginator.limit
+            paginator.observe(self._page_number_changed, names="page")
+            paginator.observe(self._limit_changed, names="limit")
+
+            self._hbox_title.children = self._hbox_title.children + (paginator,)
+        else:
+            self._limit = self._total_nb_rows
+
+        if self._controls is not None:
+            hbox_menu = HBox(self._controls)
+            self._hbox_title.children = self._hbox_title.children + (hbox_menu,)
 
     def load(self):
         if not self.loaded:
             self.loaded = True
 
-            # initialize widgets
-            # set tab page title
-            title_label = HTML(
-                f"<h3>{self._title}</h3>", layout=Layout(padding="0px 5px 5px 0px")
-            )
+            self._load_table(1, self._limit)
 
-            # this creates the ipysheet with key title and sets it as current
-            self._table = self._init_table()
-            self._load_table_cols(1, self._limit)
+            self.children = [self._hbox_title, self._table]
 
-            hbox_title = HBox()
-            hbox_title.layout.justify_content = "space-between"
-            hbox_title.layout.align_items = "center"
+    def _page_number_changed(self, change):
+        self._load_table(change.new, self._limit)
+        self.children = [self.children[0], self._table]
 
-            if self._controls is not None:
-                hbox_menu = HBox(self._controls)
-                hbox_title.children = [title_label, hbox_menu]
+    def _limit_changed(self, change):
+        print("called limit changed")
+        self._limit = change.new
+        self._load_table(1, self._limit)
+        self.children = [self.children[0], self._table]
 
-            else:
-                hbox_title.children = [title_label]
-
-            self.children = [hbox_title, self._table]
-
-    def _init_table(self):
-        """
-        Creates and returns the table to view the contents of wras.
-
-        Parameters
-        ----------
-        nb_rows: int
-            number of rows for the table.
-        nb_cols: int
-            number of columns for the table.
-        cheaders: list
-            list of columns headers.
-
-        Returns
-        -------
-        ipysheet.sheet
-            table to view the contents of the wras.
-        """
-
-        return sheet(
-            rows=min(self._total_nb_rows, self._limit),
-            columns=self._nb_cols,
-            column_headers=self._cheaders,
-            layout=Layout(width="auto", height="330px"),
-        )
-
-    def _load_table_cols(self, page, limit):
+    def _load_table(self, page, limit):
         """
         Parameters
         ----------
@@ -124,6 +221,12 @@ class ResultTabPageWidget(VBox):
         limit: int
             number of rows to display.
         """
+        self._table = sheet(
+            rows=min(self._total_nb_rows, self._limit),
+            columns=self._nb_cols,
+            column_headers=self._cheaders,
+            layout=Layout(width="auto", height="330px"),
+        )
 
         start = (page - 1) * limit
         end = min(start + limit, len(self._df))
