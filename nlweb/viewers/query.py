@@ -324,7 +324,7 @@ def _format_help_message(symbol: str, help: Optional[str]) -> str:
     {_help_message_style}
     <div class = "help-section" >
       <p class = "help-header" >
-        <i class = "fa fa-fw fa-question-circle" aria-hidden = "true" > </i > help for < b > {symbol} < /b >
+        <i class = "fa fa-fw fa-question-circle" aria-hidden = "true" > </i > help for <b> {symbol} </b>
       </p >
       <div class = "help-body" >
         {body}
