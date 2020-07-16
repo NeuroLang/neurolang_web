@@ -20,7 +20,7 @@ from neurolang.datalog.wrapped_collections import (
     WrappedRelationalAlgebraSet,
 )  # type: ignore
 
-from neurolang_ipywidgets import NlCodeEditor, NlIconTab
+from neurolang_ipywidgets import NlCodeEditor, NlDownloadLink, NlIconTab
 from nlweb.viewers.factory import ColumnsManager
 
 # This should be changed when neurolang gets
@@ -181,12 +181,19 @@ class ResultTabPageWidget(VBox):
 
         # add paginator is there exist no ExplicitVBR or ExplicitVBROverlay column
         if not self._columns_manager.hasVBRColumn:
+
+            def clicked(event):
+                dw.content = self._df.to_csv(index=False, compression="gzip")
+
+            dw = NlDownloadLink(filename=f"{self._title}.csv")
+            dw.on_click(clicked)
+
             paginator = PaginationWidget(self._df.shape[0])
             self._limit = paginator.limit
             paginator.observe(self._page_number_changed, names="page")
             paginator.observe(self._limit_changed, names="limit")
 
-            self._hbox_title.children = self._hbox_title.children + (paginator,)
+            self._hbox_title.children = self._hbox_title.children + (dw, paginator)
         else:
             self._limit = self._total_nb_rows
 
