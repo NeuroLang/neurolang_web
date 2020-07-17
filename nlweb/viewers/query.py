@@ -181,18 +181,23 @@ class ResultTabPageWidget(VBox):
 
         self._hbox_title.children = [title_label]
 
-        # add paginator is there exist no ExplicitVBR or ExplicitVBROverlay column
+        # create download link
+        dw = NlDownloadLink()
+
+        # add paginator if there exist no ExplicitVBR or ExplicitVBROverlay column
         if not self._columns_manager.hasVBRColumn:
 
             if self._total_nb_rows <= ResultTabPageWidget.DOWNLOAD_THRESHOLD:
-                dw = NlDownloadLink(filename=f"{self._title}.csv")
+                dw.filename = f"{self._title}.csv"
+                dw.tooltip = f"Download {dw.filename} file."
 
                 def clicked(event):
                     dw.content = self._df.to_csv(index=False).encode()
 
                 dw.on_click(clicked)
             else:
-                dw = Label(value="Not available for download!")
+                dw.disabled = True
+                dw.tooltip = "Not available for download due to size!"
 
             paginator = PaginationWidget(self._df.shape[0])
             self._limit = paginator.limit
@@ -201,7 +206,11 @@ class ResultTabPageWidget(VBox):
 
             self._hbox_title.children = self._hbox_title.children + (dw, paginator)
         else:
+            dw.tooltip = "Not available for download due to column type!"
+            dw.disabled = True
+
             self._limit = self._total_nb_rows
+            self._hbox_title.children = self._hbox_title.children + (dw,)
 
         if self._controls is not None:
             hbox_menu = HBox(self._controls)
