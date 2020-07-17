@@ -5,10 +5,11 @@ from ipywidgets import Button, HBox, Label, Layout
 import neurolang
 
 from neurolang_ipywidgets import (
-    NlLink,
-    NlProgress,
+    NlDownloadLink,
     NlCheckbox,
+    NlLink,
     NlPapayaViewer,
+    NlProgress,
     PapayaSpatialImage,
 )
 
@@ -89,14 +90,14 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
 
         # adjust layout
         self.layout.justify_content = "flex-start"
-        self.layout.width = "160px"
+        self.layout.width = "220px"
         self.layout.display = "flex"
         self.layout.flex_direction = "row"
         self.layout.flex = "0 0 auto"
 
         self._init_widgets(self._image)
 
-        self.children = [self._region_checkbox, self._center_btn]
+        self.children = [self._region_checkbox, self._download_link, self._center_btn]
 
     def _init_widgets(self, image):
         # add widgets
@@ -114,6 +115,20 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
                 align_self="flex-start",
             ),
         )
+        self._download_link = NlDownloadLink(
+            filename=f"{self.image.id}.nii",
+            tooltip="Download as nifti file.",
+            layout=Layout(
+                width="70px",
+                max_width="70px",
+                min_width="70px",
+                margin="5px 10px 10px 0",
+                padding="0px 0px 0px 0px",
+                flex="0 0 auto",
+                align_self="flex-start",
+            ),
+        )
+
         self._center_btn = Button(
             tooltip="Center on region",
             icon="map-marker",
@@ -129,6 +144,8 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
         )
 
         # add handlers
+        self._download_link.on_click(self._download_clicked)
+
         self._region_checkbox.observe(
             partial(self._selection_changed, image=image), names="value"
         )
@@ -156,6 +173,9 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
         self._can_select = True
         if self.image.is_label:
             self._region_checkbox.bg_color = "white"
+
+    def _download_clicked(self, event):
+        self._download_link.content = self.image.to_bytes()
 
     def _selection_changed(self, change, image):
         if self._can_select:
@@ -216,7 +236,7 @@ class ExplicitVBROverlayCellWidget(ExplicitVBRCellWidget):
         """
         super().__init__(obj, viewer, *args, **kwargs)
 
-        self.layout.width = "200px"
+        self.layout.width = "260px"
 
         self._colorbar_btn = Button(
             tooltip="Show color bar",
