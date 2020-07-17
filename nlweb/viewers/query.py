@@ -136,6 +136,8 @@ class ResultTabPageWidget(VBox):
 
     icon = Unicode()
 
+    DOWNLOAD_THRESHOLD = 500000
+
     def __init__(
         self, title: str, wras: WrappedRelationalAlgebraSet, cheaders, *args, **kwargs
     ):
@@ -182,11 +184,15 @@ class ResultTabPageWidget(VBox):
         # add paginator is there exist no ExplicitVBR or ExplicitVBROverlay column
         if not self._columns_manager.hasVBRColumn:
 
-            def clicked(event):
-                dw.content = self._df.to_csv(index=False, compression="gzip")
+            if self._total_nb_rows <= ResultTabPageWidget.DOWNLOAD_THRESHOLD:
+                dw = NlDownloadLink(filename=f"{self._title}.csv")
 
-            dw = NlDownloadLink(filename=f"{self._title}.csv")
-            dw.on_click(clicked)
+                def clicked(event):
+                    dw.content = self._df.to_csv(index=False)
+
+                dw.on_click(clicked)
+            else:
+                dw = Label(value="Not available for download!")
 
             paginator = PaginationWidget(self._df.shape[0])
             self._limit = paginator.limit
