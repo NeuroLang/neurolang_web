@@ -188,7 +188,7 @@ class ResultTabPageWidget(VBox):
                 dw = NlDownloadLink(filename=f"{self._title}.csv")
 
                 def clicked(event):
-                    dw.content = self._df.to_csv(index=False)
+                    dw.content = self._df.to_csv(index=False).encode()
 
                 dw.on_click(clicked)
             else:
