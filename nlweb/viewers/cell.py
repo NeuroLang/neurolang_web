@@ -88,12 +88,15 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
         self._centered = False
         self._can_select = True
 
-        # adjust layout
-        self.layout.justify_content = "flex-start"
-        self.layout.width = "220px"
-        self.layout.display = "flex"
-        self.layout.flex_direction = "row"
-        self.layout.flex = "0 0 auto"
+        self.layout = Layout(
+            display="flex",
+            flex_direction="row",
+            justify_content="center",
+            align_items="center",
+            width="180px",
+            max_width="180px",
+            flex="0 1 0",
+        )
 
         self._init_widgets(self._image)
 
@@ -111,36 +114,28 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
                 min_width="120px",
                 margin="5px 5px 5px 0",
                 padding="0px 0px 0px 0px",
-                flex="0 0 auto",
-                align_self="flex-start",
+                flex="0 1 0",
+                align_self="center",
             ),
         )
         self._download_link = NlDownloadLink(
             filename=f"{self.image.id}.nii",
             tooltip="Download as nifti file.",
             layout=Layout(
-                width="70px",
-                max_width="70px",
-                min_width="70px",
-                margin="5px 10px 10px 0",
-                padding="0px 0px 0px 0px",
-                flex="0 0 auto",
-                align_self="flex-start",
+                width="30px",
+                max_width="30px",
+                min_width="30px",
+                margin="5px 5px 5px 0",
+                padding="0 0 0 0",
+                flex="0 1 0",
+                align_self="center",
             ),
         )
 
         self._center_btn = Button(
             tooltip="Center on region",
             icon="map-marker",
-            layout=Layout(
-                width="30px",
-                max_width="30px",
-                min_width="30px",
-                margin="5px 5px 5px 0",
-                padding="0 0 0 0",
-                flex="0 0 auto",
-                align_self="flex-start",
-            ),
+            layout=self._download_link.layout,
         )
 
         # add handlers
@@ -237,11 +232,12 @@ class ExplicitVBROverlayCellWidget(ExplicitVBRCellWidget):
         super().__init__(obj, viewer, *args, **kwargs)
 
         self.layout.width = "260px"
+        self.layout.max_width = "260px"
 
         self._colorbar_btn = Button(
             tooltip="Show color bar",
             icon="tint",
-            layout=self._center_btn.layout,
+            layout=self._download_link.layout,
             disabled=True,
         )
         self._viewer.observe(self._reset_colorbar, names=["current_colorbar"])
@@ -249,7 +245,7 @@ class ExplicitVBROverlayCellWidget(ExplicitVBRCellWidget):
         self._config_btn = Button(
             tooltip="Configure",
             icon="cog",
-            layout=self._center_btn.layout,
+            layout=self._download_link.layout,
             disabled=True,
         )
 
