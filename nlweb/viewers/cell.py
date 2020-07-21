@@ -5,10 +5,11 @@ from ipywidgets import Button, HBox, Label, Layout
 import neurolang
 
 from neurolang_ipywidgets import (
-    NlLink,
-    NlProgress,
+    NlDownloadLink,
     NlCheckbox,
+    NlLink,
     NlPapayaViewer,
+    NlProgress,
     PapayaSpatialImage,
 )
 
@@ -87,16 +88,19 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
         self._centered = False
         self._can_select = True
 
-        # adjust layout
-        self.layout.justify_content = "flex-start"
-        self.layout.width = "160px"
-        self.layout.display = "flex"
-        self.layout.flex_direction = "row"
-        self.layout.flex = "0 0 auto"
+        self.layout = Layout(
+            display="flex",
+            flex_direction="row",
+            justify_content="center",
+            align_items="center",
+            width="180px",
+            max_width="180px",
+            flex="0 1 0",
+        )
 
         self._init_widgets(self._image)
 
-        self.children = [self._region_checkbox, self._center_btn]
+        self.children = [self._region_checkbox, self._download_link, self._center_btn]
 
     def _init_widgets(self, image):
         # add widgets
@@ -110,25 +114,33 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
                 min_width="120px",
                 margin="5px 5px 5px 0",
                 padding="0px 0px 0px 0px",
-                flex="0 0 auto",
-                align_self="flex-start",
+                flex="0 1 0",
+                align_self="center",
             ),
         )
-        self._center_btn = Button(
-            tooltip="Center on region",
-            icon="map-marker",
+        self._download_link = NlDownloadLink(
+            filename=f"{self.image.id}.nii",
+            tooltip="Download as nifti file.",
             layout=Layout(
                 width="30px",
                 max_width="30px",
                 min_width="30px",
                 margin="5px 5px 5px 0",
                 padding="0 0 0 0",
-                flex="0 0 auto",
-                align_self="flex-start",
+                flex="0 1 0",
+                align_self="center",
             ),
         )
 
+        self._center_btn = Button(
+            tooltip="Center on region",
+            icon="map-marker",
+            layout=self._download_link.layout,
+        )
+
         # add handlers
+        self._download_link.on_click(self._download_clicked)
+
         self._region_checkbox.observe(
             partial(self._selection_changed, image=image), names="value"
         )
@@ -156,6 +168,9 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
         self._can_select = True
         if self.image.is_label:
             self._region_checkbox.bg_color = "white"
+
+    def _download_clicked(self, event):
+        self._download_link.content = self.image.to_bytes()
 
     def _selection_changed(self, change, image):
         if self._can_select:
@@ -216,12 +231,13 @@ class ExplicitVBROverlayCellWidget(ExplicitVBRCellWidget):
         """
         super().__init__(obj, viewer, *args, **kwargs)
 
-        self.layout.width = "200px"
+        self.layout.width = "260px"
+        self.layout.max_width = "260px"
 
         self._colorbar_btn = Button(
             tooltip="Show color bar",
             icon="tint",
-            layout=self._center_btn.layout,
+            layout=self._download_link.layout,
             disabled=True,
         )
         self._viewer.observe(self._reset_colorbar, names=["current_colorbar"])
@@ -229,7 +245,7 @@ class ExplicitVBROverlayCellWidget(ExplicitVBRCellWidget):
         self._config_btn = Button(
             tooltip="Configure",
             icon="cog",
-            layout=self._center_btn.layout,
+            layout=self._download_link.layout,
             disabled=True,
         )
 
