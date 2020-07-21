@@ -31,6 +31,8 @@ from traitlets import Int, Unicode  # type: ignore
 
 from typing import Dict, Optional
 
+from ..util import debounce
+
 
 class PaginationWidget(HBox):
     """A pagination widget that enables setting page number and the number of rows per page.
@@ -81,6 +83,7 @@ class PaginationWidget(HBox):
             min=1,
             max=nb_pages,
             step=1,
+            continuous_update=True,
             description="page",
             description_tooltip="Current page",
             disabled=False,
@@ -97,6 +100,7 @@ class PaginationWidget(HBox):
             min=1,
             max=PaginationWidget.MAX_LIMIT,
             step=1,
+            continuous_update=True,
             description="rows",
             description_tooltip=f"Number of rows per page. Max. possible: {PaginationWidget.MAX_LIMIT}",
             disabled=False,
@@ -238,10 +242,12 @@ class ResultTabPageWidget(VBox):
 
             self.children = [self._hbox_title, self._table]
 
+    @debounce(0.5)
     def _page_number_changed(self, change):
         self._load_table(change.new, self._limit)
         self.children = [self.children[0], self._table]
 
+    @debounce(0.5)
     def _limit_changed(self, change):
         print("called limit changed")
         self._limit = change.new
