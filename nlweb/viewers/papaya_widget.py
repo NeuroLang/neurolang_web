@@ -16,6 +16,8 @@ from plotly.graph_objects import Figure, FigureWidget, Histogram
 
 from traitlets import Any
 
+from ..util import debounce
+
 
 class PapayaWidget(HBox):
     """A widget class that displays a papaya viewer (NlPapayaViewer) and config widget (PapayaConfigWidget) side by side.
@@ -158,7 +160,7 @@ class PapayaConfigWidget(VBox):
             description="alpha:",
             description_tooltip="Overlay image alpha level (0 to 1).",
             disabled=False,
-            continuous_update=False,
+            continuous_update=True,
             orientation="horizontal",
             readout=True,
             readout_format=".1f",
@@ -355,6 +357,7 @@ class PapayaConfigWidget(VBox):
 
             self._handlers = defaultdict()
 
+    @debounce(0.5)
     def _config_changed(self, change, image, name):
         if name == "min":
             self._minp.unobserve(self._handlers["minp"], names="value")
@@ -367,6 +370,7 @@ class PapayaConfigWidget(VBox):
 
         self._set_config(image, name, change.new)
 
+    @debounce(0.5)
     def _set_min_max(self, change, image, name):
         if name == "minPercent":
             self._min.unobserve(self._handlers["min"], names="value")
