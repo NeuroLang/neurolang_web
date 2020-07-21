@@ -179,10 +179,23 @@ class ResultTabPageWidget(VBox):
             layout=Layout(justify_content="space-between", align_items="center")
         )
 
-        self._hbox_title.children = [title_label]
-
         # create download link
-        dw = NlDownloadLink()
+        dw = NlDownloadLink(
+            layout=Layout(
+                width="30px",
+                max_width="30px",
+                min_width="30px",
+                margin="5px 5px 5px 0",
+                padding="0 0 0 0",
+                flex="0 1 0",
+                align_self="center",
+            )
+        )
+
+        hbox_table_info = HBox(
+            [title_label, dw],
+            layout=Layout(justify_content="flex-start", align_items="center"),
+        )
 
         # add paginator if there exist no ExplicitVBR or ExplicitVBROverlay column
         if not self._columns_manager.hasVBRColumn:
@@ -199,22 +212,23 @@ class ResultTabPageWidget(VBox):
                 dw.disabled = True
                 dw.tooltip = "Not available for download due to size!"
 
-            paginator = PaginationWidget(self._df.shape[0])
+            paginator = PaginationWidget(
+                self._df.shape[0], layout=Layout(padding="0px 0px 0px 50px")
+            )
             self._limit = paginator.limit
             paginator.observe(self._page_number_changed, names="page")
             paginator.observe(self._limit_changed, names="limit")
 
-            self._hbox_title.children = self._hbox_title.children + (dw, paginator)
+            hbox_table_info.children = hbox_table_info.children + (paginator,)
         else:
             dw.tooltip = "Not available for download due to column type!"
             dw.disabled = True
 
             self._limit = self._total_nb_rows
-            self._hbox_title.children = self._hbox_title.children + (dw,)
 
         if self._controls is not None:
             hbox_menu = HBox(self._controls)
-            self._hbox_title.children = self._hbox_title.children + (hbox_menu,)
+            self._hbox_title.children = [hbox_table_info, hbox_menu]
 
     def load(self):
         if not self.loaded:
