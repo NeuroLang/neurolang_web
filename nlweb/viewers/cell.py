@@ -190,6 +190,9 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
                 if self.image.is_label:
                     self._region_checkbox.bg_color = "white"
                 self._viewer.remove([image])
+                if self._centered:
+                    self.center_region(False)
+                    self._viewer.reset_center()
 
     def center_region(self, is_centered):
         self._centered = is_centered
