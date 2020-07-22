@@ -82,6 +82,9 @@ class PapayaWidget(HBox):
     def set_center(self, widget, image):
         self._viewer.set_center(widget, image)
 
+    def reset_center(self):
+        self._viewer.reset_center()
+
     def set_error(self, error):
         self._viewer.set_error(error)
 

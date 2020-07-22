@@ -204,6 +204,9 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
             if not self._region_checkbox.value:
                 self._region_checkbox.value = True
             self._viewer.set_center(self, self.image)
+        else:
+            self.center_region(False)
+            self._viewer.reset_center()
 
     def remove_center(self):
         self.center_region(False)
