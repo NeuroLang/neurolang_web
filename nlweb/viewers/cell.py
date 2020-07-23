@@ -1,5 +1,7 @@
 from functools import partial
 
+import gzip
+
 from ipywidgets import Button, HBox, Label, Layout
 
 import neurolang
@@ -119,7 +121,7 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
             ),
         )
         self._download_link = NlDownloadLink(
-            filename=f"{self.image.id}.nii",
+            filename=f"{self.image.id}.nii.gz",
             tooltip="Download as nifti file.",
             layout=Layout(
                 width="30px",
@@ -170,7 +172,7 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
             self._region_checkbox.bg_color = "white"
 
     def _download_clicked(self, event):
-        self._download_link.content = self.image.to_bytes()
+        self._download_link.content = gzip.compress(self.image.to_bytes())
 
     def _selection_changed(self, change, image):
         if self._can_select:
