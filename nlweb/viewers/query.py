@@ -1,4 +1,5 @@
 import html
+import gzip
 
 from ipysheet import column, hold_cells, sheet  # type: ignore
 from ipywidgets import (
@@ -205,11 +206,12 @@ class ResultTabPageWidget(VBox):
         if not self._columns_manager.hasVBRColumn:
 
             if self._total_nb_rows <= ResultTabPageWidget.DOWNLOAD_THRESHOLD:
-                dw.filename = f"{self._title}.csv"
                 dw.tooltip = f"Download {dw.filename} file."
 
                 def clicked(event):
-                    dw.content = self._df.to_csv(index=False).encode()
+                    dw.filename = f"{self._title}.csv.gz"
+                    dw.mimetype = "application/gz"
+                    dw.content = gzip.compress(self._df.to_csv(index=False).encode())
 
                 dw.on_click(clicked)
             else:
