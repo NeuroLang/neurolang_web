@@ -91,8 +91,7 @@ ns_database['pmid'] = ns_database['pmid'].apply(fe.neurosynth_utils.StudyID)
 # Probabilistic Logic Programming in NeuroLang
 # --------------------------------------------
 
-#nl = pfe.ProbabilisticFrontend()
-nl = fe.NeurolangDL()
+nl = pfe.ProbabilisticFrontend()
 
 ###############################################################################
 # Adding new aggregation function to build a region
@@ -139,9 +138,9 @@ def agg_percentile(x: Iterable, q: float) -> float:
 
 activations = nl.add_tuple_set(ns_database.values, name='activations')
 terms = nl.add_tuple_set(ns_terms.values, name='terms')
-#docs = nl.add_uniform_probabilistic_choice_over_set(
-#        ns_docs.values, name='docs'
-#)
+docs = nl.add_uniform_probabilistic_choice_over_set(
+        ns_docs.values, name='docs'
+)
 # -
 
 # # Run interface
