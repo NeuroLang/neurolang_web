@@ -6,7 +6,7 @@ name: Repo dispatch
 # projects. 
 on:
   repository_dispatch:
-    types: [ neurolang, neurolang_ipywidgets]
+    types: [ NeuroLang, neurolang-ipywidgets]
 
 jobs:
   test:
