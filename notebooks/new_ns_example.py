@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.5.0
+#       jupytext_version: 1.6.0
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -159,11 +159,11 @@ with nl.scope as e:
     nl.execute_datalog_program(datalog_script)
     res = nl.solve_all()
 
-r = next(iter(res["thr_prob"].unwrap()))[0]
-plotting.plot_roi(r.spatial_image())
+img1 = res["thr_prob"].as_pandas_dataframe().iloc[0, 0].spatial_image()
+plotting.plot_roi(img1)
 
-r2 = next(iter(res["region_prob"].unwrap()))[0]
-plotting.plot_stat_map(r2.spatial_image())
+img2 = res['region_prob'].as_pandas_dataframe().iloc[0, 0].spatial_image()
+plotting.plot_stat_map(img2)
 
 # +
 from nlweb.viewers.query import QueryWidget
