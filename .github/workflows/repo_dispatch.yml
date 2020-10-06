@@ -1,0 +1,20 @@
+name: Repo dispatch
+
+# Trigger the workflow on push to
+# - Neurolang or
+# - neurolang-ipywidgets
+# projects. 
+on:
+  repository_dispatch:
+    types: [pushed]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container:
+      image: python:3.8.2-slim-buster
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run tests
+      run: |
+        echo "running tests"
