@@ -6,7 +6,7 @@ name: Repo dispatch
 # projects. 
 on:
   repository_dispatch:
-    types: [pushed]
+    types: [ neurolang, neurolang_ipywidgets]
 
 jobs:
   test:
@@ -17,4 +17,4 @@ jobs:
     - uses: actions/checkout@v2
     - name: Run tests
       run: |
-        echo "running tests"
+        echo "running tests for ${{ github.event }}"
