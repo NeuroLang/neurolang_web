@@ -162,7 +162,7 @@ with nl.scope as e:
 img1 = res["thr_prob"].as_pandas_dataframe().iloc[0, 0].spatial_image()
 plotting.plot_roi(img1)
 
-img2 = res['region_prob'].as_pandas_dataframe().iloc[0, 0].spatial_image()
+img2 = res["region_prob"].as_pandas_dataframe().iloc[0, 0].spatial_image()
 plotting.plot_stat_map(img2)
 
 # +
