@@ -17,4 +17,4 @@ jobs:
     - uses: actions/checkout@v2
     - name: Run tests
       run: |
-        echo "Running tests for ${{ github.event.event_type }}"
+        echo "Running tests for ${{ github.event.action }}"
