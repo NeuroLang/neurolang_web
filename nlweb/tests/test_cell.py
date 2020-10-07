@@ -3,7 +3,7 @@ from ipywidgets import Widget
 
 from traitlets import TraitError
 
-from ..viewers.cell import StudyIdWidget, TfIDfWidget
+from ..viewers.cell import LabelCellWidget, StudyIdWidget, TfIDfWidget
 
 
 class TestWidget:
@@ -62,3 +62,32 @@ class TestTfIDfWidget(TestWidget):
         """Tests TfIDfWidget constructor with value greater than 1 for `tfidf`."""
         with pytest.raises(TraitError):
             TfIDfWidget(tfidf=1.1)
+
+    def test_create_valid_params(self):
+        """Tests TfIDfWidget constructor with value greater than 1 for `tfidf`."""
+        widget = TfIDfWidget(tfidf=0.1)
+        assert widget.value == 0.1
+        assert widget.max == 1
+
+
+class TestLabelCellWidget(TestWidget):
+    def test_create_no_params(self):
+        """Tests LabelCellWidget constructor with no value specified for `value`."""
+        widget = LabelCellWidget()
+        assert widget.value == ""
+
+    def test_create_emprty_str_params(self):
+        """Tests LabelCellWidget constructor with empty string specified for `value`."""
+        widget = LabelCellWidget("")
+        assert widget.value == ""
+
+    def test_create_none_params(self):
+        """Tests LabelCellWidget constructor with `None` specified for `value`."""
+        widget = LabelCellWidget(None)
+        assert widget.value == ""
+
+    def test_create(self):
+        """Tests LabelCellWidget constructor with non empty string value specified for `value`."""
+        test_label = "test_label"
+        widget = LabelCellWidget(test_label)
+        assert widget.value == test_label
