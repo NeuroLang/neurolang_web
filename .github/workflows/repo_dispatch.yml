@@ -5,16 +5,36 @@ name: Repo dispatch
 # - neurolang-ipywidgets
 # projects. 
 on:
+  push:
+    branches:
+      - master
+      - test
   repository_dispatch:
     types: [ NeuroLang, neurolang-ipywidgets]
 
 jobs:
-  test:
+  test_notebooks:
     runs-on: ubuntu-latest
-    container:
-      image: python:3.8.2-slim-buster
+    strategy:
+      matrix:
+        python-version: [3.6, 3.7, 3.8]
     steps:
-    - uses: actions/checkout@v2
-    - name: Run tests
-      run: |
-        echo "Running tests due to push in ${{ github.event.action }}"
+      - uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          git config --global url."https://${{ secrets.CI_TRIGGER_TOKEN }}@github.com/".insteadOf ssh://git@github.com/
+          python -m venv test_env
+          . test_env/bin/activate
+          python -m pip install --upgrade pip
+          pip install -e .
+      - name: Run notebook tests
+        run: |
+          echo "Running tests due to push in ${{ github.event.action }}"
+          . test_env/bin/activate
+          jupytext notebooks/simple_voila_ui.py --set-kernel - --execute; done
+#          for file in ./notebooks/*.py; do jupytext "$file" --set-kernel - --execute; done
