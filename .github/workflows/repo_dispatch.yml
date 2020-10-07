@@ -31,7 +31,7 @@ jobs:
           python -m venv test_env
           . test_env/bin/activate
           python -m pip install --upgrade pip
-          pip install -e .
+          pip install .
       - name: Run notebook tests
         run: |
           echo "Running tests due to push in ${{ github.event.action }}"
