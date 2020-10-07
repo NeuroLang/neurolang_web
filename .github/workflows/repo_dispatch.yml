@@ -36,5 +36,5 @@ jobs:
         run: |
           echo "Running tests due to push in ${{ github.event.action }}"
           . test_env/bin/activate
-          jupytext notebooks/simple_voila_ui.py --set-kernel - --execute; done
+          jupytext notebooks/simple_voila_ui.py --set-kernel - --execute
 #          for file in ./notebooks/*.py; do jupytext "$file" --set-kernel - --execute; done
