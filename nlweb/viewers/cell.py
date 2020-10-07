@@ -47,7 +47,7 @@ class TfIDfWidget(NlProgress, CellWidget):
         Parameters
         ----------
         tfidf : float, TfIDf
-            .
+            value should be in interval [0, 1].
         """
         super().__init__(value=tfidf, max=1, *args, **kwargs)
 
