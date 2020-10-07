@@ -4,7 +4,7 @@ import gzip
 
 from ipywidgets import Button, HBox, Label, Layout
 
-from neurolang.regions import ExplicitVBR, ExplicitVBROverlay  # type: ignore
+from neurolang.frontend import ExplicitVBR, ExplicitVBROverlay  # type: ignore
 
 from neurolang_ipywidgets import (
     NlDownloadLink,
@@ -67,13 +67,13 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
     """
 
     def __init__(
-        self, obj: ExplicitVBR, viewer: NlPapayaViewer, *args, **kwargs,
+        self, vbr: ExplicitVBR, viewer: NlPapayaViewer, *args, **kwargs,
     ):
-        """Initializes the widget with the specified `obj`.
+        """Initializes the widget with the specified `vbr`.
 
         Parameters
         ----------
-        obj: neurolang.regions.ExplicitVBR
+        vbr: neurolang.frontend.ExplicitVBR
 
         viewer : NlPapayaViewer
             associated viewer to visualize the spatial image.
@@ -81,7 +81,7 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
         super().__init__(*args, **kwargs)
 
         self._viewer = viewer
-        self._image = PapayaSpatialImage(obj.spatial_image())
+        self._image = PapayaSpatialImage(vbr.spatial_image())
 
         self._centered = False
         self._can_select = True
@@ -218,18 +218,18 @@ class ExplicitVBROverlayCellWidget(ExplicitVBRCellWidget):
     """
 
     def __init__(
-        self, obj: ExplicitVBROverlay, viewer: NlPapayaViewer, *args, **kwargs,
+        self, vbr: ExplicitVBROverlay, viewer: NlPapayaViewer, *args, **kwargs,
     ):
-        """Initializes the widget with the specified `obj`.
+        """Initializes the widget with the specified `vbr`.
 
         Parameters
         ----------
-        obj: neurolang.regions.ExplicitVBROverlay
+        vbr: neurolang.frontend.ExplicitVBROverlay
 
         viewer : NlPapayaViewer
             associated viewer to visualize the spatial image.
         """
-        super().__init__(obj, viewer, *args, **kwargs)
+        super().__init__(vbr, viewer, *args, **kwargs)
 
         self.layout.width = "260px"
         self.layout.max_width = "260px"
