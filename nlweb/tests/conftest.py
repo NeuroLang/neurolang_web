@@ -1,4 +1,4 @@
-from neurolang.frontend import ExplicitVBR, ExplicitVBROverlay
+from neurolang.frontend import ExplicitVBR, ExplicitVBROverlay, NeurolangDL
 import pytest
 import numpy as np
 from os.path import dirname, join
@@ -46,3 +46,8 @@ class MockNlPapayaViewer:
 @pytest.fixture
 def mock_viewer(monkeypatch):
     yield MockNlPapayaViewer()
+
+
+@pytest.fixture
+def engine(monkeypatch):
+    yield NeurolangDL()
