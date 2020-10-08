@@ -78,6 +78,13 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
         viewer : NlPapayaViewer
             associated viewer to visualize the spatial image.
         """
+
+        if vbr is None:
+            raise TypeError("vbr should not be NoneType!")
+
+        if viewer is None:
+            raise TypeError("viewer should not be NoneType!")
+
         super().__init__(*args, **kwargs)
 
         self._viewer = viewer
@@ -229,7 +236,7 @@ class ExplicitVBROverlayCellWidget(ExplicitVBRCellWidget):
         viewer : NlPapayaViewer
             associated viewer to visualize the spatial image.
         """
-        super().__init__(vbr, viewer, *args, **kwargs)
+        super().__init__(vbr=vbr, viewer=viewer, *args, **kwargs)
 
         self.layout.width = "260px"
         self.layout.max_width = "260px"
