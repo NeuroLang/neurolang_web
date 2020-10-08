@@ -502,9 +502,10 @@ class QueryWidget(VBox):
         default_query="ans(region_union(r)) :- destrieux(..., r)",
         reraise=False,
     ):
-        super().__init__()
+        if neurolang_engine is None:
+            raise TypeError("neurolang_engine should not be NoneType!")
 
-        # TODO check if neurolang_engine is None.
+        super().__init__()
 
         self.neurolang_engine = neurolang_engine
         self.reraise = reraise
