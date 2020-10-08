@@ -143,9 +143,7 @@ class ResultTabPageWidget(VBox):
 
     DOWNLOAD_THRESHOLD = 500000
 
-    def __init__(
-        self, title: str, wras: WrappedRelationalAlgebraSet, cheaders, *args, **kwargs
-    ):
+    def __init__(self, title: str, wras: WrappedRelationalAlgebraSet, *args, **kwargs):
         """
 
         Parameters
@@ -154,8 +152,6 @@ class ResultTabPageWidget(VBox):
             title for the tab page.
         wras: WrappedRelationalAlgebraSet
             query result for the specified `title`.
-        cheaders: list
-            column header list for result table.
         """
         super().__init__(*args, **kwargs)
         self.loaded = False
@@ -163,7 +159,6 @@ class ResultTabPageWidget(VBox):
         self._title = title
         self._total_nb_rows = self._df.shape[0]
         self._nb_cols = wras.arity
-        self._cheaders = cheaders
 
         # initialize columns manager that generates widgets for each column, column viewers, and controls
         self._columns_manager = ColumnsManager(self, wras.row_type)
@@ -268,7 +263,7 @@ class ResultTabPageWidget(VBox):
         self._table = sheet(
             rows=min(self._total_nb_rows, self._limit),
             columns=self._nb_cols,
-            column_headers=self._cheaders,
+            column_headers=list(self._df.columns),
             layout=Layout(width="auto", height="330px"),
         )
 
@@ -304,17 +299,13 @@ class QResultWidget(VBox):
         # viewers necessary for each resultset, can be shared among resultsets
         self._viewers = None
 
-    def _create_result_tabs(
-        self, res: Dict[str, WrappedRelationalAlgebraSet], pnames: Dict
-    ):
+    def _create_result_tabs(self, res: Dict[str, WrappedRelationalAlgebraSet]):
         """Creates necessary tab pages and viewers for the specified query result `res`.
 
         Parameters
         ----------
         res: Dict[str, WrappedRelationalAlgebraSet]
            dictionary of query results with keys as result name and values as result for corresponding key.
-        pnames: Dict[str, tuple]
-           dictionary of query result column names with keys as result name and values as tuple of column names for corresponding key.
 
         Returns
         -------
@@ -344,7 +335,7 @@ class QResultWidget(VBox):
         for name in sorted(res.keys()):
             result_set = res[name]
             result_tab = ResultTabPageWidget(
-                name, result_set, list(pnames[name]), layout=Layout(height="100%")
+                name, result_set, layout=Layout(height="100%")
             )
 
             result_tabs.append(result_tab)
@@ -363,21 +354,17 @@ class QResultWidget(VBox):
         if not tab_page.loaded:
             tab_page.load()
 
-    def show_results(self, res: Dict[str, WrappedRelationalAlgebraSet], pnames: Dict):
+    def show_results(self, res: Dict[str, WrappedRelationalAlgebraSet]):
         """Creates and displays necessary tab pages and viewers for the specified query result `res`.
 
         Parameters
         ----------
         res: Dict[str, WrappedRelationalAlgebraSet]
            dictionary of query results with keys as result name and values as result for corresponding key.
-        pnames: Dict[str, tuple]
-           dictionary of query result column names with keys as result name and values as tuple of column names for corresponding key.
         """
         self.reset()
 
-        result_tabs, titles, icons, self._viewers = self._create_result_tabs(
-            res, pnames
-        )
+        result_tabs, titles, icons, self._viewers = self._create_result_tabs(res)
 
         self._tab.children = result_tabs
 
@@ -542,10 +529,7 @@ class QueryWidget(VBox):
         with self.neurolang_engine.scope:
             self.neurolang_engine.execute_datalog_program(query)
             res = self.neurolang_engine.solve_all()
-            predicate_names = {
-                k: self.neurolang_engine.predicate_parameter_names(k) for k in res
-            }
-            return res, predicate_names
+            return res
 
     def _on_query_button_clicked(self, b):
         """Runs the query in the query text area and diplays the results.
@@ -559,14 +543,14 @@ class QueryWidget(VBox):
         self._reset_output()
 
         try:
-            qresult, pnames = self.run_query(self.query.text)
+            qresult = self.run_query(self.query.text)
         except FailedParse as fp:
             self._set_error_marker(fp)
             self._handle_generic_error(fp)
         except Exception as e:
             self.handle_generic_error(e)
         else:
-            self.result_viewer.show_results(qresult, pnames)
+            self.result_viewer.show_results(qresult)
             self.result_viewer.layout.visibility = "visible"
 
     def _reset_output(self):
