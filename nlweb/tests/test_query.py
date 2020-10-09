@@ -2,7 +2,8 @@ import pytest
 
 from neurolang.frontend import NeurolangDL
 
-from ..viewers.query import QResultWidget, QueryWidget
+from ..viewers.query import QResultWidget, QueryWidget, ResultTabPageWidget
+from ..viewers.column import ColumnFeeder
 
 
 class TestQueryWidget:
@@ -95,9 +96,7 @@ class TestQResultWidget:
 
     @pytest.fixture
     def widget(self):
-        widget = QResultWidget()
-
-        return widget
+        return QResultWidget()
 
     def test_create(self, widget):
         """Tests QResultWidget constructor."""
@@ -136,3 +135,37 @@ class TestQResultWidget:
 
         assert widget._viewers is None
         assert widget._tab is not None
+
+
+class TestResultTabPageWidget:
+    """Tests ResultTabPageWidget."""
+
+    @pytest.fixture
+    def widget(self, res):
+
+        return ResultTabPageWidget(title="A", nras=res["A"])
+
+    # TODO test with a resultset that contains image
+    # TODO test with a resultset that contains more rows than DOWNLOAD_THRESHOLD.
+
+    def test_create(self, widget, res):
+        """Tests ResultTabPageWidget constructor."""
+
+        title = "A"
+        assert widget._df.shape == (3, 2)
+        assert widget._nb_cols == 2
+        assert widget._total_nb_rows == 3
+        assert widget.loaded == False
+        assert len(widget._cell_viewers) == 0
+        assert isinstance(widget._columns_manager.get_column_feeder(0), ColumnFeeder)
+        assert widget._columns_manager.hasVBRColumn == False
+        # check if download link is created
+        assert widget._hbox_title.children[0].children[1] is not None
+        assert widget._hbox_title.children[0].children[1].filename == f"{title}.csv.gz"
+        assert widget._hbox_title.children[0].children[1].mimetype == "application/gz"
+        assert (
+            widget._hbox_title.children[0].children[1].tooltip
+            == f"Download {title}.csv.gz file."
+        )
+        # check tab title
+        assert widget._hbox_title.children[0].children[0].value == f"<h3>{title}</h3>"
