@@ -10,7 +10,7 @@ VBR_AFFINE = "vbr_affine.npy"
 
 
 @pytest.fixture
-def mock_vbr(monkeypatch):
+def vbr(monkeypatch):
 
     voxels = np.transpose(np.load(join(DATA_DIR, VBR_VOXELS))["arr_0"].nonzero())
     affine = np.load(join(DATA_DIR, VBR_AFFINE))
@@ -19,7 +19,7 @@ def mock_vbr(monkeypatch):
 
 
 @pytest.fixture
-def mock_vbr_overlay(monkeypatch):
+def vbr_overlay(monkeypatch):
     def randint(size=None):
         return np.random.randint(0, 256, size=size)
 

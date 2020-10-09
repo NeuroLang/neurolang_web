@@ -109,8 +109,8 @@ class TestExplicitVBRCellWidget(TestWidget):
     """ Tests ExplicitVBRCellWidget."""
 
     @pytest.fixture
-    def widget(self, mock_vbr, mock_viewer):
-        yield ExplicitVBRCellWidget(mock_vbr, mock_viewer)
+    def widget(self, vbr, mock_viewer):
+        yield ExplicitVBRCellWidget(vbr, mock_viewer)
 
     def test_create_no_params(self):
         """Tests constructor with no parameters."""
@@ -124,11 +124,11 @@ class TestExplicitVBRCellWidget(TestWidget):
             ExplicitVBRCellWidget(vbr=None, viewer=mock_viewer)
         assert error.value.args[0] == "vbr should not be NoneType!"
 
-    def test_create_viewer_none(self, mock_vbr):
+    def test_create_viewer_none(self, vbr):
         """Tests constructor with `None` value for `viewer`."""
 
         with pytest.raises(TypeError) as error:
-            ExplicitVBRCellWidget(vbr=mock_vbr, viewer=None)
+            ExplicitVBRCellWidget(vbr=vbr, viewer=None)
         assert error.value.args[0] == "viewer should not be NoneType!"
 
     def test_create(self, widget):
@@ -178,8 +178,8 @@ class TestExplicitVBROverlayCellWidget(TestExplicitVBRCellWidget):
     """ Tests ExplicitOverlayVBRCellWidget."""
 
     @pytest.fixture
-    def widget(self, mock_vbr_overlay, mock_viewer):
-        yield ExplicitVBROverlayCellWidget(mock_vbr_overlay, mock_viewer)
+    def widget(self, vbr_overlay, mock_viewer):
+        yield ExplicitVBROverlayCellWidget(vbr_overlay, mock_viewer)
 
     def test_create_no_params(self):
         """Tests constructor with no parameters."""
@@ -193,9 +193,9 @@ class TestExplicitVBROverlayCellWidget(TestExplicitVBRCellWidget):
             ExplicitVBROverlayCellWidget(vbr=None, viewer=mock_viewer)
         assert error.value.args[0] == "vbr should not be NoneType!"
 
-    def test_create_viewer_none(self, mock_vbr_overlay):
+    def test_create_viewer_none(self, vbr_overlay):
         """Tests constructor with `None` value for `viewer`."""
 
         with pytest.raises(TypeError) as error:
-            ExplicitVBROverlayCellWidget(vbr=mock_vbr_overlay, viewer=None)
+            ExplicitVBROverlayCellWidget(vbr=vbr_overlay, viewer=None)
         assert error.value.args[0] == "viewer should not be NoneType!"
