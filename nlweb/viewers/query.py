@@ -292,8 +292,8 @@ class ResultTabPageWidget(VBox):
 class QResultWidget(VBox):
     """A widget to display query results and corresponding viewers."""
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         # tab widget that displays each resultset in an individual tab
         self._tab = NlIconTab(layout=Layout(height="460px"))
         # viewers necessary for each resultset, can be shared among resultsets
@@ -521,7 +521,7 @@ class QueryWidget(VBox):
         for i, tab_title in enumerate(["query", "symbols"]):
             self.query_section.set_title(i, tab_title)
 
-        self.result_viewer = QResultWidget()
+        self.result_viewer = QResultWidget(layout=Layout(visibility="hidden"))
 
         self.children = [self.query_section, self.result_viewer]
 
