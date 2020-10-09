@@ -135,7 +135,7 @@ class PaginationWidget(HBox):
 
 
 class ResultTabPageWidget(VBox):
-    """Tab page widget that displays result table and controls for each column type in the result table.."""
+    """Tab page widget that displays result table and controls for each column type in the result table."""
 
     icon = Unicode()
 
@@ -156,7 +156,6 @@ class ResultTabPageWidget(VBox):
         super().__init__(*args, **kwargs)
         self.loaded = False
         self._df = nras.as_pandas_dataframe()
-        self._title = title
         self._total_nb_rows = self._df.shape[0]
         self._nb_cols = nras.arity
 
@@ -164,15 +163,32 @@ class ResultTabPageWidget(VBox):
         self._columns_manager = ColumnsManager(self, nras.row_type)
 
         self._cell_viewers = self._columns_manager.get_viewers()
-        self._controls = self._columns_manager.get_controls()
 
-        self._create_title()
+        tab_controls = self._columns_manager.get_controls()
+        self._hbox_title.children = self._create_title(title, tab_controls)
 
-    def _create_title(self):
+    def _create_title(self, title, tab_controls):
+        """Creates title controls for this tab widget.
+
+        - Adds title label
+        - Adds download button for query result. Disabled if one of the following conditions hold:
+            * there exist a column that contains image
+            * the number of rows exceeds DOWNLOAD_THRESHOLD
+        - Adds paginator if no column contains image
+        - Adds any controls related to column types in the result set
+
+        Parameters
+        ----------
+        title: str
+            result set title.
+        tab_controls: list
+            list of controls related to columns in the result set.
+
+        """
         # initialize widgets
-        # set tab page title
+        # add title label
         title_label = HTML(
-            f"<h3>{self._title}</h3>", layout=Layout(padding="0px 5px 5px 0px")
+            f"<h3>{title}</h3>", layout=Layout(padding="0px 5px 5px 0px")
         )
 
         self._hbox_title = HBox(
@@ -197,15 +213,14 @@ class ResultTabPageWidget(VBox):
             layout=Layout(justify_content="flex-start", align_items="center"),
         )
 
-        # add paginator if there exist no ExplicitVBR or ExplicitVBROverlay column
         if not self._columns_manager.hasVBRColumn:
 
             if self._total_nb_rows <= ResultTabPageWidget.DOWNLOAD_THRESHOLD:
+                dw.filename = f"{title}.csv.gz"
+                dw.mimetype = "application/gz"
                 dw.tooltip = f"Download {dw.filename} file."
 
                 def clicked(event):
-                    dw.filename = f"{self._title}.csv.gz"
-                    dw.mimetype = "application/gz"
                     dw.content = gzip.compress(self._df.to_csv(index=False).encode())
 
                 dw.on_click(clicked)
@@ -213,6 +228,7 @@ class ResultTabPageWidget(VBox):
                 dw.disabled = True
                 dw.tooltip = "Not available for download due to size!"
 
+            # add paginator if there exist no ExplicitVBR or ExplicitVBROverlay column
             paginator = PaginationWidget(
                 self._df.shape[0], layout=Layout(padding="0px 0px 0px 50px")
             )
@@ -227,9 +243,7 @@ class ResultTabPageWidget(VBox):
 
             self._limit = self._total_nb_rows
 
-        if self._controls is not None:
-            hbox_menu = HBox(self._controls)
-            self._hbox_title.children = [hbox_table_info, hbox_menu]
+        return [hbox_table_info, HBox(tab_controls)]
 
     def load(self):
         if not self.loaded:
