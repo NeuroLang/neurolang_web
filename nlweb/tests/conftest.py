@@ -15,7 +15,7 @@ def vbr(monkeypatch):
     voxels = np.transpose(np.load(join(DATA_DIR, VBR_VOXELS))["arr_0"].nonzero())
     affine = np.load(join(DATA_DIR, VBR_AFFINE))
 
-    yield ExplicitVBR(voxels, affine, image_dim=(91, 109, 91), prebuild_tree=True)
+    return ExplicitVBR(voxels, affine, image_dim=(91, 109, 91), prebuild_tree=True)
 
 
 @pytest.fixture
@@ -28,7 +28,7 @@ def vbr_overlay(monkeypatch):
 
     overlay = randint(size=voxels.shape[0])
 
-    yield ExplicitVBROverlay(
+    return ExplicitVBROverlay(
         voxels, affine, image_dim=(91, 109, 91), overlay=overlay, prebuild_tree=True
     )
 
@@ -45,9 +45,9 @@ class MockNlPapayaViewer:
 
 @pytest.fixture
 def mock_viewer(monkeypatch):
-    yield MockNlPapayaViewer()
+    return MockNlPapayaViewer()
 
 
 @pytest.fixture
 def engine(monkeypatch):
-    yield NeurolangDL()
+    return NeurolangDL()
