@@ -17,9 +17,7 @@ from ipywidgets import (
 
 from math import ceil  # type:ignore
 
-from neurolang.datalog.wrapped_collections import (
-    WrappedRelationalAlgebraSet,
-)  # type: ignore
+from neurolang.utils.relational_algebra_set.pandas import NamedRelationalAlgebraFrozenSet  # type: ignore
 
 from neurolang_ipywidgets import NlCodeEditor, NlDownloadLink, NlIconTab
 from nlweb.viewers.factory import ColumnsManager
@@ -143,25 +141,27 @@ class ResultTabPageWidget(VBox):
 
     DOWNLOAD_THRESHOLD = 500000
 
-    def __init__(self, title: str, wras: WrappedRelationalAlgebraSet, *args, **kwargs):
+    def __init__(
+        self, title: str, nras: NamedRelationalAlgebraFrozenSet, *args, **kwargs
+    ):
         """
 
         Parameters
         ----------
         title: str
             title for the tab page.
-        wras: WrappedRelationalAlgebraSet
+        nras: NamedRelationalAlgebraFrozenSet
             query result for the specified `title`.
         """
         super().__init__(*args, **kwargs)
         self.loaded = False
-        self._df = wras.as_pandas_dataframe()
+        self._df = nras.as_pandas_dataframe()
         self._title = title
         self._total_nb_rows = self._df.shape[0]
-        self._nb_cols = wras.arity
+        self._nb_cols = nras.arity
 
         # initialize columns manager that generates widgets for each column, column viewers, and controls
-        self._columns_manager = ColumnsManager(self, wras.row_type)
+        self._columns_manager = ColumnsManager(self, nras.row_type)
 
         self._cell_viewers = self._columns_manager.get_viewers()
         self._controls = self._columns_manager.get_controls()
@@ -299,12 +299,12 @@ class QResultWidget(VBox):
         # viewers necessary for each resultset, can be shared among resultsets
         self._viewers = None
 
-    def _create_result_tabs(self, res: Dict[str, WrappedRelationalAlgebraSet]):
+    def _create_result_tabs(self, res: Dict[str, NamedRelationalAlgebraFrozenSet]):
         """Creates necessary tab pages and viewers for the specified query result `res`.
 
         Parameters
         ----------
-        res: Dict[str, WrappedRelationalAlgebraSet]
+        res: Dict[str, NamedRelationalAlgebraFrozenSet]
            dictionary of query results with keys as result name and values as result for corresponding key.
 
         Returns
@@ -354,12 +354,12 @@ class QResultWidget(VBox):
         if not tab_page.loaded:
             tab_page.load()
 
-    def show_results(self, res: Dict[str, WrappedRelationalAlgebraSet]):
+    def show_results(self, res: Dict[str, NamedRelationalAlgebraFrozenSet]):
         """Creates and displays necessary tab pages and viewers for the specified query result `res`.
 
         Parameters
         ----------
-        res: Dict[str, WrappedRelationalAlgebraSet]
+        res: Dict[str, NamedRelationalAlgebraFrozenSet]
            dictionary of query results with keys as result name and values as result for corresponding key.
         """
         self.reset()
