@@ -10,7 +10,7 @@ class TestQueryWidget:
 
     @pytest.fixture
     def widget(self, engine):
-        yield QueryWidget(neurolang_engine=engine)
+        return QueryWidget(neurolang_engine=engine)
 
     def test_create_engine_none(self):
         """Tests constructor with `None` value for `neurolang_engine`."""
@@ -43,23 +43,48 @@ class TestQueryWidget:
         assert widget.query_section is not None
         assert widget.error_display is not None
 
-    def test_run_query(self, widget, monkeypatch):
-        """Tests run_query with empty engine."""
+    def test_run_query(self, widget):
+        """Tests run_query."""
+
+        res = widget.run_query(widget.query.text)
+        assert res == {}
+
+    def test_query_button_clicked_empty_res(self, widget, monkeypatch):
+        """Tests _query_button_clicked when empty result returns."""
 
         def mock_solve_all(*args, **kwargs):
             return {}
 
         monkeypatch.setattr(NeurolangDL, "solve_all", mock_solve_all)
 
-        res = widget.run_query(widget.query.text)
-        assert res == {}
-
-    def test_query_button_clicked(self, widget, monkeypatch):
-        """Tests constructor with no value specified for `default_query`."""
-
         widget._on_query_button_clicked(None)
         assert widget.error_display.layout.visibility == "visible"
         assert (
             widget.error_display.value
             == f"<pre style='background-color:#faaba5; border: 1px solid red; padding: 0.4em'>{ValueError('Query did not return any results.')}</pre>"
+        )
+        assert widget.result_viewer.layout.visibility == "hidden"
+
+    def test_query_button_clicked(self, widget, monkeypatch, mock_solve_all):
+        """Tests _query_button_clicked when non-empty result returns."""
+
+        monkeypatch.setattr(NeurolangDL, "solve_all", mock_solve_all)
+
+        widget._on_query_button_clicked(None)
+        assert widget.result_viewer.layout.visibility == "visible"
+        assert widget.error_display.layout.visibility == "hidden"
+
+    def test_reset_output(self, widget):
+        """Tests _reset_output."""
+
+        widget._reset_output()
+        assert widget.result_viewer.layout.visibility == "hidden"
+        assert widget.error_display.layout.visibility == "hidden"
+
+    def test_handle_generic_error(self, widget):
+        """Tests _handle_generic_error."""
+        widget._handle_generic_error(ValueError("Error"))
+        assert (
+            widget.error_display.value
+            == f"<pre style='background-color:#faaba5; border: 1px solid red; padding: 0.4em'>{ValueError('Error')}</pre>"
         )

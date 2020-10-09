@@ -51,3 +51,26 @@ def mock_viewer(monkeypatch):
 @pytest.fixture
 def engine(monkeypatch):
     return NeurolangDL()
+
+
+@pytest.fixture
+def mock_solve_all(monkeypatch):
+
+    neurolang = NeurolangDL()
+    neurolang.execute_datalog_program(
+        """
+    A(4, 5)
+    A(5, 6)
+    A(6, 5)
+    B(x,y) :- A(x, y)
+    B(x,y) :- B(x, z),A(z, y)
+    C(x) :- B(x, y), y == 5
+    D("x")
+    """
+    )
+    res = neurolang.solve_all()
+
+    def solve_all(*args, **kwargs):
+        return res
+
+    return solve_all
