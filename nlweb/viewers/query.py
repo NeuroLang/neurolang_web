@@ -548,10 +548,15 @@ class QueryWidget(VBox):
             self._set_error_marker(fp)
             self._handle_generic_error(fp)
         except Exception as e:
-            self.handle_generic_error(e)
+            self._handle_generic_error(e)
         else:
-            self.result_viewer.show_results(qresult)
-            self.result_viewer.layout.visibility = "visible"
+            if qresult != {}:
+                self.result_viewer.show_results(qresult)
+                self.result_viewer.layout.visibility = "visible"
+            else:
+                self._handle_generic_error(
+                    ValueError("Query did not return any results.")
+                )
 
     def _reset_output(self):
         self.query.clear_marks()
