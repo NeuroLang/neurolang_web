@@ -1,5 +1,7 @@
 import pytest
 
+from neurolang.frontend import NeurolangDL
+
 from ..viewers.query import QueryWidget
 
 
@@ -41,9 +43,23 @@ class TestQueryWidget:
         assert widget.query_section is not None
         assert widget.error_display is not None
 
-    def test_run_query(self, widget):
-        """Tests constructor with no value specified for `default_query`."""
+    def test_run_query(self, widget, monkeypatch):
+        """Tests run_query with empty engine."""
+
+        def mock_solve_all(*args, **kwargs):
+            return {}
+
+        monkeypatch.setattr(NeurolangDL, "solve_all", mock_solve_all)
 
         res = widget.run_query(widget.query.text)
-
         assert res == {}
+
+    def test_query_button_clicked(self, widget, monkeypatch):
+        """Tests constructor with no value specified for `default_query`."""
+
+        widget._on_query_button_clicked(None)
+        assert widget.error_display.layout.visibility == "visible"
+        assert (
+            widget.error_display.value
+            == f"<pre style='background-color:#faaba5; border: 1px solid red; padding: 0.4em'>{ValueError('Query did not return any results.')}</pre>"
+        )
