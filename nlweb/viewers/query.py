@@ -277,7 +277,7 @@ class ResultTabPageWidget(VBox):
                 rows = []
 
                 for row_index in range(start, end):
-                    rows.append(column_feeder.get_widget(column_data[row_index]))
+                    rows.append(column_feeder.get_widget(column_data.iloc[row_index]))
                     column(col_index, rows, row_start=0)
 
     def get_viewers(self):
@@ -529,6 +529,7 @@ class QueryWidget(VBox):
         with self.neurolang_engine.scope:
             self.neurolang_engine.execute_datalog_program(query)
             res = self.neurolang_engine.solve_all()
+
             return res
 
     def _on_query_button_clicked(self, b):
