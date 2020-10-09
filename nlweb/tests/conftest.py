@@ -54,8 +54,7 @@ def engine(monkeypatch):
 
 
 @pytest.fixture
-def mock_solve_all(monkeypatch):
-
+def res(monkeypatch):
     neurolang = NeurolangDL()
     neurolang.execute_datalog_program(
         """
@@ -68,8 +67,11 @@ def mock_solve_all(monkeypatch):
     D("x")
     """
     )
-    res = neurolang.solve_all()
+    return neurolang.solve_all()
 
+
+@pytest.fixture
+def mock_solve_all(monkeypatch, res):
     def solve_all(*args, **kwargs):
         return res
 

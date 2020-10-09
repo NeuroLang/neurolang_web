@@ -2,7 +2,7 @@ import pytest
 
 from neurolang.frontend import NeurolangDL
 
-from ..viewers.query import QueryWidget
+from ..viewers.query import QResultWidget, QueryWidget
 
 
 class TestQueryWidget:
@@ -88,3 +88,51 @@ class TestQueryWidget:
             widget.error_display.value
             == f"<pre style='background-color:#faaba5; border: 1px solid red; padding: 0.4em'>{ValueError('Error')}</pre>"
         )
+
+
+class TestQResultWidget:
+    """Tests QResultWidget."""
+
+    @pytest.fixture
+    def widget(self):
+        widget = QResultWidget()
+
+        return widget
+
+    def test_create(self, widget):
+        """Tests QResultWidget constructor."""
+
+        assert widget._tab is not None
+        assert widget._viewers is None
+
+    def test_create_result_tabs(self, widget, res):
+        """Tests QResultWidget _create_result_tabs."""
+
+        result_tabs, titles, icons, viewers = widget._create_result_tabs(res)
+
+        assert len(result_tabs) == 4
+        assert len(titles) == 4
+        assert titles == ["A", "B", "C", "D"]
+        assert len(icons) == 4
+        assert len(viewers) == 0
+
+    def test_show_results(self, widget, res):
+        """Tests QResultWidget show_results."""
+
+        widget.show_results(res)
+
+        assert len(widget._tab.children) == 4
+        assert widget._tab.get_title(0) == "A"
+        assert widget._tab.get_title(1) == "B"
+        assert widget._tab.get_title(2) == "C"
+        assert widget._tab.get_title(3) == "D"
+        assert widget._tab.selected_index == 0
+        assert len(widget._viewers) == 0
+
+    def test_reset(self, widget):
+        """Tests QResultWidget reset."""
+
+        widget.reset()
+
+        assert widget._viewers is None
+        assert widget._tab is not None
