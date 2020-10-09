@@ -110,7 +110,7 @@ class TestExplicitVBRCellWidget(TestWidget):
 
     @pytest.fixture
     def widget(self, vbr, mock_viewer):
-        yield ExplicitVBRCellWidget(vbr, mock_viewer)
+        return ExplicitVBRCellWidget(vbr, mock_viewer)
 
     def test_create_no_params(self):
         """Tests constructor with no parameters."""
@@ -179,7 +179,7 @@ class TestExplicitVBROverlayCellWidget(TestExplicitVBRCellWidget):
 
     @pytest.fixture
     def widget(self, vbr_overlay, mock_viewer):
-        yield ExplicitVBROverlayCellWidget(vbr_overlay, mock_viewer)
+        return ExplicitVBROverlayCellWidget(vbr_overlay, mock_viewer)
 
     def test_create_no_params(self):
         """Tests constructor with no parameters."""
