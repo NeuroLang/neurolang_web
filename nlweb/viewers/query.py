@@ -172,9 +172,9 @@ class ResultTabPageWidget(VBox):
 
         - Adds title label
         - Adds download button for query result. Disabled if one of the following conditions hold:
-            * there exist a column that contains image
-            * the number of rows exceeds DOWNLOAD_THRESHOLD
-        - Adds paginator if no column contains image
+            * query result contains ExplicitVBR or ExplicitVBROverlay type column
+            * number of rows in the query result exceeds DOWNLOAD_THRESHOLD
+        - Adds paginator if there exists no ExplicitVBR or ExplicitVBROverlay type column
         - Adds any controls related to column types in the result set
 
         Parameters
