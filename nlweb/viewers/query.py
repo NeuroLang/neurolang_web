@@ -388,9 +388,7 @@ class QResultWidget(VBox):
         self.children = (self._tab,) + tuple(self._viewers)
 
     def _tab_index_changed(self, change):
-        print("entered")
         if self._tab.selected_index is None:
-            print("entered none")
             return
         tab_page = self._tab.children[self._tab.selected_index]
 
