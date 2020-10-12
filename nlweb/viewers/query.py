@@ -156,6 +156,7 @@ class ResultTabPageWidget(VBox):
         super().__init__(*args, **kwargs)
         self.loaded = False
         self._df = nras.as_pandas_dataframe()
+        self._df = self._df.sort_values(self._df.columns[0])
         self._total_nb_rows = self._df.shape[0]
         self._nb_cols = nras.arity
 
@@ -260,7 +261,6 @@ class ResultTabPageWidget(VBox):
 
     @debounce(0.5)
     def _limit_changed(self, change):
-        print("called limit changed")
         self._limit = change.new
         self._load_table(1, self._limit)
         self.children = [self.children[0], self._table]
@@ -362,12 +362,6 @@ class QResultWidget(VBox):
 
         return result_tabs, titles, icons, viewers
 
-    def _tab_index_changed(self, change):
-        tab_page = self._tab.children[self._tab.selected_index]
-
-        if not tab_page.loaded:
-            tab_page.load()
-
     def show_results(self, res: Dict[str, NamedRelationalAlgebraFrozenSet]):
         """Creates and displays necessary tab pages and viewers for the specified query result `res`.
 
@@ -376,7 +370,6 @@ class QResultWidget(VBox):
         res: Dict[str, NamedRelationalAlgebraFrozenSet]
            dictionary of query results with keys as result name and values as result for corresponding key.
         """
-        self.reset()
 
         result_tabs, titles, icons, self._viewers = self._create_result_tabs(res)
 
@@ -391,9 +384,18 @@ class QResultWidget(VBox):
         self._tab.observe(self._tab_index_changed, names="selected_index")
 
         self._tab.selected_index = 0
-        self._tab_index_changed(None)
 
         self.children = (self._tab,) + tuple(self._viewers)
+
+    def _tab_index_changed(self, change):
+        print("entered")
+        if self._tab.selected_index is None:
+            print("entered none")
+            return
+        tab_page = self._tab.children[self._tab.selected_index]
+
+        if not tab_page.loaded:
+            tab_page.load()
 
     def reset(self):
         """Resets this query result widget removing all tabs in tab widget and resetting and removing all viewers."""
@@ -574,10 +576,10 @@ class QueryWidget(VBox):
                 )
 
     def _reset_output(self):
+        self.error_display.layout.visibility = "hidden"
+        self.result_viewer.layout.visibility = "hidden"
         self.query.clear_marks()
         self.result_viewer.reset()
-        self.result_viewer.layout.visibility = "hidden"
-        self.error_display.layout.visibility = "hidden"
 
     def _set_error_marker(self, pe: FailedParse):
         try:
