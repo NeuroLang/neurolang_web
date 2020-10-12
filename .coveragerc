@@ -1,0 +1,18 @@
+[run]
+branch = True
+
+source =
+     nlweb
+     nlweb/viewers
+       
+
+omit =
+     */__init__.py
+
+
+[report]
+show_missing = true
+
+
+[html]
+directory = coverage_html
