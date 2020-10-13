@@ -15,8 +15,6 @@ from ipywidgets import (
     VBox,
 )  # type: ignore
 
-from math import ceil  # type:ignore
-
 from neurolang.utils.relational_algebra_set.pandas import NamedRelationalAlgebraFrozenSet  # type: ignore
 
 from neurolang_ipywidgets import NlCodeEditor, NlDownloadLink, NlIconTab
@@ -69,51 +67,60 @@ class PaginationWidget(HBox):
 
         self.layout.width = "400px"
 
-        if nb_rows > limit:
-            self.layout.visibility = "visible"
-        else:
+        if nb_rows <= limit:
             self.layout.visibility = "hidden"
+        else:
+            self.layout.visibility = "visible"
 
-        nb_pages = self._get_nb_pages(self.limit)
+            nb_pages = self._get_nb_pages(self.limit)
 
-        # widget to set page number
-        self.__page_widget = BoundedIntText(
-            value=self.page,
-            min=1,
-            max=nb_pages,
-            step=1,
-            continuous_update=True,
-            description="page",
-            description_tooltip="Current page",
-            disabled=False,
-            style={"description_width": "30px"},
-            layout=Layout(width="90px", max_width="90px"),
-        )
+            # widget to set page number
+            self.__page_widget = BoundedIntText(
+                value=self.page,
+                min=1,
+                max=nb_pages,
+                step=1,
+                continuous_update=True,
+                description="page",
+                description_tooltip="Current page",
+                disabled=False,
+                style={"description_width": "30px"},
+                layout=Layout(width="90px", max_width="90px"),
+            )
 
-        # widget to display total number of pages.
-        self.__label_slash = Label(value=f"/ {nb_pages}", layout=Layout(width="60px"))
+            # widget to display total number of pages.
+            self.__label_slash = Label(
+                value=f"/ {nb_pages}", layout=Layout(width="60px")
+            )
 
-        # widget to set limit
-        self.__limit_widget = BoundedIntText(
-            value=self.limit,
-            min=1,
-            max=PaginationWidget.MAX_LIMIT,
-            step=1,
-            continuous_update=True,
-            description="rows",
-            description_tooltip=f"Number of rows per page. Max. possible: {PaginationWidget.MAX_LIMIT}",
-            disabled=False,
-            style={"description_width": "30px"},
-            layout=Layout(width="90px", max_width="90px"),
-        )
+            # widget to set limit
+            self.__limit_widget = BoundedIntText(
+                value=self.limit,
+                min=1,
+                max=PaginationWidget.MAX_LIMIT,
+                step=1,
+                continuous_update=True,
+                description="rows",
+                description_tooltip=f"Number of rows per page. Max. possible: {PaginationWidget.MAX_LIMIT}",
+                disabled=False,
+                style={"description_width": "30px"},
+                layout=Layout(width="90px", max_width="90px"),
+            )
 
-        self.__page_widget.observe(self._page_widget_changed, names="value")
-        self.__limit_widget.observe(self._limit_widget_changed, names="value")
+            self.__page_widget.observe(self._page_widget_changed, names="value")
+            self.__limit_widget.observe(self._limit_widget_changed, names="value")
 
-        self.children = [self.__page_widget, self.__label_slash, self.__limit_widget]
+            self.children = [
+                self.__page_widget,
+                self.__label_slash,
+                self.__limit_widget,
+            ]
 
     def _get_nb_pages(self, limit):
-        return ceil(self.__nb_rows / self.limit)
+        if self.__nb_rows <= limit:
+            return 1
+        else:
+            return (self.__nb_rows // limit) + 1
 
     def _page_widget_changed(self, change):
         self.page = change.new
