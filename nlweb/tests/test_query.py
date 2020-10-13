@@ -336,3 +336,58 @@ class TestResultTabPageWidget:
 
         assert len(widget._cell_viewers) == 0
         assert len(widget.get_viewers()) == 0
+
+
+class TestPaginationWidget:
+    """Tests PaginationWidget"""
+
+    @pytest.fixture
+    def widget(self, res):
+        return PaginationWidget(nb_rows=1670)
+
+    def test_create_rows_less_than_limit(self):
+        """Tests PaginationWidget constructor with number of rows less than the limit."""
+
+        widget = PaginationWidget(nb_rows=50)
+
+        assert len(widget.children) == 0
+        assert widget.layout.visibility == "hidden"
+
+    def test_create(self, widget):
+        """Tests PaginationWidget constructor."""
+        nb_pages = (1670 // 50) + 1
+
+        assert len(widget.children) == 3
+        assert widget.layout.visibility == "visible"
+        assert widget.children[0].min == 1
+        assert widget.children[0].max == nb_pages
+
+        assert widget.children[1].value == f"/ {nb_pages}"
+
+        assert widget.children[2].min == 1
+        assert widget.children[2].max == PaginationWidget.MAX_LIMIT
+
+    def test_get_nb_pages(self, widget):
+        """Tests PaginationWidget _get_nb_pages."""
+
+        assert widget._get_nb_pages(widget.limit) == (1670 // 50) + 1
+        assert widget._get_nb_pages(1670) == 1
+        assert widget._get_nb_pages(2000) == 1
+
+    def test_page_widget_changed(self, widget):
+        """Tests PaginationWidget _page_widget_changed."""
+
+        widget._page_widget_changed(change=dict(new=3))
+        assert widget.page == 3
+
+    def test_limit_widget_changed(self, widget):
+        """Tests PaginationWidget _limit_widget_changed."""
+
+        widget._limit_widget_changed(change=dict(new=100))
+        assert widget.limit == 100
+        assert widget.page == 1
+
+        nb_pages = (1670 // 100) + 1
+        assert widget.children[0].max == nb_pages
+        assert widget.children[0].value == 1
+        assert widget.children[1].value == f"/ {nb_pages}"
