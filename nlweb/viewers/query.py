@@ -158,7 +158,6 @@ class ResultTabPageWidget(VBox):
         self._df = nras.as_pandas_dataframe()
         self._df = self._df.sort_values(self._df.columns[0])
         self._total_nb_rows = self._df.shape[0]
-        self._nb_cols = nras.arity
 
         # initialize columns manager that generates widgets for each column, column viewers, and controls
         self._columns_manager = ColumnsManager(self, nras.row_type)
@@ -254,17 +253,6 @@ class ResultTabPageWidget(VBox):
 
             self.children = [self._hbox_title, self._table]
 
-    @debounce(0.5)
-    def _page_number_changed(self, change):
-        self._load_table(change.new, self._limit)
-        self.children = [self.children[0], self._table]
-
-    @debounce(0.5)
-    def _limit_changed(self, change):
-        self._limit = change.new
-        self._load_table(1, self._limit)
-        self.children = [self.children[0], self._table]
-
     def _load_table(self, page, limit):
         """
         Parameters
@@ -276,7 +264,7 @@ class ResultTabPageWidget(VBox):
         """
         self._table = sheet(
             rows=min(self._total_nb_rows, self._limit),
-            columns=self._nb_cols,
+            columns=len(self._df.columns),
             column_headers=list(self._df.columns),
             layout=Layout(width="auto", height="330px"),
         )
@@ -293,6 +281,17 @@ class ResultTabPageWidget(VBox):
                 for row_index in range(start, end):
                     rows.append(column_feeder.get_widget(column_data.iloc[row_index]))
                     column(col_index, rows, row_start=0)
+
+    @debounce(0.5)
+    def _page_number_changed(self, change):
+        self._load_table(change.new, self._limit)
+        self.children = [self.children[0], self._table]
+
+    @debounce(0.5)
+    def _limit_changed(self, change):
+        self._limit = change.new
+        self._load_table(1, self._limit)
+        self.children = [self.children[0], self._table]
 
     def get_viewers(self):
         """Returns list of viewers for this tab page.
@@ -383,11 +382,13 @@ class QResultWidget(VBox):
         # observe to load each table upon tab selection
         self._tab.observe(self._tab_index_changed, names="selected_index")
 
+        # select first tab so that data is loaded and it is viewed initially
         self._tab.selected_index = 0
 
         self.children = (self._tab,) + tuple(self._viewers)
 
     def _tab_index_changed(self, change):
+        """Loads the result table for the selected tab."""
         tab_page = self._tab.children[self._tab.selected_index]
 
         if not tab_page.loaded:
