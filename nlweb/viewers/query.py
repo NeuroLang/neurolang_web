@@ -156,7 +156,13 @@ class ResultTabPageWidget(VBox):
         super().__init__(*args, **kwargs)
         self.loaded = False
         self._df = nras.as_pandas_dataframe()
-        self._df = self._df.sort_values(self._df.columns[0])
+
+        try:
+            self._df = self._df.sort_values(self._df.columns[0])
+        except TypeError:
+            # print(f"Table {title} cannot be sorted.")
+            pass
+
         self._total_nb_rows = self._df.shape[0]
 
         # initialize columns manager that generates widgets for each column, column viewers, and controls
