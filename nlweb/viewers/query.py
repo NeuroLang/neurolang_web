@@ -15,6 +15,8 @@ from ipywidgets import (
     VBox,
 )  # type: ignore
 
+from math import ceil
+
 from neurolang.utils.relational_algebra_set.pandas import NamedRelationalAlgebraFrozenSet  # type: ignore
 
 from neurolang_ipywidgets import NlCodeEditor, NlDownloadLink, NlIconTab
@@ -117,16 +119,13 @@ class PaginationWidget(HBox):
             ]
 
     def _get_nb_pages(self, limit):
-        if self.__nb_rows <= limit:
-            return 1
-        else:
-            return (self.__nb_rows // limit) + 1
+        return ceil(self.__nb_rows / limit)
 
     def _page_widget_changed(self, change):
-        self.page = change.new
+        self.page = change["new"]
 
     def _limit_widget_changed(self, change):
-        new_limit = change.new
+        new_limit = change["new"]
         # update limit
         self.limit = new_limit
         self.page = 1
