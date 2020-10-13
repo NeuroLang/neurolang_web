@@ -266,10 +266,17 @@ class ResultTabPageWidget(VBox):
         page: int
             page number to view.
         limit: int
-            number of rows to display.
+            number of rows to display per page.
         """
+
         start = (page - 1) * limit
-        end = min(start + limit, len(self._df))
+
+        if start < 0 or start >= self._total_nb_rows:
+            raise ValueError(
+                f"Specified page number {page} and limit {limit} are not valid for result set of {self._total_nb_rows} rows."
+            )
+
+        end = min(start + limit, self._total_nb_rows)
 
         number_of_rows = end - start
 
@@ -292,7 +299,9 @@ class ResultTabPageWidget(VBox):
 
     @debounce(0.5)
     def _page_number_changed(self, change):
-        self._load_table(change.new, self._limit)
+        page_number = change["new"]
+
+        self._load_table(page_number, self._limit)
         self.children = [self.children[0], self._table]
 
     @debounce(0.5)
