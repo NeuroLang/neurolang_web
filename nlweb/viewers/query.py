@@ -302,13 +302,14 @@ class ResultTabPageWidget(VBox):
         page_number = change["new"]
 
         self._load_table(page_number, self._limit)
-        self.children = [self.children[0], self._table]
+        self.children = [self._hbox_title, self._table]
 
     @debounce(0.5)
     def _limit_changed(self, change):
-        self._limit = change.new
+        self._limit = change["new"]
+
         self._load_table(1, self._limit)
-        self.children = [self.children[0], self._table]
+        self.children = [self._hbox_title, self._table]
 
     def get_viewers(self):
         """Returns list of viewers for this tab page.
