@@ -262,15 +262,17 @@ class ResultTabPageWidget(VBox):
         limit: int
             number of rows to display.
         """
+        start = (page - 1) * limit
+        end = min(start + limit, len(self._df))
+
+        number_of_rows = end - start
+
         self._table = sheet(
-            rows=min(self._total_nb_rows, self._limit),
+            rows=min(self._total_nb_rows, number_of_rows),
             columns=len(self._df.columns),
             column_headers=list(self._df.columns),
             layout=Layout(width="auto", height="330px"),
         )
-
-        start = (page - 1) * limit
-        end = min(start + limit, len(self._df))
 
         with hold_cells():
             for col_index, column_id in enumerate(self._df.columns):
