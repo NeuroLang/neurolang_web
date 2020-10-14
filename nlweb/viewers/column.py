@@ -10,6 +10,9 @@ from nlweb.viewers.cell import (
     TfIDfWidget,
 )
 
+from nlweb.viewers.query import ResultTabPageWidget
+from nlweb.viewers.query import ViewerFactory
+
 
 class ColumnFeeder:
     """Base class for a column feeder which works as a factory to create cell widgets and their corresponding controls and viewers of a specific type of column."""
@@ -65,13 +68,14 @@ class ExplicitVBRColumn(ColumnFeeder):
         "Turn on selected regions. This will add selected regions to the viewer."
     )
 
-    def __init__(self, result_tab, viewer_factory):
+    def __init__(self, result_tab: ResultTabPageWidget, viewer_factory: ViewerFactory):
         """
         Parameters
         ----------
-        result_tab:
+        result_tab: ResultTabPageWidget
+            the tab widget that will display the column generated.
         viewer_factory: ViewerFactory
-            viewer factory to get viewer for corresponding column type
+            viewer factory to get viewer for corresponding column type.
 
         """
         super().__init__()
