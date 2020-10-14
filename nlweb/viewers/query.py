@@ -20,7 +20,7 @@ from math import ceil
 from neurolang.utils.relational_algebra_set.pandas import NamedRelationalAlgebraFrozenSet  # type: ignore
 
 from neurolang_ipywidgets import NlCodeEditor, NlDownloadLink, NlIconTab
-from nlweb.viewers.factory import ViewerFactory, ColumnsManager
+
 
 # This should be changed when neurolang gets
 # a unified exceptions hierarchy
@@ -30,7 +30,8 @@ from traitlets import Int, Unicode  # type: ignore
 
 from typing import Dict, Optional
 
-from ..util import debounce
+from nlweb.util import debounce
+from nlweb.viewers.factory import ViewerFactory, ColumnsManager
 
 
 class PaginationWidget(HBox):
@@ -366,6 +367,7 @@ class QResultWidget(VBox):
         titles = []
         icons = []
 
+        # to be passed to each tab page to use viewers from the same factory
         viewer_factory = ViewerFactory()
 
         # set of all viewers for each result_tab
