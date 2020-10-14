@@ -9,7 +9,6 @@ from nlweb.viewers.cell import (
     StudyIdWidget,
     TfIDfWidget,
 )
-from nlweb.viewers.factory import ViewerFactory
 
 
 class ColumnFeeder:
@@ -66,11 +65,19 @@ class ExplicitVBRColumn(ColumnFeeder):
         "Turn on selected regions. This will add selected regions to the viewer."
     )
 
-    def __init__(self, result_tab):
+    def __init__(self, result_tab, viewer_factory):
+        """
+        Parameters
+        ----------
+        result_tab:
+        viewer_factory: ViewerFactory
+            viewer factory to get viewer for corresponding column type
+
+        """
         super().__init__()
         self.result_tab = result_tab
 
-        self._viewer = ViewerFactory.get_region_viewer()
+        self._viewer = viewer_factory.get_region_viewer()
 
         self._turn_on_off_btn = Button(
             tooltip=ExplicitVBRColumn.__TOOLTIP_ON,
@@ -152,8 +159,8 @@ class ExplicitVBRColumn(ColumnFeeder):
 
 
 class ExplicitVBROverlayColumn(ExplicitVBRColumn):
-    def __init__(self, result_tab):
-        super().__init__(result_tab)
+    def __init__(self, result_tab, viewer_factory):
+        super().__init__(result_tab, viewer_factory)
 
     def get_widget(self, obj):
         """"""

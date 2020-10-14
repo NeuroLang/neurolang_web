@@ -20,7 +20,7 @@ from math import ceil
 from neurolang.utils.relational_algebra_set.pandas import NamedRelationalAlgebraFrozenSet  # type: ignore
 
 from neurolang_ipywidgets import NlCodeEditor, NlDownloadLink, NlIconTab
-from nlweb.viewers.factory import ColumnsManager
+from nlweb.viewers.factory import ViewerFactory, ColumnsManager
 
 # This should be changed when neurolang gets
 # a unified exceptions hierarchy
@@ -148,7 +148,12 @@ class ResultTabPageWidget(VBox):
     DOWNLOAD_THRESHOLD = 500000
 
     def __init__(
-        self, title: str, nras: NamedRelationalAlgebraFrozenSet, *args, **kwargs
+        self,
+        title: str,
+        nras: NamedRelationalAlgebraFrozenSet,
+        viewer_factory: ViewerFactory,
+        *args,
+        **kwargs,
     ):
         """
 
@@ -158,6 +163,8 @@ class ResultTabPageWidget(VBox):
             title for the tab page.
         nras: NamedRelationalAlgebraFrozenSet
             query result for the specified `title`.
+        viewer_factory: ViewerFactory
+            viewer factory to get viewer for corresponding column type
         """
         super().__init__(*args, **kwargs)
         self.loaded = False
@@ -172,7 +179,7 @@ class ResultTabPageWidget(VBox):
         self._total_nb_rows = self._df.shape[0]
 
         # initialize columns manager that generates widgets for each column, column viewers, and controls
-        self._columns_manager = ColumnsManager(self, nras.row_type)
+        self._columns_manager = ColumnsManager(self, nras.row_type, viewer_factory)
 
         self._cell_viewers = self._columns_manager.get_viewers()
 
@@ -359,6 +366,8 @@ class QResultWidget(VBox):
         titles = []
         icons = []
 
+        viewer_factory = ViewerFactory()
+
         # set of all viewers for each result_tab
         viewers = set()
 
@@ -372,7 +381,7 @@ class QResultWidget(VBox):
         for name in sorted(res.keys()):
             result_set = res[name]
             result_tab = ResultTabPageWidget(
-                name, result_set, layout=Layout(height="100%")
+                name, result_set, viewer_factory, layout=Layout(height="100%")
             )
 
             result_tabs.append(result_tab)
