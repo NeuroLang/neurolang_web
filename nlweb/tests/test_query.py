@@ -187,9 +187,9 @@ class TestResultTabPageWidget:
     """Tests ResultTabPageWidget."""
 
     @pytest.fixture
-    def widget(self, res):
+    def widget(self, res, mock_viewerfactory):
 
-        return ResultTabPageWidget(title="A", nras=res["A"])
+        return ResultTabPageWidget("A", res["A"], mock_viewerfactory)
 
     # TODO test with a resultset that contains image
     # TODO test with a resultset that contains more rows than DOWNLOAD_THRESHOLD.
