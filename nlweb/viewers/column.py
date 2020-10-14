@@ -43,11 +43,12 @@ class ColumnFeeder:
         return self._controls
 
     def get_widget(self, obj):
-        """Returns a Label widget for the specified `obj`.
+        """Returns str for the specified `obj`.
 
         Returns
         -------
-        ipywidgets.widgets.Label
+        str
+           str value for the specified `obj`.
 
         """
         obj_converted = obj
