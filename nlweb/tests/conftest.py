@@ -76,3 +76,26 @@ def mock_solve_all(monkeypatch, res):
         return res
 
     return solve_all
+
+
+class MockViewerFactory:
+    def __init__(self):
+        self.viewer = MockNlPapayaViewer()
+
+    def get_region_viewer(self):
+        return self.viewer
+
+
+@pytest.fixture
+def mock_viewerfactory(monkeypatch):
+    return MockViewerFactory()
+
+
+class MockResultTabPage:
+
+    icon = None
+
+
+@pytest.fixture
+def mock_resulttabpage(monkeypatch):
+    return MockResultTabPage()
