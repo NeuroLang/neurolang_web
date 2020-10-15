@@ -16,6 +16,7 @@ jobs:
   install_dependencies:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         python-version: [3.6, 3.7, 3.8]
     steps:
