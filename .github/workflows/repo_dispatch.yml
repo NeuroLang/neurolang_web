@@ -30,7 +30,7 @@ jobs:
       - name: Cache pip
         uses: actions/cache@v2
         with:
-          path: ~/.cache/pip
+          path: .webenv
           # Look to see if there is a cache hit for the corresponding requirements file
           key: ${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('requirements-test.txt') }}
           restore-keys: |
@@ -41,6 +41,8 @@ jobs:
           git config --global url."https://${{ secrets.CI_TRIGGER_TOKEN }}@github.com/".insteadOf ssh://git@github.com/
       - name: Install Python dependencies
         run: |
+          if [ ! -d ".webenv" ]; then python -m venv .webenv ; fi
+          . .webenv/bin/activate
           python -m pip install --upgrade pip
           pip install -r requirements-test.txt
       - name: Install Neurolang if triggered by NeuroLang
@@ -69,7 +71,7 @@ jobs:
       - name: Cache pip
         uses: actions/cache@v2
         with:
-          path: ~/.cache/pip
+          path: .webenv
           # Look to see if there is a cache hit for the corresponding requirements file
           key: ${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('requirements-test.txt') }}
           restore-keys: |
@@ -78,6 +80,7 @@ jobs:
       - name: Run notebook tests
         run: |
           if [ "${{ github.event.action }}" != "" ]; then echo "Due to push in ${{ github.event.action }}" ; fi
+          . .webenv/bin/activate
           for file in ./notebooks/*.py; do jupytext "$file" --set-kernel - --execute; done
 
   run_unit_tests:
@@ -97,7 +100,7 @@ jobs:
       - name: Cache pip
         uses: actions/cache@v2
         with:
-          path: ~/.cache/pip
+          path: .webenv
           # Look to see if there is a cache hit for the corresponding requirements file
           key: ${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('requirements-test.txt') }}
           restore-keys: |
@@ -106,6 +109,5 @@ jobs:
       - name: Run unit tests
         run: |
           if [ "${{ github.event.action }}" != "" ]; then echo "Due to push in ${{ github.event.action }}" ; fi
-          pytest --cov=nlweb nlweb/tests/ --cov-report html
-
-
+          . .webenv/bin/activate
+          python -m pytest --cov=nlweb nlweb/tests/ --cov-report html
