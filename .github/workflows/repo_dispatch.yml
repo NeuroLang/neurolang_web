@@ -78,8 +78,7 @@ jobs:
       - name: Run notebook tests
         run: |
           if [ "${{ github.event.action }}" != "" ]; then echo "Due to push in ${{ github.event.action }}" ; fi
-#          jupytext notebooks/simple_voila_ui.py --set-kernel - --execute
-#          for file in ./notebooks/*.py; do jupytext "$file" --set-kernel - --execute; done
+          for file in ./notebooks/*.py; do jupytext "$file" --set-kernel - --execute; done
 
   run_unit_tests:
     needs: install_dependencies
