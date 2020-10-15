@@ -13,7 +13,7 @@ on:
     types: [ NeuroLang, neurolang-ipywidgets]
 
 jobs:
-  test_notebooks:
+  install_dependencies:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -26,11 +26,54 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Cache pip
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          # Look to see if there is a cache hit for the corresponding requirements file
+          key: ${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('requirements-test.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.python-version }}-pip-
+            ${{ runner.os }}-${{ matrix.python-version }}-
       - name: Set git config
         run: |
           git config --global url."https://${{ secrets.CI_TRIGGER_TOKEN }}@github.com/".insteadOf ssh://git@github.com/
       - name: Install Python dependencies
-        uses: py-actions/py-dependency-install@v2
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-test.txt
+      - name: Install Neurolang if triggered by NeuroLang
+        run: |
+          if [ ${{ github.event.action }} == "NeuroLang" ]; then pip install neurolang @ git+ssh://git@github.com/NeuroLang/NeuroLang#egg=neurolang
+      - name: Install neurolang-ipywidgets if triggered by neurolang-ipywidgets
+        run: |
+          if [ ${{ github.event.action }} == "neurolang-ipywidgets" ]; then pip install neurolang-ipywidgets @ git+ssh://git@github.com/NeuroLang/neurolang-ipywidgets#egg=neurolang_ipywidgets
+      
+
+          
+  test_notebooks:
+    needs: install_dependencies
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.6, 3.7, 3.8]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Cache pip
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          # Look to see if there is a cache hit for the corresponding requirements file
+          key: ${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('requirements-test.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.python-version }}-pip-
+            ${{ runner.os }}-${{ matrix.python-version }}-
       - name: Run notebook tests
         run: |
           echo "Running tests due to push in ${{ github.event.action }}"
