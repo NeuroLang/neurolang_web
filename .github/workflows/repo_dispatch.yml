@@ -77,9 +77,6 @@ jobs:
             ${{ runner.os }}-${{ matrix.python-version }}-
       - name: Run notebook tests
         run: |
-          echo "Running tests due to push in ${{ github.event.action }}"
+          if [ "${{ github.event.action }}" != "" ]; then echo "Due to push in ${{ github.event.action }}" ; fi
 #          jupytext notebooks/simple_voila_ui.py --set-kernel - --execute
 #          for file in ./notebooks/*.py; do jupytext "$file" --set-kernel - --execute; done
-
-
-
