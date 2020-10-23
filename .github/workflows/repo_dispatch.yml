@@ -5,16 +5,109 @@ name: Repo dispatch
 # - neurolang-ipywidgets
 # projects. 
 on:
+  push:
+    branches:
+      - master
+      - test
   repository_dispatch:
     types: [ NeuroLang, neurolang-ipywidgets]
 
 jobs:
-  test:
+  install_dependencies:
     runs-on: ubuntu-latest
-    container:
-      image: python:3.8.2-slim-buster
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.6, 3.7, 3.8]
     steps:
-    - uses: actions/checkout@v2
-    - name: Run tests
-      run: |
-        echo "Running tests due to push in ${{ github.event.action }}"
+      - uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Cache pip
+        uses: actions/cache@v2
+        with:
+          path: .webenv
+          # Look to see if there is a cache hit for the corresponding requirements file
+          key: ${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('requirements-test.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.python-version }}-pip-
+            ${{ runner.os }}-${{ matrix.python-version }}-
+      - name: Set git config
+        run: |
+          git config --global url."https://${{ secrets.CI_TRIGGER_TOKEN }}@github.com/".insteadOf ssh://git@github.com/
+      - name: Install Python dependencies
+        run: |
+          if [ ! -d ".webenv" ]; then python -m venv .webenv ; fi
+          . .webenv/bin/activate
+          python -m pip install --upgrade pip
+          pip install -r requirements-test.txt
+      - name: Install Neurolang if triggered by NeuroLang
+        run: |
+          if [ "${{ github.event.action }}" == "NeuroLang" ]; then pip install --no-cache-dir neurolang @ git+ssh://git@github.com/NeuroLang/NeuroLang#egg=neurolang ; fi
+      - name: Install neurolang-ipywidgets if triggered by neurolang-ipywidgets
+        run: |
+          if [ "${{ github.event.action }}" == "neurolang-ipywidgets" ]; then pip install --no-cache-dir neurolang-ipywidgets @ git+ssh://git@github.com/NeuroLang/neurolang-ipywidgets#egg=neurolang_ipywidgets ; fi
+      
+
+          
+  test_notebooks:
+    needs: install_dependencies
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.6, 3.7, 3.8]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Cache pip
+        uses: actions/cache@v2
+        with:
+          path: .webenv
+          # Look to see if there is a cache hit for the corresponding requirements file
+          key: ${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('requirements-test.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.python-version }}-pip-
+            ${{ runner.os }}-${{ matrix.python-version }}-
+      - name: Run notebook tests
+        run: |
+          if [ "${{ github.event.action }}" != "" ]; then echo "Due to push in ${{ github.event.action }}" ; fi
+          . .webenv/bin/activate
+          for file in ./notebooks/*.py; do jupytext "$file" --set-kernel - --execute; done
+
+  run_unit_tests:
+    needs: install_dependencies
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.6, 3.7, 3.8]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Cache pip
+        uses: actions/cache@v2
+        with:
+          path: .webenv
+          # Look to see if there is a cache hit for the corresponding requirements file
+          key: ${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('requirements-test.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.python-version }}-pip-
+            ${{ runner.os }}-${{ matrix.python-version }}-
+      - name: Run unit tests
+        run: |
+          if [ "${{ github.event.action }}" != "" ]; then echo "Due to push in ${{ github.event.action }}" ; fi
+          . .webenv/bin/activate
+          python -m pytest --cov=nlweb nlweb/tests/ --cov-report html
