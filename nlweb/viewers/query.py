@@ -35,8 +35,7 @@ from nlweb.viewers.factory import ViewerFactory, ColumnsManager
 
 
 class PaginationWidget(HBox):
-    """A pagination widget that enables setting page number and the number of rows per page.
-    """
+    """A pagination widget that enables setting page number and the number of rows per page."""
 
     # number of rows in a page by default
     DEFAULT_LIMIT = 50
@@ -541,6 +540,8 @@ class QueryWidget(VBox):
             raise TypeError("neurolang_engine should not be NoneType!")
 
         super().__init__()
+
+        self.layout.max_width = "1000px"
 
         self.neurolang_engine = neurolang_engine
         self.reraise = reraise
