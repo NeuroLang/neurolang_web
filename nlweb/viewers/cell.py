@@ -63,8 +63,7 @@ class LabelCellWidget(Label, CellWidget):
 
 
 class ExplicitVBRCellWidget(HBox, CellWidget):
-    """A cell widget for data type `ExplicitVBR` that enables displaying the spatial image in an associated viewer or center on the spatial image's coordinates.
-    """
+    """A cell widget for data type `ExplicitVBR` that enables displaying the spatial image in an associated viewer or center on the spatial image's coordinates."""
 
     def __init__(
         self, vbr: ExplicitVBR, viewer: NlPapayaViewer, *args, **kwargs,
@@ -221,8 +220,7 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
 
 
 class ExplicitVBROverlayCellWidget(ExplicitVBRCellWidget):
-    """ A cell widget for data type `ExplicitVBROverlay` that enables displaying the spatial image in an associated viewer or center on the spatial image's coordinates, and manipulate image configuration parameters.
-    """
+    """A cell widget for data type `ExplicitVBROverlay` that enables displaying the spatial image in an associated viewer or center on the spatial image's coordinates, and manipulate image configuration parameters."""
 
     def __init__(
         self, vbr: ExplicitVBROverlay, viewer: NlPapayaViewer, *args, **kwargs,
