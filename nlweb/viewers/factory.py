@@ -8,7 +8,16 @@ from .papaya_widget import PapayaWidget
 
 class ViewerFactory:
     def __init__(self):
-        self.__papaya_viewer = PapayaWidget(layout=Layout(width="auto", height="570px"))
+        self.__papaya_viewer = PapayaWidget(
+            layout=Layout(
+                width="auto",
+                height="580px",
+                max_width="950px",
+                max_height="780px",
+                overflow="hidden",
+                overflow_y="hidden",
+            )
+        )
 
     def get_region_viewer(self):
         return self.__papaya_viewer
@@ -90,7 +99,7 @@ class ColumnsManager:
         ----------
         index : int
             index of the column.
-        obj : 
+        obj :
             object of column type at the specified `index` which will be used by the widget.
 
         Returns
