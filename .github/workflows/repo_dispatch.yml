@@ -47,10 +47,10 @@ jobs:
           pip install -r requirements-test.txt
       - name: Install Neurolang if triggered by NeuroLang
         run: |
-          if [ "${{ github.event.action }}" == "NeuroLang" ]; then pip install --no-cache-dir neurolang @ git+ssh://git@github.com/NeuroLang/NeuroLang#egg=neurolang ; fi
+          if [ "${{ github.event.action }}" == "NeuroLang" ]; then pip install --no-cache-dir git+ssh://git@github.com/NeuroLang/NeuroLang#egg=neurolang ; fi
       - name: Install neurolang-ipywidgets if triggered by neurolang-ipywidgets
         run: |
-          if [ "${{ github.event.action }}" == "neurolang-ipywidgets" ]; then pip install --no-cache-dir neurolang-ipywidgets @ git+ssh://git@github.com/NeuroLang/neurolang-ipywidgets#egg=neurolang_ipywidgets ; fi
+          if [ "${{ github.event.action }}" == "neurolang-ipywidgets" ]; then pip install --no-cache-dir git+ssh://git@github.com/NeuroLang/neurolang-ipywidgets#egg=neurolang_ipywidgets ; fi
       
 
           
