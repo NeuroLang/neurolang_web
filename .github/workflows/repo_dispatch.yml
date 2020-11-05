@@ -51,12 +51,7 @@ jobs:
         run: |
           . .webenv/bin/activate
           if [ "${{ github.event.action }}" == "neurolang-ipywidgets" ]; then pip install --no-cache-dir git+https://github.com/NeuroLang/neurolang_ipywidgets#egg=neurolang-ipywidgets ; fi
-      - name: Install neurolang_web
-        run: |
-          . .webenv/bin/activate
-          pip install -e .      
-
-          
+         
   test_notebooks:
     needs: install_dependencies
     runs-on: ubuntu-latest
@@ -80,6 +75,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ matrix.python-version }}-pip-
             ${{ runner.os }}-${{ matrix.python-version }}-
+      - name: Install neurolang_web
+        run: |
+          . .webenv/bin/activate
+          pip install -e .      
       - name: Run notebook tests
         run: |
           if [ "${{ github.event.action }}" != "" ]; then echo "Due to push in ${{ github.event.action }}" ; fi
@@ -109,6 +108,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ matrix.python-version }}-pip-
             ${{ runner.os }}-${{ matrix.python-version }}-
+      - name: Install neurolang_web
+        run: |
+          . .webenv/bin/activate
+          pip install -e .      
       - name: Run unit tests
         run: |
           if [ "${{ github.event.action }}" != "" ]; then echo "Due to push in ${{ github.event.action }}" ; fi
