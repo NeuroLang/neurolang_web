@@ -42,7 +42,7 @@ jobs:
           . .webenv/bin/activate
           python -m pip install --upgrade pip
           #install neurolang_web dependencies and test dependencies
-          pip install -r requiremnts.txt -r requirements-test.txt
+          pip install -r requirements.txt -r requirements-test.txt
       - name: Install Neurolang if triggered by NeuroLang
         run: |
           if [ "${{ github.event.action }}" == "NeuroLang" ]; then pip install --no-cache-dir git+https://github.com/NeuroLang/NeuroLang#egg=neurolang ; fi
