@@ -45,12 +45,16 @@ jobs:
           pip install -r requirements.txt -r requirements-test.txt
       - name: Install Neurolang if triggered by NeuroLang
         run: |
+          . .webenv/bin/activate
           if [ "${{ github.event.action }}" == "NeuroLang" ]; then pip install --no-cache-dir git+https://github.com/NeuroLang/NeuroLang#egg=neurolang ; fi
       - name: Install neurolang-ipywidgets if triggered by neurolang-ipywidgets
         run: |
+          . .webenv/bin/activate
           if [ "${{ github.event.action }}" == "neurolang-ipywidgets" ]; then pip install --no-cache-dir git+https://github.com/NeuroLang/neurolang_ipywidgets#egg=neurolang-ipywidgets ; fi
       - name: Install neurolang_web
-        run: pip install .      
+        run: |
+          . .webenv/bin/activate
+          pip install .      
 
           
   test_notebooks:
