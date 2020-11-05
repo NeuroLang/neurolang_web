@@ -41,8 +41,6 @@ jobs:
           if [ ! -d ".webenv" ]; then python -m venv .webenv ; fi
           . .webenv/bin/activate
           python -m pip install --upgrade pip
-          # install neurolang dependencies
-          pip install -r https://raw.githubusercontent.com/NeuroLang/NeuroLang/master/requirements.txt
           #install neurolang_web dependencies and test dependencies
           pip install -r requiremnts.txt -r requirements-test.txt
       - name: Install Neurolang if triggered by NeuroLang
