@@ -54,7 +54,7 @@ jobs:
       - name: Install neurolang_web
         run: |
           . .webenv/bin/activate
-          pip install .      
+          pip install -e .      
 
           
   test_notebooks:
