@@ -1,17 +1,18 @@
-name: Repo dispatch
+name: Testing
 
-# Trigger the workflow on push to
-# - Neurolang or
-# - neurolang-ipywidgets
-# projects. 
 on:
   push:
     branches:
       - master
+# Trigger the workflow on push to
+# - Neurolang or
+# - neurolang-ipywidgets
+# projects. 
   repository_dispatch:
     types: [ NeuroLang, neurolang-ipywidgets]
 
 jobs:
+  # This job installs and caches neurolang_web dependencies
   install_dependencies:
     runs-on: ubuntu-latest
     strategy:
@@ -50,7 +51,10 @@ jobs:
         run: |
           . .webenv/bin/activate
           if [ "${{ github.event.action }}" == "neurolang-ipywidgets" ]; then pip install --no-cache-dir git+https://github.com/NeuroLang/neurolang_ipywidgets#egg=neurolang-ipywidgets ; fi
-         
+
+
+  # This job runs notebook cells for each notebook.
+  # It uses cached dependencies from install_dependencies job.
   test_notebooks:
     needs: install_dependencies
     runs-on: ubuntu-latest
@@ -78,12 +82,14 @@ jobs:
         run: |
           . .webenv/bin/activate
           pip install -e .      
-      - name: Run notebook tests
+      - name: Run notebook cells for each notebook
         run: |
           if [ "${{ github.event.action }}" != "" ]; then echo "Due to push in ${{ github.event.action }}" ; fi
           . .webenv/bin/activate
           for file in ./notebooks/*.py; do jupytext "$file" --set-kernel - --execute; done
 
+  # This job runs unit tests, creates coverage report and puts it to artifacts.
+  # It uses cached dependencies from install_dependencies job.
   run_unit_tests:
     needs: install_dependencies
     runs-on: ubuntu-latest
