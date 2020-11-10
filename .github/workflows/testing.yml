@@ -81,7 +81,7 @@ jobs:
       - name: Install neurolang_web
         run: |
           . .webenv/bin/activate
-          pip install -e .      
+          pip install .      
       - name: Run notebook cells for each notebook
         run: |
           if [ "${{ github.event.action }}" != "" ]; then echo "Due to push in ${{ github.event.action }}" ; fi
@@ -117,7 +117,7 @@ jobs:
       - name: Install neurolang_web
         run: |
           . .webenv/bin/activate
-          pip install -e .      
+          pip install .      
       - name: Run unit tests
         run: |
           if [ "${{ github.event.action }}" != "" ]; then echo "Due to push in ${{ github.event.action }}" ; fi
