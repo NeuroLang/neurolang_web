@@ -1,6 +1,7 @@
 -e git+https://github.com/NeuroLang/NeuroLang#egg=neurolang
 -e git+https://github.com/NeuroLang/neurolang_ipywidgets#egg=neurolang-ipywidgets
 
+nbconvert==6.0.0
 jupyter==1.0.0
 jupytext==1.6.0
 ipysheet==0.4.4
