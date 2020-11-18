@@ -2,6 +2,8 @@
 # ## Destrieux cortical atlas (dated 2009)
 
 # +
+import sys
+import os
 import warnings  # type: ignore
 
 warnings.filterwarnings("ignore")
@@ -14,7 +16,6 @@ from nlweb.viewers.query import QueryWidget
 import nibabel as nib
 
 from nilearn import datasets  # type: ignore
-
 
 # Query agent
 def init_agent():
@@ -51,10 +52,15 @@ def add_destrieux(nl):
     nl.add_tuple_set(destrieux_set, name="destrieux")
 
 
-# Prepare engine
-nl = init_agent()
-add_destrieux(nl)
+with open(os.devnull, "w") as devnull:
+    old_stdout = sys.stdout
+    sys.stdout = devnull
 
+    # Prepare engine
+    nl = init_agent()
+    add_destrieux(nl)
+
+    sys.stdout = old_stdout
 
 # display query gui
 query = "ans(region_union(r)) :- destrieux(..., r)"
