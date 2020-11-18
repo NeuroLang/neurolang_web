@@ -33,7 +33,7 @@ def init_agent():
 
 def add_destrieux(nl):
     nl.new_symbol(name="destrieux")
-    destrieux_atlas = datasets.fetch_atlas_destrieux_2009()
+    destrieux_atlas = datasets.fetch_atlas_destrieux_2009(data_dir="neurolang_data")
     destrieux_atlas_image = nib.load(destrieux_atlas["maps"])
     destrieux_labels = dict(destrieux_atlas["labels"])
 
