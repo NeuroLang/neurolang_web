@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# ## Destrieux cortical atlas (dated 2009)
+# # Destrieux cortical atlas (dated 2009)
 
 # +
 import sys
@@ -16,7 +16,8 @@ from neurolang.frontend import NeurolangDL, ExplicitVBR  # type: ignore
 
 from nlweb.viewers.query import QueryWidget
 
-# Query agent
+
+# +
 def init_agent():
     nl = NeurolangDL()
 
@@ -47,18 +48,22 @@ def add_destrieux(nl):
     nl.add_tuple_set(destrieux_set, name="destrieux")
 
 
-# to prevent stdout to ui in the gallery
+# +
+# Prepare engine
+
+# prevent stdout to ui in the gallery
 with open(os.devnull, "w") as devnull:
     old_stdout = sys.stdout
     sys.stdout = devnull
 
-    # Prepare engine
+    # Initialize query agent
     nl = init_agent()
     add_destrieux(nl)
 
     sys.stdout = old_stdout
+# -
 
-# display query gui
-query = "ans(region_union(r)) :- destrieux(..., r)"
+# Display query gui
+query = "union(region_union(r)) :- destrieux(..., r)"
 qw = QueryWidget(nl, query)
 qw
