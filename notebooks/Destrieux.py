@@ -28,9 +28,9 @@ def init_agent():
     return nl
 
 
-def add_destrieux(nl):
+def add_destrieux(nl, destrieux_atlas):
     nl.new_symbol(name="destrieux")
-    destrieux_atlas = datasets.fetch_atlas_destrieux_2009(data_dir="neurolang_data")
+
     destrieux_atlas_image = nib.load(destrieux_atlas["maps"])
     destrieux_labels = dict(destrieux_atlas["labels"])
 
@@ -48,6 +48,10 @@ def add_destrieux(nl):
     nl.add_tuple_set(destrieux_set, name="destrieux")
 
 
+def load_database():
+    return datasets.fetch_atlas_destrieux_2009(data_dir="neurolang_data")
+
+
 # +
 # Prepare engine
 
@@ -58,7 +62,8 @@ with open(os.devnull, "w") as devnull:
 
     # Initialize query agent
     nl = init_agent()
-    add_destrieux(nl)
+    destrieux_atlas = load_database()
+    add_destrieux(nl, destrieux_atlas)
 
     sys.stdout = old_stdout
 # -
