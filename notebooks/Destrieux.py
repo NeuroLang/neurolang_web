@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# # Destrieux cortical atlas (dated 2009)
+# ## Destrieux cortical atlas (dated 2009)
 
 # +
 import sys
