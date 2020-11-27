@@ -1,4 +1,4 @@
--e git+https://github.com/NeuroLang/NeuroLang#egg=neurolang
+-e git+https://github.com/hndgzkn/NeuroLang#egg=neurolang
 -e git+https://github.com/NeuroLang/neurolang_ipywidgets#egg=neurolang-ipywidgets
 
 nbconvert==6.0.0
