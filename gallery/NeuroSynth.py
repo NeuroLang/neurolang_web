@@ -22,119 +22,126 @@ import warnings  # type: ignore
 
 warnings.filterwarnings("ignore")
 
+
+from nilearn import datasets, image
 import nibabel as nib
-from nilearn.datasets import utils
 import numpy as np
 import pandas as pd
 
 from typing import Iterable
 
 from neurolang import frontend as fe
+from neurolang import NeurolangPDL
 
 from nlweb.viewers.query import QueryWidget
 
 
 # +
 def init_agent():
-    nl = fe.NeurolangDL()
 
+    # Probabilistic Logic Programming in NeuroLang
+
+    nl = NeurolangPDL()
+
+    # Adding new aggregation function to build a region
     @nl.add_symbol
-    def agg_count(x: Iterable) -> int:
-        return len(x)
+    def agg_count(i: Iterable) -> np.int64:
+        return np.int64(len(i))
 
+    # Adding new aggregation function to build a region
     @nl.add_symbol
-    def agg_sum(x: Iterable) -> float:
-        return x.sum()
+    def agg_create_region(i: Iterable, j: Iterable, k: Iterable) -> fe.ExplicitVBR:
+        voxels = np.c_[i, j, k]
+        return fe.ExplicitVBR(voxels, mni_t1_4mm.affine, image_dim=mni_t1_4mm.shape)
 
-    @nl.add_symbol
-    def agg_mean(x: Iterable) -> float:
-        return x.mean()
-
-    @nl.add_symbol
-    def agg_create_region(x: Iterable, y: Iterable, z: Iterable) -> fe.ExplicitVBR:
-        mni_t1 = it.masker.volume
-        voxels = nib.affines.apply_affine(np.linalg.inv(mni_t1.affine), np.c_[x, y, z])
-        return fe.ExplicitVBR(voxels, mni_t1.affine, image_dim=mni_t1.shape)
-
+    # Adding new aggregation function to build a region overlay
     @nl.add_symbol
     def agg_create_region_overlay(
-        x: Iterable, y: Iterable, z: Iterable, v: Iterable
+        i: Iterable, j: Iterable, k: Iterable, p: Iterable
     ) -> fe.ExplicitVBR:
-        mni_t1 = it.masker.volume
-        voxels = nib.affines.apply_affine(np.linalg.inv(mni_t1.affine), np.c_[x, y, z])
-        return fe.ExplicitVBROverlay(voxels, mni_t1.affine, v, image_dim=mni_t1.shape)
+        voxels = np.c_[i, j, k]
+        return fe.ExplicitVBROverlay(
+            voxels, mni_t1_4mm.affine, p, image_dim=mni_t1_4mm.shape
+        )
+
+    @nl.add_symbol
+    def agg_percentile(x: Iterable, q: float) -> float:
+        ret = np.percentile(x, q)
+        return ret
 
     return nl
 
 
-def add_features(nl, features_normalised):
-    nl.add_tuple_set(features_normalised.values, name="ns_pmid_term_tfidf")
+def load_mni_atlas():
+    """Load the MNI atlas and resample it to 4mm voxels."""
+
+    mni_t1 = nib.load(datasets.fetch_icbm152_2009()["t1"])
+    return image.resample_img(mni_t1, np.eye(3) * 4)
 
 
-def add_ns_activations(nl):
-    nl.add_tuple_set(
-        database[["id", "x", "y", "z", "space"]].values, name="ns_activations"
+def load_database(mni_atlas):
+    """Load neurosynth database."""
+    d_neurosynth = datasets.utils._get_dataset_dir(
+        "neurosynth", data_dir="neurolang_data"
     )
 
-
-def add_ns_activations_by_id(nl, study_id_vox_id):
-    nl.add_tuple_set(study_id_vox_id, name="ns_activations_by_id")
-
-
-def add_vox_id_MNI(nl, vox_id_MNI):
-    nl.add_tuple_set(vox_id_MNI, name="ns_vox_id_MNI")
-
-
-def load_database():
-
-    d_neurosynth = utils._get_dataset_dir("neurosynth", data_dir="neurolang_data")
-
-    f_neurosynth = utils._fetch_files(
+    ns_database_fn, ns_features_fn = datasets.utils._fetch_files(
         d_neurosynth,
         [
             (
-                f,
+                "database.txt",
                 "https://github.com/neurosynth/neurosynth-data/raw/master/current_data.tar.gz",
                 {"uncompress": True},
-            )
-            for f in ("database.txt", "features.txt")
+            ),
+            (
+                "features.txt",
+                "https://github.com/neurosynth/neurosynth-data/raw/master/current_data.tar.gz",
+                {"uncompress": True},
+            ),
         ],
-        verbose=True,
+        verbose=0,
     )
 
-    database = pd.read_csv(f_neurosynth[0], sep="\t")
-    features = pd.read_csv(f_neurosynth[1], sep="\t")
+    ns_database = pd.read_csv(ns_database_fn, sep="\t")
+    ijk_positions = np.round(
+        nib.affines.apply_affine(
+            np.linalg.inv(mni_atlas.affine),
+            ns_database[["x", "y", "z"]].values.astype(float),
+        )
+    ).astype(int)
+    ns_database["i"] = ijk_positions[:, 0]
+    ns_database["j"] = ijk_positions[:, 1]
+    ns_database["k"] = ijk_positions[:, 2]
 
-    return database, features
+    ns_features = pd.read_csv(ns_features_fn, sep="\t")
+
+    ns_database = ns_database.query("space == 'MNI'")[
+        ["x", "y", "z", "i", "j", "k", "id"]
+    ].rename(columns={"id": "pmid"})
+    ns_database["pmid"] = ns_database["pmid"].apply(fe.neurosynth_utils.StudyID)
+
+    return ns_database, ns_features
 
 
-def normalize_features(features):
-
-    features_normalised = features.melt(
-        id_vars=features.columns[0],
-        var_name="term",
-        value_vars=features.columns[1:],
-        value_name="tfidf",
-    ).query("tfidf > 0")
-
-    return features_normalised
+def add_activations(nl, ns_database):
+    nl.add_tuple_set(ns_database, name="activations")
 
 
-def handle_neurosynth_data():
-    nsh = fe.neurosynth_utils.NeuroSynthHandler()
-    ns_ds = nsh.ns_load_dataset()
-    it = ns_ds.image_table
-    vox_ids, study_ids_ix = it.data.nonzero()
-    study_ids = ns_ds.image_table.ids[study_ids_ix]
-    study_id_vox_id = np.transpose([study_ids, vox_ids])
-    masked_ = it.masker.unmask(np.arange(it.data.shape[0]))
-    nnz = masked_.nonzero()
-    vox_id_MNI = np.c_[
-        masked_[nnz].astype(int),
-        nib.affines.apply_affine(it.masker.volume.affine, np.transpose(nnz)),
-    ]
+def add_terms(nl, ns_features):
+    ns_terms = pd.melt(
+        ns_features, var_name="term", id_vars="pmid", value_name="TfIdf"
+    ).query("TfIdf > 1e-3")[["pmid", "term", "TfIdf"]]
+    ns_terms["TfIdf"] = ns_terms["TfIdf"].apply(fe.neurosynth_utils.TfIDf)
+    ns_terms["pmid"] = ns_terms["pmid"].apply(fe.neurosynth_utils.StudyID)
 
-    return it, study_id_vox_id, vox_id_MNI
+    nl.add_tuple_set(ns_terms, name="terms")
+
+
+def add_docs(nl, ns_features):
+    ns_docs = ns_features[["pmid"]].drop_duplicates()
+    ns_docs["pmid"] = ns_docs["pmid"].apply(fe.neurosynth_utils.StudyID)
+
+    nl.add_uniform_probabilistic_choice_over_set(ns_docs.values, name="docs")
 
 
 # +
@@ -143,54 +150,30 @@ def handle_neurosynth_data():
 # prevent stdout to ui in the gallery
 with open(os.devnull, "w") as devnull:
     old_stdout = sys.stdout
-    #   sys.stdout = devnull
+    sys.stdout = devnull
 
+    mni_t1_4mm = load_mni_atlas()
     # Prepare neurosynth data
-    database, features = load_database()
-    features_normalised = normalize_features(features)
-    it, study_id_vox_id, vox_id_MNI = handle_neurosynth_data()
+    ns_database, ns_features = load_database(mni_t1_4mm)
 
     # Initialize query agent
     nl = init_agent()
-    add_features(nl, features_normalised)
-    add_ns_activations(nl)
-    add_ns_activations_by_id(nl, study_id_vox_id)
-    add_vox_id_MNI(nl, vox_id_MNI)
+
+    # Loading the database
+    add_activations(nl, ns_database)
+    add_terms(nl, ns_features)
+    add_docs(nl, ns_features)
 
     sys.stdout = old_stdout
 
-
 # +
 # Display query gui
-query = """
-term_docs(term, pmid) :- ns_pmid_term_tfidf(pmid, term, tfidf),\
-    term == 'auditory', tfidf > .003
-term_docs(term, pmid) :- ns_pmid_term_tfidf(pmid, term, tfidf),\
-    term == 'fear', tfidf > .003
-
-act_term_counts(term, voxid, agg_count(pmid)) :- \
-    ns_activations_by_id(pmid, voxid) &\
-    term_docs(term, pmid)\
-
-term_counts(term, agg_count(pmid)) :-  \
-    ns_pmid_term_tfidf(pmid, term, tfidf) & \
-    term_docs(term, pmid)
-
-p_act_given_term(voxid, x, y, z, term, prob) :- \
-    act_term_counts(term, voxid, act_term_count) & \
-    term_counts(term, term_count) & \
-    ns_vox_id_MNI(voxid, x, y, z) & \
-    prob == (act_term_count / term_count)
-
-
-region_prob(agg_create_region_overlay(x, y, z, prob), term) :- \
-    p_act_given_term(voxid, x, y, z, term, prob)
-
-thr_prob(agg_create_region(x, y, z), term) :- \
-    p_act_given_term(voxid, x, y, z, term, prob) & \
-    prob > 0.1
+query = r"""
+activation_marginal(i, j, k) :- activations(..., ..., ..., i, j, k, study_id), docs(study_id)
+term_marginal(term) :- terms(study_id, term, tfidf), tfidf > 0.01, docs(study_id), term == 'auditory'
+activation_given_term(i, j, k, PROB(i, j, k)) :- activation_marginal(i,j,k) // term_marginal(term)
+activation_given_term_image(agg_create_region_overlay(i, j, k, p)) :- activation_given_term(i,j,k,p)
 """
-
 
 qw = QueryWidget(nl, query)
 qw
