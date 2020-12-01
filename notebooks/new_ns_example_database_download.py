@@ -150,10 +150,9 @@ docs = nl.add_uniform_probabilistic_choice_over_set(
 # +
 query = r'''
 activation_marginal(i, j, k) :- activations(..., ..., ..., i, j, k, study_id), docs(study_id)
-term_marginal(term) :- terms(study_id, term, tfidf), tfidf > 0.01, docs(study_id), term == 'fear'
+term_marginal(term) :- terms(study_id, term, tfidf), tfidf > 0.01, docs(study_id), term == 'auditory'
 activation_given_term(i, j, k, PROB(i, j, k)) :- activation_marginal(i,j,k) // term_marginal(term)
-threshold_95(agg_percentile(p, 95)) :- activation_given_term(..., ..., ..., p)
-activation_given_term_image(agg_create_region_overlay(i, j, k, p)) :- activation_given_term(i,j,k,p), threshold_95(t), p >= t
+activation_given_term_image(agg_create_region_overlay(i, j, k, p)) :- activation_given_term(i,j,k,p)
 '''
 
 qw = QueryWidget(nl, query)
