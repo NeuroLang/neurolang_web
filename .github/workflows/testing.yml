@@ -1,0 +1,131 @@
+name: Testing
+
+on:
+  push:
+    branches:
+      - master
+# Trigger the workflow on push to
+# - Neurolang or
+# - neurolang-ipywidgets
+# projects. 
+  repository_dispatch:
+    types: [ NeuroLang, neurolang-ipywidgets]
+
+jobs:
+  # This job installs and caches neurolang_web dependencies
+  install_dependencies:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.6, 3.7, 3.8]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Cache pip
+        uses: actions/cache@v2
+        with:
+          path: .webenv
+          # Look to see if there is a cache hit for the corresponding requirements file
+          key: ${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('requirements.txt') }}-${{ hashFiles('requirements-test.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.python-version }}-pip-
+            ${{ runner.os }}-${{ matrix.python-version }}-
+      - name: Install Python dependencies
+        run: |
+          if [ ! -d ".webenv" ]; then python -m venv .webenv ; fi
+          . .webenv/bin/activate
+          python -m pip install --upgrade pip
+          #install neurolang_web dependencies and test dependencies
+          pip install -r requirements.txt -r requirements-test.txt
+      - name: Install Neurolang if triggered by NeuroLang
+        run: |
+          . .webenv/bin/activate
+          if [ "${{ github.event.action }}" == "NeuroLang" ]; then pip install --no-cache-dir git+https://github.com/NeuroLang/NeuroLang#egg=neurolang ; fi
+      - name: Install neurolang-ipywidgets if triggered by neurolang-ipywidgets
+        run: |
+          . .webenv/bin/activate
+          if [ "${{ github.event.action }}" == "neurolang-ipywidgets" ]; then pip install --no-cache-dir git+https://github.com/NeuroLang/neurolang_ipywidgets#egg=neurolang-ipywidgets ; fi
+
+
+  # This job runs notebook cells for each notebook.
+  # It uses cached dependencies from install_dependencies job.
+  test_notebooks:
+    needs: install_dependencies
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.6, 3.7, 3.8]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Cache pip
+        uses: actions/cache@v2
+        with:
+          path: .webenv
+          # Look to see if there is a cache hit for the corresponding requirements file
+          key: ${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('requirements.txt') }}-${{ hashFiles('requirements-test.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.python-version }}-pip-
+            ${{ runner.os }}-${{ matrix.python-version }}-
+      - name: Install neurolang_web
+        run: |
+          . .webenv/bin/activate
+          pip install .      
+      - name: Run notebook cells for each notebook
+        run: |
+          if [ "${{ github.event.action }}" != "" ]; then echo "Due to push in ${{ github.event.action }}" ; fi
+          . .webenv/bin/activate
+          for file in ./notebooks/*.py; do jupytext "$file" --set-kernel - --execute; done
+
+  # This job runs unit tests, creates coverage report and puts it to artifacts.
+  # It uses cached dependencies from install_dependencies job.
+  run_unit_tests:
+    needs: install_dependencies
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.6, 3.7, 3.8]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+          lfs: true
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Cache pip
+        uses: actions/cache@v2
+        with:
+          path: .webenv
+          # Look to see if there is a cache hit for the corresponding requirements file
+          key: ${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('requirements.txt') }}-${{ hashFiles('requirements-test.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.python-version }}-pip-
+            ${{ runner.os }}-${{ matrix.python-version }}-
+      - name: Install neurolang_web
+        run: |
+          . .webenv/bin/activate
+          pip install .      
+      - name: Run unit tests
+        run: |
+          if [ "${{ github.event.action }}" != "" ]; then echo "Due to push in ${{ github.event.action }}" ; fi
+          . .webenv/bin/activate
+          python -m pytest --cov=nlweb nlweb/tests/ --cov-report html
+      - name: Archive code coverage results
+        uses: actions/upload-artifact@v2
+        with:
+          name: code-coverage-report
+          path: coverage_html/
+          retention-days: 5

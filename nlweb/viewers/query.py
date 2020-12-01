@@ -15,14 +15,12 @@ from ipywidgets import (
     VBox,
 )  # type: ignore
 
-from math import ceil  # type:ignore
+from math import ceil
 
-from neurolang.datalog.wrapped_collections import (
-    WrappedRelationalAlgebraSet,
-)  # type: ignore
+from neurolang.utils.relational_algebra_set.pandas import NamedRelationalAlgebraFrozenSet  # type: ignore
 
 from neurolang_ipywidgets import NlCodeEditor, NlDownloadLink, NlIconTab
-from nlweb.viewers.factory import ColumnsManager
+
 
 # This should be changed when neurolang gets
 # a unified exceptions hierarchy
@@ -32,12 +30,12 @@ from traitlets import Int, Unicode  # type: ignore
 
 from typing import Dict, Optional
 
-from ..util import debounce
+from nlweb.util import debounce
+from nlweb.viewers.factory import ViewerFactory, ColumnsManager
 
 
 class PaginationWidget(HBox):
-    """A pagination widget that enables setting page number and the number of rows per page.
-    """
+    """A pagination widget that enables setting page number and the number of rows per page."""
 
     # number of rows in a page by default
     DEFAULT_LIMIT = 50
@@ -71,57 +69,63 @@ class PaginationWidget(HBox):
 
         self.layout.width = "400px"
 
-        if nb_rows > limit:
-            self.layout.visibility = "visible"
-        else:
+        if nb_rows <= limit:
             self.layout.visibility = "hidden"
+        else:
+            self.layout.visibility = "visible"
 
-        nb_pages = self._get_nb_pages(self.limit)
+            nb_pages = self._get_nb_pages(self.limit)
 
-        # widget to set page number
-        self.__page_widget = BoundedIntText(
-            value=self.page,
-            min=1,
-            max=nb_pages,
-            step=1,
-            continuous_update=True,
-            description="page",
-            description_tooltip="Current page",
-            disabled=False,
-            style={"description_width": "30px"},
-            layout=Layout(width="90px", max_width="90px"),
-        )
+            # widget to set page number
+            self.__page_widget = BoundedIntText(
+                value=self.page,
+                min=1,
+                max=nb_pages,
+                step=1,
+                continuous_update=True,
+                description="page",
+                description_tooltip="Current page",
+                disabled=False,
+                style={"description_width": "30px"},
+                layout=Layout(width="90px", max_width="90px"),
+            )
 
-        # widget to display total number of pages.
-        self.__label_slash = Label(value=f"/ {nb_pages}", layout=Layout(width="60px"))
+            # widget to display total number of pages.
+            self.__label_slash = Label(
+                value=f"/ {nb_pages}", layout=Layout(width="60px")
+            )
 
-        # widget to set limit
-        self.__limit_widget = BoundedIntText(
-            value=self.limit,
-            min=1,
-            max=PaginationWidget.MAX_LIMIT,
-            step=1,
-            continuous_update=True,
-            description="rows",
-            description_tooltip=f"Number of rows per page. Max. possible: {PaginationWidget.MAX_LIMIT}",
-            disabled=False,
-            style={"description_width": "30px"},
-            layout=Layout(width="90px", max_width="90px"),
-        )
+            # widget to set limit
+            self.__limit_widget = BoundedIntText(
+                value=self.limit,
+                min=1,
+                max=PaginationWidget.MAX_LIMIT,
+                step=1,
+                continuous_update=True,
+                description="rows",
+                description_tooltip=f"Number of rows per page. Max. possible: {PaginationWidget.MAX_LIMIT}",
+                disabled=False,
+                style={"description_width": "30px"},
+                layout=Layout(width="90px", max_width="90px"),
+            )
 
-        self.__page_widget.observe(self._page_widget_changed, names="value")
-        self.__limit_widget.observe(self._limit_widget_changed, names="value")
+            self.__page_widget.observe(self._page_widget_changed, names="value")
+            self.__limit_widget.observe(self._limit_widget_changed, names="value")
 
-        self.children = [self.__page_widget, self.__label_slash, self.__limit_widget]
+            self.children = [
+                self.__page_widget,
+                self.__label_slash,
+                self.__limit_widget,
+            ]
 
     def _get_nb_pages(self, limit):
-        return ceil(self.__nb_rows / self.limit)
+        return ceil(self.__nb_rows / limit)
 
     def _page_widget_changed(self, change):
-        self.page = change.new
+        self.page = change["new"]
 
     def _limit_widget_changed(self, change):
-        new_limit = change.new
+        new_limit = change["new"]
         # update limit
         self.limit = new_limit
         self.page = 1
@@ -137,14 +141,19 @@ class PaginationWidget(HBox):
 
 
 class ResultTabPageWidget(VBox):
-    """Tab page widget that displays result table and controls for each column type in the result table.."""
+    """Tab page widget that displays result table and controls for each column type in the result table."""
 
     icon = Unicode()
 
     DOWNLOAD_THRESHOLD = 500000
 
     def __init__(
-        self, title: str, wras: WrappedRelationalAlgebraSet, cheaders, *args, **kwargs
+        self,
+        title: str,
+        nras: NamedRelationalAlgebraFrozenSet,
+        viewer_factory: ViewerFactory,
+        *args,
+        **kwargs,
     ):
         """
 
@@ -152,32 +161,53 @@ class ResultTabPageWidget(VBox):
         ----------
         title: str
             title for the tab page.
-        wras: WrappedRelationalAlgebraSet
+        nras: NamedRelationalAlgebraFrozenSet
             query result for the specified `title`.
-        cheaders: list
-            column header list for result table.
+        viewer_factory: ViewerFactory
+            viewer factory to get viewer for corresponding column type
         """
         super().__init__(*args, **kwargs)
         self.loaded = False
-        self._df = wras.as_pandas_dataframe()
-        self._title = title
+        self._df = nras.as_pandas_dataframe()
+
+        try:
+            self._df = self._df.sort_values(self._df.columns[0])
+        except TypeError:
+            # print(f"Table {title} cannot be sorted.")
+            pass
+
         self._total_nb_rows = self._df.shape[0]
-        self._nb_cols = wras.arity
-        self._cheaders = cheaders
 
         # initialize columns manager that generates widgets for each column, column viewers, and controls
-        self._columns_manager = ColumnsManager(self, wras.row_type)
+        self._columns_manager = ColumnsManager(self, nras.row_type, viewer_factory)
 
         self._cell_viewers = self._columns_manager.get_viewers()
-        self._controls = self._columns_manager.get_controls()
 
-        self._create_title()
+        tab_controls = self._columns_manager.get_controls()
+        self._hbox_title.children = self._create_title(title, tab_controls)
 
-    def _create_title(self):
+    def _create_title(self, title, tab_controls):
+        """Creates title controls for this tab widget.
+
+        - Adds title label
+        - Adds download button for query result. Disabled if one of the following conditions hold:
+            * query result contains ExplicitVBR or ExplicitVBROverlay type column
+            * number of rows in the query result exceeds DOWNLOAD_THRESHOLD
+        - Adds paginator if there exists no ExplicitVBR or ExplicitVBROverlay type column
+        - Adds any controls related to column types in the result set
+
+        Parameters
+        ----------
+        title: str
+            result set title.
+        tab_controls: list
+            list of controls related to columns in the result set.
+
+        """
         # initialize widgets
-        # set tab page title
+        # add title label
         title_label = HTML(
-            f"<h3>{self._title}</h3>", layout=Layout(padding="0px 5px 5px 0px")
+            f"<h3>{title}</h3>", layout=Layout(padding="0px 5px 5px 0px")
         )
 
         self._hbox_title = HBox(
@@ -202,15 +232,14 @@ class ResultTabPageWidget(VBox):
             layout=Layout(justify_content="flex-start", align_items="center"),
         )
 
-        # add paginator if there exist no ExplicitVBR or ExplicitVBROverlay column
         if not self._columns_manager.hasVBRColumn:
 
             if self._total_nb_rows <= ResultTabPageWidget.DOWNLOAD_THRESHOLD:
+                dw.filename = f"{title}.csv.gz"
+                dw.mimetype = "application/gz"
                 dw.tooltip = f"Download {dw.filename} file."
 
                 def clicked(event):
-                    dw.filename = f"{self._title}.csv.gz"
-                    dw.mimetype = "application/gz"
                     dw.content = gzip.compress(self._df.to_csv(index=False).encode())
 
                 dw.on_click(clicked)
@@ -218,6 +247,7 @@ class ResultTabPageWidget(VBox):
                 dw.disabled = True
                 dw.tooltip = "Not available for download due to size!"
 
+            # add paginator if there exist no ExplicitVBR or ExplicitVBROverlay column
             paginator = PaginationWidget(
                 self._df.shape[0], layout=Layout(padding="0px 0px 0px 50px")
             )
@@ -232,9 +262,7 @@ class ResultTabPageWidget(VBox):
 
             self._limit = self._total_nb_rows
 
-        if self._controls is not None:
-            hbox_menu = HBox(self._controls)
-            self._hbox_title.children = [hbox_table_info, hbox_menu]
+        return [hbox_table_info, HBox(tab_controls)]
 
     def load(self):
         if not self.loaded:
@@ -244,18 +272,6 @@ class ResultTabPageWidget(VBox):
 
             self.children = [self._hbox_title, self._table]
 
-    @debounce(0.5)
-    def _page_number_changed(self, change):
-        self._load_table(change.new, self._limit)
-        self.children = [self.children[0], self._table]
-
-    @debounce(0.5)
-    def _limit_changed(self, change):
-        print("called limit changed")
-        self._limit = change.new
-        self._load_table(1, self._limit)
-        self.children = [self.children[0], self._table]
-
     def _load_table(self, page, limit):
         """
         Parameters
@@ -263,17 +279,26 @@ class ResultTabPageWidget(VBox):
         page: int
             page number to view.
         limit: int
-            number of rows to display.
+            number of rows to display per page.
         """
-        self._table = sheet(
-            rows=min(self._total_nb_rows, self._limit),
-            columns=self._nb_cols,
-            column_headers=self._cheaders,
-            layout=Layout(width="auto", height="330px"),
-        )
 
         start = (page - 1) * limit
-        end = min(start + limit, len(self._df))
+
+        if start < 0 or start >= self._total_nb_rows:
+            raise ValueError(
+                f"Specified page number {page} and limit {limit} are not valid for result set of {self._total_nb_rows} rows."
+            )
+
+        end = min(start + limit, self._total_nb_rows)
+
+        number_of_rows = end - start
+
+        self._table = sheet(
+            rows=min(self._total_nb_rows, number_of_rows),
+            columns=len(self._df.columns),
+            column_headers=list(self._df.columns),
+            layout=Layout(width="auto", height="330px"),
+        )
 
         with hold_cells():
             for col_index, column_id in enumerate(self._df.columns):
@@ -282,8 +307,22 @@ class ResultTabPageWidget(VBox):
                 rows = []
 
                 for row_index in range(start, end):
-                    rows.append(column_feeder.get_widget(column_data[row_index]))
+                    rows.append(column_feeder.get_widget(column_data.iloc[row_index]))
                     column(col_index, rows, row_start=0)
+
+    @debounce(0.5)
+    def _page_number_changed(self, change):
+        page_number = change["new"]
+
+        self._load_table(page_number, self._limit)
+        self.children = [self._hbox_title, self._table]
+
+    @debounce(0.5)
+    def _limit_changed(self, change):
+        self._limit = change["new"]
+
+        self._load_table(1, self._limit)
+        self.children = [self._hbox_title, self._table]
 
     def get_viewers(self):
         """Returns list of viewers for this tab page.
@@ -297,24 +336,20 @@ class ResultTabPageWidget(VBox):
 class QResultWidget(VBox):
     """A widget to display query results and corresponding viewers."""
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         # tab widget that displays each resultset in an individual tab
         self._tab = NlIconTab(layout=Layout(height="460px"))
         # viewers necessary for each resultset, can be shared among resultsets
         self._viewers = None
 
-    def _create_result_tabs(
-        self, res: Dict[str, WrappedRelationalAlgebraSet], pnames: Dict
-    ):
+    def _create_result_tabs(self, res: Dict[str, NamedRelationalAlgebraFrozenSet]):
         """Creates necessary tab pages and viewers for the specified query result `res`.
 
         Parameters
         ----------
-        res: Dict[str, WrappedRelationalAlgebraSet]
+        res: Dict[str, NamedRelationalAlgebraFrozenSet]
            dictionary of query results with keys as result name and values as result for corresponding key.
-        pnames: Dict[str, tuple]
-           dictionary of query result column names with keys as result name and values as tuple of column names for corresponding key.
 
         Returns
         -------
@@ -331,6 +366,9 @@ class QResultWidget(VBox):
         titles = []
         icons = []
 
+        # to be passed to each tab page to use viewers from the same factory
+        viewer_factory = ViewerFactory()
+
         # set of all viewers for each result_tab
         viewers = set()
 
@@ -344,7 +382,7 @@ class QResultWidget(VBox):
         for name in sorted(res.keys()):
             result_set = res[name]
             result_tab = ResultTabPageWidget(
-                name, result_set, list(pnames[name]), layout=Layout(height="100%")
+                name, result_set, viewer_factory, layout=Layout(height="100%")
             )
 
             result_tabs.append(result_tab)
@@ -357,27 +395,16 @@ class QResultWidget(VBox):
 
         return result_tabs, titles, icons, viewers
 
-    def _tab_index_changed(self, change):
-        tab_page = self._tab.children[self._tab.selected_index]
-
-        if not tab_page.loaded:
-            tab_page.load()
-
-    def show_results(self, res: Dict[str, WrappedRelationalAlgebraSet], pnames: Dict):
+    def show_results(self, res: Dict[str, NamedRelationalAlgebraFrozenSet]):
         """Creates and displays necessary tab pages and viewers for the specified query result `res`.
 
         Parameters
         ----------
-        res: Dict[str, WrappedRelationalAlgebraSet]
+        res: Dict[str, NamedRelationalAlgebraFrozenSet]
            dictionary of query results with keys as result name and values as result for corresponding key.
-        pnames: Dict[str, tuple]
-           dictionary of query result column names with keys as result name and values as tuple of column names for corresponding key.
         """
-        self.reset()
 
-        result_tabs, titles, icons, self._viewers = self._create_result_tabs(
-            res, pnames
-        )
+        result_tabs, titles, icons, self._viewers = self._create_result_tabs(res)
 
         self._tab.children = result_tabs
 
@@ -389,10 +416,17 @@ class QResultWidget(VBox):
         # observe to load each table upon tab selection
         self._tab.observe(self._tab_index_changed, names="selected_index")
 
+        # select first tab so that data is loaded and it is viewed initially
         self._tab.selected_index = 0
-        self._tab_index_changed(None)
 
         self.children = (self._tab,) + tuple(self._viewers)
+
+    def _tab_index_changed(self, change):
+        """Loads the result table for the selected tab."""
+        tab_page = self._tab.children[self._tab.selected_index]
+
+        if not tab_page.loaded:
+            tab_page.load()
 
     def reset(self):
         """Resets this query result widget removing all tabs in tab widget and resetting and removing all viewers."""
@@ -502,9 +536,12 @@ class QueryWidget(VBox):
         default_query="ans(region_union(r)) :- destrieux(..., r)",
         reraise=False,
     ):
+        if neurolang_engine is None:
+            raise TypeError("neurolang_engine should not be NoneType!")
+
         super().__init__()
 
-        # TODO check if neurolang_engine is None.
+        self.layout.max_width = "1000px"
 
         self.neurolang_engine = neurolang_engine
         self.reraise = reraise
@@ -533,7 +570,7 @@ class QueryWidget(VBox):
         for i, tab_title in enumerate(["query", "symbols"]):
             self.query_section.set_title(i, tab_title)
 
-        self.result_viewer = QResultWidget()
+        self.result_viewer = QResultWidget(layout=Layout(visibility="hidden"))
 
         self.children = [self.query_section, self.result_viewer]
 
@@ -541,10 +578,8 @@ class QueryWidget(VBox):
         with self.neurolang_engine.scope:
             self.neurolang_engine.execute_datalog_program(query)
             res = self.neurolang_engine.solve_all()
-            predicate_names = {
-                k: self.neurolang_engine.predicate_parameter_names(k) for k in res
-            }
-            return res, predicate_names
+
+            return res
 
     def _on_query_button_clicked(self, b):
         """Runs the query in the query text area and diplays the results.
@@ -558,21 +593,26 @@ class QueryWidget(VBox):
         self._reset_output()
 
         try:
-            qresult, pnames = self.run_query(self.query.text)
+            qresult = self.run_query(self.query.text)
         except FailedParse as fp:
             self._set_error_marker(fp)
             self._handle_generic_error(fp)
         except Exception as e:
-            self.handle_generic_error(e)
+            self._handle_generic_error(e)
         else:
-            self.result_viewer.show_results(qresult, pnames)
-            self.result_viewer.layout.visibility = "visible"
+            if qresult != {}:
+                self.result_viewer.show_results(qresult)
+                self.result_viewer.layout.visibility = "visible"
+            else:
+                self._handle_generic_error(
+                    ValueError("Query did not return any results.")
+                )
 
     def _reset_output(self):
+        self.error_display.layout.visibility = "hidden"
+        self.result_viewer.layout.visibility = "hidden"
         self.query.clear_marks()
         self.result_viewer.reset()
-        self.result_viewer.layout.visibility = "hidden"
-        self.error_display.layout.visibility = "hidden"
 
     def _set_error_marker(self, pe: FailedParse):
         try:

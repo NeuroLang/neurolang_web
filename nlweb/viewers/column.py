@@ -9,7 +9,9 @@ from nlweb.viewers.cell import (
     StudyIdWidget,
     TfIDfWidget,
 )
-from nlweb.viewers.factory import ViewerFactory
+
+from nlweb.viewers.query import ResultTabPageWidget
+from nlweb.viewers.query import ViewerFactory
 
 
 class ColumnFeeder:
@@ -41,11 +43,12 @@ class ColumnFeeder:
         return self._controls
 
     def get_widget(self, obj):
-        """Returns a Label widget for the specified `obj`.
+        """Returns str for the specified `obj`.
 
         Returns
         -------
-        ipywidgets.widgets.Label
+        str
+           str value for the specified `obj`.
 
         """
         obj_converted = obj
@@ -66,11 +69,20 @@ class ExplicitVBRColumn(ColumnFeeder):
         "Turn on selected regions. This will add selected regions to the viewer."
     )
 
-    def __init__(self, result_tab):
+    def __init__(self, result_tab: ResultTabPageWidget, viewer_factory: ViewerFactory):
+        """
+        Parameters
+        ----------
+        result_tab: ResultTabPageWidget
+            the tab widget that will display the column generated.
+        viewer_factory: ViewerFactory
+            viewer factory to get viewer for corresponding column type.
+
+        """
         super().__init__()
         self.result_tab = result_tab
 
-        self._viewer = ViewerFactory.get_region_viewer()
+        self._viewer = viewer_factory.get_region_viewer()
 
         self._turn_on_off_btn = Button(
             tooltip=ExplicitVBRColumn.__TOOLTIP_ON,
@@ -152,8 +164,8 @@ class ExplicitVBRColumn(ColumnFeeder):
 
 
 class ExplicitVBROverlayColumn(ExplicitVBRColumn):
-    def __init__(self, result_tab):
-        super().__init__(result_tab)
+    def __init__(self, result_tab, viewer_factory):
+        super().__init__(result_tab, viewer_factory)
 
     def get_widget(self, obj):
         """"""

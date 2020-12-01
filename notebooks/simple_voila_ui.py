@@ -90,10 +90,10 @@ def add_study_tf_idf(nl):
 
 nl = init_agent()
 add_destrieux(nl)
-add_subramarginal(nl)
-add_def_mode_study(nl)
-add_pcc_study(nl)
-add_study_tf_idf(nl)
+# add_subramarginal(nl)
+# add_def_mode_study(nl)
+# add_pcc_study(nl)
+# add_study_tf_idf(nl)
 
 # ## Query UI
 

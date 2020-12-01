@@ -20,9 +20,7 @@ from ..util import debounce
 
 
 class PapayaWidget(HBox):
-    """A widget class that displays a papaya viewer (NlPapayaViewer) and config widget (PapayaConfigWidget) side by side.
-
-    """
+    """A widget class that displays a papaya viewer (NlPapayaViewer) and config widget (PapayaConfigWidget) side by side."""
 
     current_config = Any()
     current_colorbar = Any()
@@ -37,7 +35,9 @@ class PapayaWidget(HBox):
         """
         super().__init__(*args, **kwargs)
 
-        self._viewer = NlPapayaViewer(layout=Layout(width="70%", height="auto"))
+        self._viewer = NlPapayaViewer(
+            layout=Layout(width="70%", height="auto", border="1px solid black")
+        )
 
         self._config = PapayaConfigWidget(
             self._viewer,
@@ -151,8 +151,7 @@ class PapayaConfigWidget(VBox):
         ]
 
     def _init_widgets(self):
-        """Initializes all configuration widgets. Possible image config parameters are:
-        """
+        """Initializes all configuration widgets. Possible image config parameters are:"""
         layout = Layout(width="200px", max_width="200px")
 
         self._alpha = FloatSlider(
@@ -346,8 +345,7 @@ class PapayaConfigWidget(VBox):
         self._sym.observe(self._handlers["sym"], names="value")
 
     def _remove_handlers(self):
-        """Removes all event handlers set for the config widgets.
-        """
+        """Removes all event handlers set for the config widgets."""
         if len(self._handlers):
             self._alpha.unobserve(self._handlers["alpha"], names="value")
             self._lut.unobserve(self._handlers["lut"], names="value")
@@ -421,8 +419,7 @@ class PapayaConfigWidget(VBox):
             self.reset()
 
     def reset(self):
-        """Resets values for all config widgets.
-        """
+        """Resets values for all config widgets."""
         self._remove_handlers()
         self._set_values({}, 100, [])
         self.layout.visibility = "hidden"
