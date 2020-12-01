@@ -6,11 +6,11 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.5.2
+#       jupytext_version: 1.7.1
 #   kernelspec:
-#     display_name: Python 3.8.2 64-bit ('base')
+#     display_name: python3.8
 #     language: python
-#     name: python38264bitbase1b15e812226d42068d829dc2c51d0e05
+#     name: python3
 # ---
 
 import warnings  # type: ignore
@@ -18,7 +18,7 @@ import warnings  # type: ignore
 from nilearn import datasets, image, plotting
 import pandas as pd
 from neurolang import frontend as fe
-from neurolang.frontend import probabilistic_frontend as pfe
+from neurolang import NeurolangPDL
 from typing import Iterable
 import nibabel as nib
 import numpy as np
@@ -34,7 +34,7 @@ warnings.filterwarnings("ignore")
 # Load the MNI atlas and resample it to 4mm voxels
 
 mni_t1 = nib.load(datasets.fetch_icbm152_2009()['t1'])
-mni_t1_4mm = image.resample_img(mni_t1, np.eye(3) * 1)
+mni_t1_4mm = image.resample_img(mni_t1, np.eye(3) * 4)
 
 # +
 ###############################################################################
@@ -54,9 +54,10 @@ ns_database_fn, ns_features_fn = datasets.utils._fetch_files(
             {'uncompress': True}
         ),
     ]
+    , verbose=0
 )
 
-ns_database = pd.read_csv(ns_database_fn, sep=f'\t')
+ns_database = pd.read_csv(ns_database_fn, sep='\t')
 ijk_positions = (
     np.round(nib.affines.apply_affine(
         np.linalg.inv(mni_t1_4mm.affine),
@@ -67,8 +68,10 @@ ns_database['i'] = ijk_positions[:, 0]
 ns_database['j'] = ijk_positions[:, 1]
 ns_database['k'] = ijk_positions[:, 2]
 
-ns_features = pd.read_csv(ns_features_fn, sep=f'\t')
+ns_features = pd.read_csv(ns_features_fn, sep='\t')
 ns_docs = ns_features[['pmid']].drop_duplicates()
+ns_docs['pmid'] = ns_docs['pmid'].apply(fe.neurosynth_utils.StudyID)
+
 ns_terms = (
     pd.melt(
             ns_features,
@@ -91,7 +94,7 @@ ns_database['pmid'] = ns_database['pmid'].apply(fe.neurosynth_utils.StudyID)
 # Probabilistic Logic Programming in NeuroLang
 # --------------------------------------------
 
-nl = pfe.ProbabilisticFrontend()
+nl = NeurolangPDL()
 
 ###############################################################################
 # Adding new aggregation function to build a region
@@ -128,16 +131,15 @@ def agg_create_region_overlay(
 
 @nl.add_symbol
 def agg_percentile(x: Iterable, q: float) -> float:
-    ret = np.percentile(x, 95)
-    print("THR", ret)
+    ret = np.percentile(x, q)
     return ret
 
 
 ###############################################################################
 # Loading the database
 
-activations = nl.add_tuple_set(ns_database.values, name='activations')
-terms = nl.add_tuple_set(ns_terms.values, name='terms')
+activations = nl.add_tuple_set(ns_database, name='activations')
+terms = nl.add_tuple_set(ns_terms, name='terms')
 docs = nl.add_uniform_probabilistic_choice_over_set(
         ns_docs.values, name='docs'
 )
@@ -147,22 +149,15 @@ docs = nl.add_uniform_probabilistic_choice_over_set(
 
 # +
 query = r'''
-voxel_terms_doc_counts(term, i, j, k, agg_count(study_id)) :- terms(study_id, term, tfidf),activations(..., ..., ..., i, j, k, study_id),term == 'fear'
-voxel_terms_doc_counts(term, i, j, k, agg_count(study_id)) :- terms(study_id, term, tfidf),activations(..., ..., ..., i, j, k, study_id),term == 'auditory'
-term_images(agg_create_region_overlay(i, j, k, c), term) :- voxel_terms_doc_counts(term, i, j, k, c)
-term_images_voxel_count(term, agg_count(c)):-voxel_terms_doc_counts(term, i, j, k, c), c > 5
+activation_marginal(i, j, k) :- activations(..., ..., ..., i, j, k, study_id), docs(study_id)
+term_marginal(term) :- terms(study_id, term, tfidf), tfidf > 0.01, docs(study_id), term == 'fear'
+activation_given_term(i, j, k, PROB(i, j, k)) :- activation_marginal(i,j,k) // term_marginal(term)
+threshold_95(agg_percentile(p, 95)) :- activation_given_term(..., ..., ..., p)
+activation_given_term_image(agg_create_region_overlay(i, j, k, p)) :- activation_given_term(i,j,k,p), threshold_95(t), p >= t
 '''
 
 qw = QueryWidget(nl, query)
 qw
 # -
-
-from nilearn import plotting
-
-with nl.scope as e:
-    nl.execute_datalog_program(query)
-    res = nl.solve_all()
-
-plotting.plot_stat_map(res['term_images'].as_pandas_dataframe().iloc[0, 0].spatial_image())
 
 
