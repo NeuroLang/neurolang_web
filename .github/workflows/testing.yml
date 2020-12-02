@@ -40,7 +40,7 @@ jobs:
         run: |
           if [ ! -d ".webenv" ]; then python -m venv .webenv ; fi
           . .webenv/bin/activate
-          python -m pip install --upgrade pip
+          .webenv/bin/python -m pip install --upgrade pip
           #install neurolang_web dependencies and test dependencies
           pip install -r requirements.txt -r requirements-test.txt
       - name: Install Neurolang if triggered by NeuroLang
@@ -82,7 +82,12 @@ jobs:
         run: |
           . .webenv/bin/activate
           pip install .      
-      - name: Run notebook cells for each notebook
+      - name: Run notebook cells for each notebook under gallery
+        run: |
+          if [ "${{ github.event.action }}" != "" ]; then echo "Due to push in ${{ github.event.action }}" ; fi
+          . .webenv/bin/activate
+          for file in ./gallery/*.py; do jupytext "$file" --set-kernel - --execute; done
+      - name: Run notebook cells for each notebook under notebooks
         run: |
           if [ "${{ github.event.action }}" != "" ]; then echo "Due to push in ${{ github.event.action }}" ; fi
           . .webenv/bin/activate
