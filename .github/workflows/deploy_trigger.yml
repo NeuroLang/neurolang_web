@@ -1,0 +1,21 @@
+name: neurolang_gallery deploy trigger
+
+on:
+  workflow_run:
+    workflows: ["Testing"]
+    branches: [main]
+    types: 
+      - completed
+      
+jobs:
+  trigger_deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger deployment to server
+        run: |
+          curl -X POST \
+          -F token=$DEPLOY_TRIGGER_TOKEN \
+          -F ref=master \
+          -F "variables[REPO]=neurolang_web" \
+          https://gitlab.inria.fr/api/v4/projects/25219/trigger/pipeline
+
