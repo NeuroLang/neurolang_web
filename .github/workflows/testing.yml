@@ -38,11 +38,12 @@ jobs:
             ${{ runner.os }}-${{ matrix.python-version }}-
       - name: Install Python dependencies
         run: |
-          if [ ! -d ".webenv" ]; then python -m venv .webenv ; fi
+          if [ -d ".webenv" ]; then rm -r .webenv ; fi
+          python -m venv .webenv
           . .webenv/bin/activate
           .webenv/bin/python -m pip install --upgrade pip
           #install neurolang_web dependencies and test dependencies
-          pip install -r requirements.txt -r requirements-test.txt
+          pip install --no-cache-dir -r requirements.txt -r requirements-test.txt
       - name: Install Neurolang if triggered by NeuroLang
         run: |
           . .webenv/bin/activate
