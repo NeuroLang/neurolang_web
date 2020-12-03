@@ -83,17 +83,17 @@ jobs:
         run: |
           . .webenv/bin/activate
           pip install .      
-      - name: Run notebook cells for each notebook under gallery
-        run: |
-          if [ "${{ github.event.action }}" != "" ]; then echo "Due to push in ${{ github.event.action }}" ; fi
-          . .webenv/bin/activate
-          for file in ./gallery/*.py; do jupytext "$file" --set-kernel - --execute; done
-      - name: Run notebook cells for each notebook under notebooks
+     - name: Run notebook cells for each notebook under notebooks
         run: |
           if [ "${{ github.event.action }}" != "" ]; then echo "Due to push in ${{ github.event.action }}" ; fi
           . .webenv/bin/activate
           for file in ./notebooks/*.py; do jupytext "$file" --set-kernel - --execute; done
-
+     - name: Run notebook cells for each notebook under gallery
+        run: |
+          if [ "${{ github.event.action }}" != "" ]; then echo "Due to push in ${{ github.event.action }}" ; fi
+          . .webenv/bin/activate
+          for file in ./gallery/*.py; do jupytext "$file" --set-kernel - --execute; done
+ 
   # This job runs unit tests, creates coverage report and puts it to artifacts.
   # It uses cached dependencies from install_dependencies job.
   run_unit_tests:
