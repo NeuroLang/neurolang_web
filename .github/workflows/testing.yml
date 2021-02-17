@@ -44,14 +44,16 @@ jobs:
           .webenv/bin/python -m pip install --upgrade pip
           #install neurolang_web dependencies and test dependencies
           pip install --no-cache-dir -r requirements.txt -r requirements-test.txt
-      - name: Install Neurolang if triggered by NeuroLang
+      - name: Reinstall Neurolang if triggered by NeuroLang
+        if: ${{ github.event.action == 'Neurolang' }}
         run: |
           . .webenv/bin/activate
-          if [ "${{ github.event.action }}" == "NeuroLang" ]; then pip install --no-cache-dir git+https://github.com/NeuroLang/NeuroLang#egg=neurolang ; fi
-      - name: Install neurolang-ipywidgets if triggered by neurolang-ipywidgets
+          pip install --no-cache-dir git+https://github.com/NeuroLang/NeuroLang#egg=neurolang ; fi
+      - name: Reinstall neurolang-ipywidgets if triggered by neurolang-ipywidgets
+        if: ${{ github.event.action == 'neurolang-ipywidgets' }}
         run: |
           . .webenv/bin/activate
-          if [ "${{ github.event.action }}" == "neurolang-ipywidgets" ]; then pip install --no-cache-dir git+https://github.com/NeuroLang/neurolang_ipywidgets#egg=neurolang-ipywidgets ; fi
+          pip install --no-cache-dir git+https://github.com/NeuroLang/neurolang_ipywidgets#egg=neurolang-ipywidgets ; fi
 
 
   # This job runs notebook cells for each notebook.
