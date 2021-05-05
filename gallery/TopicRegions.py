@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.11.1
+#       jupytext_version: 1.11.2
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -30,40 +30,9 @@ import sklearn
 from neurolang.frontend import NeurolangPDL
 from scipy.stats import binom_test, kurtosis, norm, skew
 
-from gallery import data_utils
+from gallery import metafc
 
 # %%
-def load_mni_atlas():
-    """Load the MNI atlas and resample it to 2mm voxels."""
-
-    mni_mask = image.resample_img(
-        nib.load(datasets.fetch_icbm152_2009()["gm"]),
-        np.eye(3) * 2,
-        interpolation="nearest",
-    )
-    return mni_mask
-
-
-def load_neuroquery(data_dir: Path, mni_mask):
-    term_in_study, peak_reported, study_ids = data_utils.fetch_neuroquery(
-        data_dir=data_dir,
-        tfidf_threshold=0.01,
-        mask=mni_mask,
-        coord_type="ijk",
-    )
-    return term_in_study, peak_reported, study_ids
-
-
-def load_difumo(data_dir: Path, mni_mask, n_difumo_components: int = 1024):
-    region_voxels, difumo_meta = data_utils.fetch_difumo(
-        data_dir=data_dir,
-        mask=mni_mask,
-        coord_type="ijk",
-        n_components=n_difumo_components,
-    )
-    return region_voxels, difumo_meta
-
-
 def init_frontend():
     nl = NeurolangPDL()
 
@@ -283,11 +252,27 @@ def load_study_splits(
 data_dir = Path("neurolang_data")
 
 # %%
-mni_mask = load_mni_atlas()
+resolution = 2
+interpolation = "nearest"
+mni_mask = metafc.load_mni_atlas(
+    resolution=resolution, interpolation=interpolation
+)
 
 # %%
-term_in_study, peak_reported, study_ids = load_neuroquery(data_dir, mni_mask)
-region_voxels, difumo_meta = load_difumo(data_dir, mni_mask)
+coord_type = "ijk"
+tfidf_threshold = 0.01
+term_in_study, peak_reported, study_ids = metafc.load_neuroquery(
+    data_dir, mni_mask, tfidf_threshold=tfidf_threshold, coord_type=coord_type
+)
+
+# %%
+n_difumo_components = 1024
+region_voxels, difumo_meta = metafc.load_difumo(
+    data_dir,
+    mni_mask,
+    n_difumo_components=n_difumo_components,
+    coord_type=coord_type,
+)
 
 # %%
 nl = init_frontend()
@@ -304,16 +289,17 @@ load_study_splits(nl, study_ids, n_splits=10)
 # %%
 query = r"""BinReported(b, s) :- PeakReported(i, j, k, s) & LpfcArea(b, r, i, j, k, g)
 StudyNotReportingPeak(b, s) :- Study(idxs, s) & Bin(b) & ~BinReported(b, s)
-StudyMatchingBinSegregationQuery(s, b) :- BinReported(b, s) & ~(\u2203b2: Bin(b2) & (b2 != b) & BinReported(b2, s))
+BinAux(b, s) :- Bin(b2) & (b2 != b) & BinReported(b2, s)
+StudyMatchingBinSegregationQuery(s, b) :- BinReported(b, s) & ~BinAux(b, s)
 ProbTopicInStudyA(t, split, PROB(t, split)) :- TopicInStudy(t, s) & SelectedStudy(s) & StudySplit(idxs, s, split)
 ProbTopicStudy(t, Mean(p)) :- ProbTopicInStudyA(t, split, p)
 QueryA(t, b, split, PROB(t, b, split)) :- TopicInStudy(t, s) // (StudyMatchingBinSegregationQuery(s, b) & SelectedStudy(s) & StudySplit(idxs, s, split))
 QueryB(t, b, split, PROB(t, b, split)) :- (TopicInStudy(t, s)) // (StudyNotReportingPeak(b, s) & SelectedStudy(s) & StudySplit(idxs, s, split))
 QueryP(t, b, Mean(p0)) :- QueryA(t, b, split, p0)
 QueryN(t, b, Mean(p1)) :- QueryB(t, b, split, p1)
-ThrQuery(t, b, p, pmarg, zw) :- (QueryP(t, b, p) & QueryN(t, b, pmarg) & (zw == log_odds(p, pmarg)))"""
+ThrQuery(t, b, p, pmarg, zw) :- QueryP(t, b, p) & QueryN(t, b, pmarg) & (zw == log_odds(p, pmarg))"""
 
-# %%
+# %% tags=[]
 from nlweb.viewers.query import QueryWidget
 
 qw = QueryWidget(nl, query)
