@@ -1,5 +1,19 @@
-# -*- coding: utf-8 -*-
-# ## Destrieux cortical atlas (dated 2009)
+# ---
+# jupyter:
+#   jupytext:
+#     formats: ipynb,py:light
+#     text_representation:
+#       extension: .py
+#       format_name: light
+#       format_version: '1.5'
+#       jupytext_version: 1.11.2
+#   kernelspec:
+#     display_name: Python 3
+#     language: python
+#     name: python3
+# ---
+
+# # Destrieux cortical atlas (dated 2009)
 
 # +
 import sys
