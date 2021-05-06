@@ -27,15 +27,23 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
+
+      # add more precise python version info because of https://github.com/actions/setup-python/issues/182
+      - name: Get full Python version
+        id: full-python-version
+        shell: bash
+        run: echo ::set-output name=version::$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")
+
       - name: Cache pip
         uses: actions/cache@v2
         with:
           path: .webenv
           # Look to see if there is a cache hit for the corresponding requirements file
-          key: ${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('requirements.txt') }}-${{ hashFiles('requirements-test.txt') }}
+          key: ${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-pip-${{ hashFiles('requirements.txt') }}-${{ hashFiles('requirements-test.txt') }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.python-version }}-pip-
-            ${{ runner.os }}-${{ matrix.python-version }}-
+            ${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-pip-
+            ${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-
+
       - name: Install Python dependencies
         run: |
           if [ -d ".webenv" ]; then rm -r .webenv ; fi
@@ -72,19 +80,27 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
+
+      # add more precise python version info because of https://github.com/actions/setup-python/issues/182
+      - name: Get full Python version
+        id: full-python-version
+        shell: bash
+        run: echo ::set-output name=version::$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")
+      
       - name: Cache pip
         uses: actions/cache@v2
         with:
           path: .webenv
           # Look to see if there is a cache hit for the corresponding requirements file
-          key: ${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('requirements.txt') }}-${{ hashFiles('requirements-test.txt') }}
+          key: ${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-pip-${{ hashFiles('requirements.txt') }}-${{ hashFiles('requirements-test.txt') }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.python-version }}-pip-
-            ${{ runner.os }}-${{ matrix.python-version }}-
+            ${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-pip-
+            ${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-
+
       - name: Install neurolang_web
         run: |
           . .webenv/bin/activate
-          pip install .      
+          pip install .
       - name: Run notebook cells for each notebook under gallery
         run: |
           if [ "${{ github.event.action }}" != "" ]; then echo "Due to push in ${{ github.event.action }}" ; fi
@@ -108,19 +124,25 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
+
+      - name: Get full Python version
+        id: full-python-version
+        shell: bash
+        run: echo ::set-output name=version::$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")
+
       - name: Cache pip
         uses: actions/cache@v2
         with:
           path: .webenv
           # Look to see if there is a cache hit for the corresponding requirements file
-          key: ${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('requirements.txt') }}-${{ hashFiles('requirements-test.txt') }}
+          key: ${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-pip-${{ hashFiles('requirements.txt') }}-${{ hashFiles('requirements-test.txt') }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.python-version }}-pip-
-            ${{ runner.os }}-${{ matrix.python-version }}-
+            ${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-pip-
+            ${{ runner.os }}-${{ steps.full-python-version.outputs.version }}
       - name: Install neurolang_web
         run: |
           . .webenv/bin/activate
-          pip install .      
+          pip install .
       - name: Run unit tests
         run: |
           if [ "${{ github.event.action }}" != "" ]; then echo "Due to push in ${{ github.event.action }}" ; fi
