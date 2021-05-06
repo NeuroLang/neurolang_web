@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.6.0
+#       jupytext_version: 1.11.2
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -30,7 +30,7 @@ import pandas as pd
 
 from typing import Iterable
 
-from neurolang import frontend as fe
+from neurolang.frontend import ExplicitVBR, ExplicitVBROverlay
 from neurolang import NeurolangPDL
 
 from nlweb.viewers.query import QueryWidget
@@ -50,17 +50,21 @@ def init_agent():
 
     # Adding new aggregation function to build a region
     @nl.add_symbol
-    def agg_create_region(i: Iterable, j: Iterable, k: Iterable) -> fe.ExplicitVBR:
+    def agg_create_region(
+        i: Iterable, j: Iterable, k: Iterable
+    ) -> ExplicitVBR:
         voxels = np.c_[i, j, k]
-        return fe.ExplicitVBR(voxels, mni_t1_4mm.affine, image_dim=mni_t1_4mm.shape)
+        return ExplicitVBR(
+            voxels, mni_t1_4mm.affine, image_dim=mni_t1_4mm.shape
+        )
 
     # Adding new aggregation function to build a region overlay
     @nl.add_symbol
     def agg_create_region_overlay(
         i: Iterable, j: Iterable, k: Iterable, p: Iterable
-    ) -> fe.ExplicitVBR:
+    ) -> ExplicitVBR:
         voxels = np.c_[i, j, k]
-        return fe.ExplicitVBROverlay(
+        return ExplicitVBROverlay(
             voxels, mni_t1_4mm.affine, p, image_dim=mni_t1_4mm.shape
         )
 
@@ -118,7 +122,6 @@ def load_database(mni_atlas):
     ns_database = ns_database.query("space == 'MNI'")[
         ["x", "y", "z", "i", "j", "k", "id"]
     ].rename(columns={"id": "pmid"})
-    ns_database["pmid"] = ns_database["pmid"].apply(fe.neurosynth_utils.StudyID)
 
     return ns_database, ns_features
 
@@ -131,16 +134,11 @@ def add_terms(nl, ns_features):
     ns_terms = pd.melt(
         ns_features, var_name="term", id_vars="pmid", value_name="TfIdf"
     ).query("TfIdf > 1e-3")[["pmid", "term", "TfIdf"]]
-    ns_terms["TfIdf"] = ns_terms["TfIdf"].apply(fe.neurosynth_utils.TfIDf)
-    ns_terms["pmid"] = ns_terms["pmid"].apply(fe.neurosynth_utils.StudyID)
-
     nl.add_tuple_set(ns_terms, name="terms")
 
 
 def add_docs(nl, ns_features):
     ns_docs = ns_features[["pmid"]].drop_duplicates()
-    ns_docs["pmid"] = ns_docs["pmid"].apply(fe.neurosynth_utils.StudyID)
-
     nl.add_uniform_probabilistic_choice_over_set(ns_docs.values, name="docs")
 
 
