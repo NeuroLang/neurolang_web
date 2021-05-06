@@ -48,12 +48,12 @@ jobs:
         if: ${{ github.event.action == 'Neurolang' }}
         run: |
           . .webenv/bin/activate
-          pip install --no-cache-dir git+https://github.com/NeuroLang/NeuroLang#egg=neurolang ; fi
+          pip install --no-cache-dir git+https://github.com/NeuroLang/NeuroLang#egg=neurolang
       - name: Reinstall neurolang-ipywidgets if triggered by neurolang-ipywidgets
         if: ${{ github.event.action == 'neurolang-ipywidgets' }}
         run: |
           . .webenv/bin/activate
-          pip install --no-cache-dir git+https://github.com/NeuroLang/neurolang_ipywidgets#egg=neurolang-ipywidgets ; fi
+          pip install --no-cache-dir git+https://github.com/NeuroLang/neurolang_ipywidgets#egg=neurolang-ipywidgets
 
 
   # This job runs notebook cells for each notebook.
@@ -85,16 +85,11 @@ jobs:
         run: |
           . .webenv/bin/activate
           pip install .      
-      - name: Run notebook cells for each notebook under notebooks
-        run: |
-          if [ "${{ github.event.action }}" != "" ]; then echo "Due to push in ${{ github.event.action }}" ; fi
-          . .webenv/bin/activate
-          for file in ./notebooks/*.py; do jupytext "$file" --set-kernel - --execute; done
       - name: Run notebook cells for each notebook under gallery
         run: |
           if [ "${{ github.event.action }}" != "" ]; then echo "Due to push in ${{ github.event.action }}" ; fi
           . .webenv/bin/activate
-          for file in ./gallery/*.py; do jupytext "$file" --set-kernel - --execute; done
+          for file in ./gallery/*.py; do jupytext "$file" --execute; done
  
   # This job runs unit tests, creates coverage report and puts it to artifacts.
   # It uses cached dependencies from install_dependencies job.
