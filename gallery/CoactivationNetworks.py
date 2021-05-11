@@ -43,17 +43,17 @@ def xyz_to_ijk(x, y, z, mni_mask):
     ).astype(int)
     return voxels
 
+
 # %%
 def init_frontend():
     nl = NeurolangPDL()
 
     nl.add_symbol(
-        np.log,
-        name="log",
-        type_=Callable[[float], float],
+        np.log, name="log", type_=Callable[[float], float],
     )
 
     return nl
+
 
 # %%
 def load_studies(nl, peak_reported, study_ids):
@@ -77,13 +77,10 @@ def load_studies(nl, peak_reported, study_ids):
     )
     nl.add_tuple_set(study_ids, name="Study")
     nl.add_tuple_set(
-        {
-            ("aCC", -2, 46, -4),
-            ("CS", -34, -26, 60),
-            ("lIPS", -26, -58, 48),
-        },
+        {("aCC", -2, 46, -4), ("CS", -34, -26, 60), ("lIPS", -26, -58, 48),},
         name="SeedVoxel",
     )
+
 
 # %%
 def load_regions_and_peaks_reported(nl):
@@ -116,7 +113,7 @@ def load_regions_and_peaks_reported(nl):
 
 # %%
 resolution = 3
-mni_mask = metafc.load_mni_atlas(resolution=resolution)
+mni_mask = metafc.load_mni_atlas(data_dir, resolution=resolution)
 
 # %%
 coord_type = "xyz"

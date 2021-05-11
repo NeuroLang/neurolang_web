@@ -248,6 +248,7 @@ def load_study_splits(
     splits = pd.concat(splits)
     StudySplit = nl.add_tuple_set(splits, name="StudySplit")
 
+
 # %%
 data_dir = Path("neurolang_data")
 
@@ -255,7 +256,7 @@ data_dir = Path("neurolang_data")
 resolution = 2
 interpolation = "nearest"
 mni_mask = metafc.load_mni_atlas(
-    resolution=resolution, interpolation=interpolation
+    data_dir, resolution=resolution, interpolation=interpolation
 )
 
 # %%

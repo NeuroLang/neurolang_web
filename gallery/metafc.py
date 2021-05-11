@@ -7,11 +7,11 @@ from pathlib import Path
 from gallery import data_utils
 
 
-def load_mni_atlas(resolution: int = 2, interpolation: str = "continuous"):
+def load_mni_atlas(data_dir: Path, resolution: int = 2, interpolation: str = "continuous"):
     """Load the MNI atlas and resample it to 2mm voxels."""
 
     mni_mask = image.resample_img(
-        nib.load(datasets.fetch_icbm152_2009()["gm"]),
+        nib.load(datasets.fetch_icbm152_2009(data_dir=str(data_dir))["gm"]),
         np.eye(3) * resolution,
         interpolation=interpolation,
     )

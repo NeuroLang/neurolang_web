@@ -78,8 +78,8 @@ def init_agent():
 
 def load_mni_atlas():
     """Load the MNI atlas and resample it to 4mm voxels."""
-
-    mni_t1 = nib.load(datasets.fetch_icbm152_2009()["t1"])
+    data_dir="neurolang_data"
+    mni_t1 = nib.load(datasets.fetch_icbm152_2009(data_dir=data_dir)["t1"])
     return image.resample_img(mni_t1, np.eye(3) * 4)
 
 
