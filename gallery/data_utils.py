@@ -26,14 +26,6 @@ DIFUMO_N_COMPONENTS_TO_DOWNLOAD_ID = {
     1024: "34792",
 }
 
-RESOLUTION = 3
-
-MNI_MASK = nilearn.image.resample_img(
-    nibabel.load(nilearn.datasets.fetch_icbm152_2009()["gm"]),
-    np.eye(3) * RESOLUTION,
-)
-
-
 def xyz_to_ijk(xyz, mask):
     voxels = nibabel.affines.apply_affine(
         np.linalg.inv(mask.affine),
@@ -43,7 +35,7 @@ def xyz_to_ijk(xyz, mask):
 
 
 def fetch_neuroquery(
-    mask: nibabel.Nifti1Image = MNI_MASK,
+    mask: nibabel.Nifti1Image,
     data_dir: Path = DATA_DIR,
     tfidf_threshold: Optional[float] = None,
     coord_type: str = "xyz",
@@ -194,7 +186,7 @@ def fetch_difumo_meta(
 
 
 def fetch_difumo(
-    mask: nibabel.Nifti1Image = MNI_MASK,
+    mask: nibabel.Nifti1Image,
     component_filter_fun: Callable = lambda _: True,
     data_dir: Path = DATA_DIR,
     coord_type: str = "xyz",
