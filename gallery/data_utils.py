@@ -19,7 +19,6 @@ FILETYPE_TO_EXTENSION = {
     "parquet": "gz",
 }
 
-
 DIFUMO_N_COMPONENTS_TO_DOWNLOAD_ID = {
     256: "3vrct",
     512: "9b76y",

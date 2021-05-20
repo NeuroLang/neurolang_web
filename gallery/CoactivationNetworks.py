@@ -19,18 +19,13 @@ import warnings  # type: ignore
 warnings.filterwarnings("ignore")
 
 from pathlib import Path
-from typing import Callable, Iterable
+from typing import Callable
 
 import nibabel as nib
-import nilearn.datasets as datasets
-import nilearn.image as image
 import numpy as np
-import pandas as pd
-import sklearn
 from neurolang.frontend import NeurolangPDL
-from scipy.stats import binom_test, kurtosis, norm, skew
 
-from gallery import data_utils, metafc
+from gallery import metafc
 
 # %%
 data_dir = Path("neurolang_data")
@@ -137,13 +132,14 @@ ProbActivation(x, y, z, PROB(x, y, z)) :- VoxelReported(x, y, z, s) & SelectedSt
 ProbActivationSeed(region, PROB(region)) :- RegionReported(region, s) & SelectedStudy(s)
 ProbActivationAndSeedActivation(x, y, z, region, PROB(x, y, z, region)) :- VoxelReported(x, y, z, s) & SelectedStudy(s) & RegionReported(region, s)
 Query(x,y,z,region,pA,pASeed,pAgA,pAgD,pAaA,n,m,kk,N, llr) :- ProbActivationAndSeedActivation(x, y, z, region, pAaA), ProbActivationGivenSeedActivation(x, y, z, region, pAgA), ProbActivationGivenSeedDeactivation(x, y, z, region, pAgD), ProbActivation(x, y, z, pA), ProbActivationSeed(region, pASeed), CountStudies(N), (m == pA * N), (n == pASeed * N), (kk == pAaA * N), ( llr == (kk * log(pAgA) + ((n - kk) * log(1 - pAgA) + ((m - kk) * log(pAgD) + (((N - n) - (m + kk)) * log(1 - pAgD))))) - (kk * log(pA) + ((n - kk) * log(1 - pA) + ((m - kk) * log(pA) + (((N - n) - (m + kk)) * log(1 - pA))))) )
+ans(x,y,z,region,pA,pASeed,pAgA,pAgD,pAaA,n,m,kk,N, llr) :- Query(x,y,z,region,pA,pASeed,pAgA,pAgD,pAaA,n,m,kk,N, llr)
 """
 
 # %%
 with nl.scope:
-    nl.execute_datalog_program(query)
-    res = nl.solve_all()
+    res = nl.execute_datalog_program(query)
 
+res
 # %%
 from nlweb.viewers.query import QueryWidget
 
