@@ -44,7 +44,7 @@ class TestQueryWidget:
 
         assert widget.neurolang_engine is not None
         assert widget.query is not None
-        assert widget.query.text == "ans(region_union(r)) :- destrieux(..., r)"
+        assert widget.query.text == "union(region_union(r)) :- destrieux(..., r)"
         assert widget.result_viewer is not None
         assert widget.reraise == False
         assert widget.query_section is not None

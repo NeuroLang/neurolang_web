@@ -533,7 +533,7 @@ class QueryWidget(VBox):
     def __init__(
         self,
         neurolang_engine,
-        default_query="ans(region_union(r)) :- destrieux(..., r)",
+        default_query="union(region_union(r)) :- destrieux(..., r)",
         reraise=False,
     ):
         if neurolang_engine is None:
@@ -561,9 +561,10 @@ class QueryWidget(VBox):
         self.button = Button(description="Run query")
         self.button.on_click(self._on_query_button_clicked)
         self.error_display = HTML(layout=Layout(visibility="hidden"))
+        self.info_display = HTML(layout=Layout(visibility="hidden"))
         self.query_section = Tab(
             children=[
-                VBox([HBox([self.query, self.button]), self.error_display]),
+                VBox([HBox([self.query, self.button]), self.error_display, self.info_display]),
                 SymbolsWidget(self.neurolang_engine),
             ]
         )
@@ -593,6 +594,7 @@ class QueryWidget(VBox):
         self._reset_output()
 
         try:
+            self._display_info("Your query is running, this may take a while ...")
             qresult = self.run_query(self.query.text)
         except FailedParse as fp:
             self._set_error_marker(fp)
@@ -607,9 +609,12 @@ class QueryWidget(VBox):
                 self._handle_generic_error(
                     ValueError("Query did not return any results.")
                 )
+        finally:
+            self._display_info()
 
     def _reset_output(self):
         self.error_display.layout.visibility = "hidden"
+        self.info_display.layout.visibility = "hidden"
         self.result_viewer.layout.visibility = "hidden"
         self.query.clear_marks()
         self.result_viewer.reset()
@@ -635,9 +640,24 @@ class QueryWidget(VBox):
         if self.reraise:
             raise e
 
+    def _display_info(self, info: str = None):
+        if info is None:
+            self.info_display.layout.visibility = "hidden"
+        else:
+            self.info_display.layout.visibility = "visible"
+            self.info_display.value = _format_info(info)
+
 
 def _format_exc(e: Exception):
     """
     Format an exception for display
     """
     return f"<pre style='background-color:#faaba5; border: 1px solid red; padding: 0.4em'>{e}</pre>"
+
+
+def _format_info(info: str):
+    """
+    Format an info string for display
+    """
+    return f"<pre style='background-color:#a5affa; border: 1px solid blue; padding: 0.4em'>{info}</pre>"
+
