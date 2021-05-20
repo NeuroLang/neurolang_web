@@ -1,11 +1,11 @@
 # ---
 # jupyter:
 #   jupytext:
-#     formats: ipynb,py:light
+#     formats: ipynb,py:percent
 #     text_representation:
 #       extension: .py
-#       format_name: light
-#       format_version: '1.5'
+#       format_name: percent
+#       format_version: '1.3'
 #       jupytext_version: 1.11.2
 #   kernelspec:
 #     display_name: Python 3
@@ -13,9 +13,10 @@
 #     name: python3
 # ---
 
-# # NeuroSynth
+# %%
+# NeuroSynth
 
-# +
+# %%
 import sys
 import os
 import warnings  # type: ignore
@@ -36,7 +37,7 @@ from neurolang import NeurolangPDL
 from nlweb.viewers.query import QueryWidget
 
 
-# +
+# %%
 def init_agent():
 
     # Probabilistic Logic Programming in NeuroLang
@@ -78,7 +79,7 @@ def init_agent():
 
 def load_mni_atlas():
     """Load the MNI atlas and resample it to 4mm voxels."""
-    data_dir="neurolang_data"
+    data_dir = "neurolang_data"
     mni_t1 = nib.load(datasets.fetch_icbm152_2009(data_dir=data_dir)["t1"])
     return image.resample_img(mni_t1, np.eye(3) * 4)
 
@@ -142,7 +143,7 @@ def add_docs(nl, ns_features):
     nl.add_uniform_probabilistic_choice_over_set(ns_docs.values, name="docs")
 
 
-# +
+# %%
 # Prepare engine
 
 # prevent stdout to ui in the gallery
@@ -164,7 +165,7 @@ with open(os.devnull, "w") as devnull:
 
     sys.stdout = old_stdout
 
-# +
+# %%
 # Display query gui
 query = r"""
 activation_marginal(i, j, k) :- activations(..., ..., ..., i, j, k, study_id), docs(study_id)
@@ -175,6 +176,3 @@ activation_given_term_image(agg_create_region_overlay(i, j, k, p)) :- activation
 
 qw = QueryWidget(nl, query)
 qw
-# -
-
-

@@ -25,7 +25,6 @@ from neurolang.frontend import NeurolangPDL
 
 from gallery import data_utils
 
-
 # %%
 def init_frontend():
     nl = NeurolangPDL()
@@ -40,7 +39,7 @@ def init_frontend():
 # %%
 def load_studies(
     nl,
-    term_association,
+    topic_association,
     peak_reported,
     study_ids,
     split_id: int = 42,
@@ -52,16 +51,12 @@ def load_studies(
     peak_reported = peak_reported.loc[
         peak_reported.study_id.isin(study_ids.study_id)
     ]
-    term_association = term_association.loc[
-        term_association.study_id.isin(study_ids.study_id)
+    topic_association = topic_association.loc[
+        topic_association.study_id.isin(study_ids.study_id)
     ]
     nl.add_probabilistic_facts_from_tuples(
-        set(
-            term_association[["tfidf", "term", "study_id"]].itertuples(
-                index=False, name=None
-            )
-        ),
-        name="TermAssociation",
+        set(topic_association.itertuples(index=False, name=None)),
+        name="TopicAssociation",
     )
     nl.add_tuple_set(peak_reported, name="PeakReported")
     nl.add_uniform_probabilistic_choice_over_set(
@@ -116,16 +111,17 @@ resolution = 3
 mni_mask = data_utils.load_mni_atlas(resolution=resolution)
 
 # %%
-coord_type = "xyz"
-term_association, peak_reported, study_ids = data_utils.fetch_neuroquery(
-    mni_mask, tfidf_threshold=None, coord_type=coord_type
-)
+n_topics = 100
+topic_association = data_utils.fetch_neurosynth_topic_associations(n_topics)
+
+# %%
+_, peak_reported, study_ids = data_utils.fetch_neurosynth(tfidf_threshold=1e-2)
 
 # %%
 nl = init_frontend()
 
 # %%
-load_studies(nl, term_association, peak_reported, study_ids)
+load_studies(nl, topic_association, peak_reported, study_ids)
 load_attention_language_networks(nl)
 
 # %%
@@ -134,16 +130,16 @@ RegionReported(r, s) :- PeakReported(x1, y1, z1, s) & RegionSeedVoxel(r, x2, y2,
 NetworkReported(n, s) :- RegionReported(r, s) & RegionInNetwork(r, n)
 StudyMatchingNetworkQuery(s, n) :- RegionReported("VWFA", s) & NetworkReported(n, s) & exists(n2; ((n2 != n) & NetworkReported(n2, s) & Network(n2)))
 StudyNotMatchingSegregationQuery(s, n) :- ~StudyMatchingNetworkQuery(s, n) & Study(s) & Network(n)
-PositiveReverseInferenceSegregationQuery(t, n, PROB(t, n)) :- (TermAssociation(t, s) & SelectedStudy(s)) // (StudyMatchingNetworkQuery(s, n) & SelectedStudy(s))
-NegativeReverseInferenceSegregationQuery(t, n, PROB(t, n)) :- (TermAssociation(t, s) & SelectedStudy(s)) // (StudyNotMatchingSegregationQuery(s, n) & SelectedStudy(s))
-MarginalTermAssociation(t, PROB(t)) :- SelectedStudy(s) & TermAssociation(t, s)
+PositiveReverseInferenceSegregationQuery(t, n, PROB(t, n)) :- (TopicAssociation(t, s) & SelectedStudy(s)) // (StudyMatchingNetworkQuery(s, n) & SelectedStudy(s))
+NegativeReverseInferenceSegregationQuery(t, n, PROB(t, n)) :- (TopicAssociation(t, s) & SelectedStudy(s)) // (StudyNotMatchingSegregationQuery(s, n) & SelectedStudy(s))
+MarginalTopicAssociation(t, PROB(t)) :- SelectedStudy(s) & TopicAssociation(t, s)
 CountStudies(count(s)) :- Study(s)
-CountStudiesWithTerm(t, c) :- MarginalTermAssociation(t, prob) & (c == prob * N) & CountStudies(N)
+CountStudiesWithTopic(t, c) :- MarginalTopicAssociation(t, prob) & (c == prob * N) & CountStudies(N)
 CountStudiesMatchingQuery(n, count(s)) :- StudyMatchingNetworkQuery(s, n)
-JointProb(t, n, PROB(t, n)) :- TermAssociation(t, s) & StudyMatchingNetworkQuery(s, n) & SelectedStudy(s)
-CountStudiesMatchingQueryWithTerm(t, n, c) :- JointProb(t, n, p) & CountStudies(N) & (c == N * p)
-LikelihoodRatio(term, network, p1, p0, llr, m, n, k) :- PositiveReverseInferenceSegregationQuery(term, network, p1) & NegativeReverseInferenceSegregationQuery(term, network, p0) & MarginalTermAssociation(term, p) & CountStudies(N) & CountStudiesWithTerm(term, m) & CountStudiesMatchingQuery(network, n) & CountStudiesMatchingQueryWithTerm(term, network, k) & ( llr == ( k * log(p1) + ((n - k) * log(1 - p1) + ((m - k) * log(p0) + (((N - n) - (m + k)) * log(1 - p0))))) - ( k * log(p) + ((n - k) * log(1 - p) + ((m - k) * log(p) + (((N - n) - (m + k)) * log(1 - p))))))
-ans(term, network, pTgQ, pTgNotQ, llr, nb_studies_associated_with_term, nb_studies_matching_segregation_query, nb_studies_both_associated_with_term_and_matching_query) :- LikelihoodRatio(term, network, pTgQ, pTgNotQ, llr, nb_studies_associated_with_term, nb_studies_matching_segregation_query, nb_studies_both_associated_with_term_and_matching_query)
+JointProb(t, n, PROB(t, n)) :- TopicAssociation(t, s) & StudyMatchingNetworkQuery(s, n) & SelectedStudy(s)
+CountStudiesMatchingQueryWithTopic(t, n, c) :- JointProb(t, n, p) & CountStudies(N) & (c == N * p)
+LikelihoodRatio(topic, network, p1, p0, llr, m, n, k) :- PositiveReverseInferenceSegregationQuery(topic, network, p1) & NegativeReverseInferenceSegregationQuery(topic, network, p0) & MarginalTopicAssociation(topic, p) & CountStudies(N) & CountStudiesWithTopic(topic, m) & CountStudiesMatchingQuery(network, n) & CountStudiesMatchingQueryWithTopic(topic, network, k) & ( llr == ( k * log(p1) + ((n - k) * log(1 - p1) + ((m - k) * log(p0) + (((N - n) - (m + k)) * log(1 - p0))))) - ( k * log(p) + ((n - k) * log(1 - p) + ((m - k) * log(p) + (((N - n) - (m + k)) * log(1 - p))))))
+ans(topic, network, pTgQ, pTgNotQ, llr, nb_studies_associated_with_topic, nb_studies_matching_segregation_query, nb_studies_both_associated_with_topic_and_matching_query) :- LikelihoodRatio(topic, network, pTgQ, pTgNotQ, llr, nb_studies_associated_with_topic, nb_studies_matching_segregation_query, nb_studies_both_associated_with_topic_and_matching_query)
 """
 
 # %%
@@ -156,3 +152,5 @@ from nlweb.viewers.query import QueryWidget
 
 qw = QueryWidget(nl, query)
 qw
+
+# %%

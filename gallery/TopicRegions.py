@@ -30,7 +30,7 @@ import sklearn
 from neurolang.frontend import NeurolangPDL
 from scipy.stats import binom_test, kurtosis, norm, skew
 
-from gallery import metafc
+from gallery import data_utils
 
 # %%
 def init_frontend():
@@ -255,24 +255,21 @@ data_dir = Path("neurolang_data")
 # %%
 resolution = 2
 interpolation = "nearest"
-mni_mask = metafc.load_mni_atlas(
-    data_dir, resolution=resolution, interpolation=interpolation
+mni_mask = data_utils.load_mni_atlas(
+    resolution=resolution, interpolation=interpolation
 )
 
 # %%
 coord_type = "ijk"
 tfidf_threshold = 0.01
-term_in_study, peak_reported, study_ids = metafc.load_neuroquery(
-    data_dir, mni_mask, tfidf_threshold=tfidf_threshold, coord_type=coord_type
+term_in_study, peak_reported, study_ids = data_utils.fetch_neuroquery(
+    mni_mask, tfidf_threshold=tfidf_threshold, coord_type=coord_type
 )
 
 # %%
-n_difumo_components = 1024
-region_voxels, difumo_meta = metafc.load_difumo(
-    data_dir,
-    mni_mask,
-    n_difumo_components=n_difumo_components,
-    coord_type=coord_type,
+n_components = 1024
+region_voxels, difumo_meta = data_utils.fetch_difumo(
+    mni_mask, n_components=n_components, coord_type=coord_type,
 )
 
 # %%
@@ -304,15 +301,13 @@ ans(t, b, p, pmarg, zw) :- ThrQuery(t, b, p, pmarg, zw)"""
 with nl.scope:
     res = nl.execute_datalog_program(query)
     res = nl.solve_all()
-    
+
 res
 
 # %%
 
-# %% tags=[]
+# %%
 from nlweb.viewers.query import QueryWidget
 
 qw = QueryWidget(nl, query)
 qw
-
-# %%

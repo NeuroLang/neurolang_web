@@ -18,25 +18,13 @@ import warnings  # type: ignore
 
 warnings.filterwarnings("ignore")
 
-from pathlib import Path
 from typing import Callable
 
 import nibabel as nib
 import numpy as np
 from neurolang.frontend import NeurolangPDL
 
-from gallery import metafc
-
-# %%
-data_dir = Path("neurolang_data")
-
-
-# %%
-def xyz_to_ijk(x, y, z, mni_mask):
-    voxels = nib.affines.apply_affine(
-        np.linalg.inv(mni_mask.affine), np.c_[x, y, z],
-    ).astype(int)
-    return voxels
+from gallery import data_utils
 
 
 # %%
@@ -108,13 +96,13 @@ def load_regions_and_peaks_reported(nl):
 
 # %%
 resolution = 3
-mni_mask = metafc.load_mni_atlas(data_dir, resolution=resolution)
+mni_mask = data_utils.load_mni_atlas(resolution=resolution)
 
 # %%
 coord_type = "xyz"
 tfidf_threshold = 1e-2
-_, peak_reported, study_ids = metafc.load_neuroquery(
-    data_dir, mni_mask, tfidf_threshold=tfidf_threshold, coord_type=coord_type
+_, peak_reported, study_ids = data_utils.fetch_neuroquery(
+    mni_mask, tfidf_threshold=tfidf_threshold, coord_type=coord_type
 )
 
 # %%

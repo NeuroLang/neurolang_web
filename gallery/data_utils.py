@@ -3,7 +3,6 @@ import os
 from pathlib import Path
 from typing import Callable, Optional, Tuple, Union
 
-import neurolang
 import nibabel
 import nilearn.datasets
 import nilearn.datasets.utils
@@ -12,7 +11,7 @@ import numpy as np
 import pandas as pd
 import scipy.sparse
 
-DATA_DIR = Path(neurolang.__path__[0]) / "data"
+DATA_DIR = Path(os.path.dirname(os.path.realpath(__file__))) / "neurolang_data"
 
 FILETYPE_TO_EXTENSION = {
     "hdf": "h5",
@@ -375,10 +374,10 @@ def subsample_cbma_data(
     return term_data, peak_data, study_ids
 
 
-def fetch_neurosynth_topic_associations(n_topics: int) -> pd.DataFrame:
+def fetch_neurosynth_topic_associations(n_topics: int, data_dir: Path = DATA_DIR) -> pd.DataFrame:
     if n_topics not in {50, 100, 200, 400}:
         raise ValueError(f"Unexpected number of topics: {n_topics}")
-    ns_dir = DATA_DIR / "neurosynth"
+    ns_dir = data_dir / "neurosynth"
     ns_data_url = "https://github.com/neurosynth/neurosynth-data/raw/master/"
     topic_data = nilearn.datasets.utils._fetch_files(
         ns_dir,
@@ -396,3 +395,14 @@ def fetch_neurosynth_topic_associations(n_topics: int) -> pd.DataFrame:
     ta.columns = ("topic", "study_id", "prob")
     ta = ta[["prob", "topic", "study_id"]]
     return ta
+
+
+def load_mni_atlas(data_dir: Path = DATA_DIR, resolution: int = 2, interpolation: str = "continuous"):
+    """Load the MNI atlas and resample it to 2mm voxels."""
+
+    mni_mask = nilearn.image.resample_img(
+        nibabel.load(nilearn.datasets.fetch_icbm152_2009(data_dir=str(data_dir))["gm"]),
+        np.eye(3) * resolution,
+        interpolation=interpolation,
+    )
+    return mni_mask
