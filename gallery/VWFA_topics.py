@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # ---
 # jupyter:
 #   jupytext:
@@ -12,6 +13,17 @@
 #     language: python
 #     name: python3
 # ---
+
+# %% [markdown]
+# # Meta-Analysing the Role of the Visual Word-Form Area in Attention Circuitry
+
+# %% [markdown]
+"""
+Recently (Chen et al., 2019) provided evidence that the visual word-form area (VWFA) was part of attention circuitry, 
+through an analysis of high-resolution multimodal imaging data from a Human Connectome Project cohort (Van Essen et al., 2013). 
+Can this relationship be identified solely from a meta-analysis of past studies that have reported activations in the left 
+ventral occipito-temporal cortex without necessarily identifying it as the VWFA?
+"""
 
 # %%
 import warnings  # type: ignore
@@ -35,6 +47,12 @@ def init_frontend():
 
     return nl
 
+
+# %% [markdown]
+"""
+We use the Neurosynth CBMA database (Yarkoni et al., 2011), consisting of 14,371 studies, 
+and its associated `v5-topics-100` topic model (Poldrack et al., 2012), encoded in the `TopicAssociation` database table. 
+"""
 
 # %%
 def load_studies(
@@ -64,6 +82,16 @@ def load_studies(
     )
     nl.add_tuple_set(study_ids, name="Study")
 
+
+# %% [markdown]
+"""
+To define the VWFA, fronto-parietal attention network and ‘language’ network, 
+we use the same seed locations as in (Chen et al., 2019), 
+stored in a `RegionSeedVoxel` database table that contains a row (x, y, z, r) for each region r’s seed voxel 
+located at MNI coordinates (x, y, z). 
+
+A database table `RegionInNetwork` contains rows (n, r) for each region r belonging to network n. 
+"""
 
 # %%
 def load_attention_language_networks(nl):
@@ -124,13 +152,62 @@ nl = init_frontend()
 load_studies(nl, topic_association, peak_reported, study_ids)
 load_attention_language_networks(nl)
 
+# %% [markdown]
+"""
+We formulate NeuroLang queries that infer the most probable topic associations among studies that 
+report activations close to the VWFA region, while simultaneously reporting activations within the 
+fronto-parietal attention network, but not reporting activations within the ‘language’ network.
+
+By excluding studies that report activations within the language network, we maintain the focus of 
+the meta-analysis on studies that might be studying the attention circuitry, while still reporting activations within the VWFA.
+"""
+
+# %% [markdown]
+"""
+A brain region is considered to be reported by a study if it reports a peak activation within 10mm 
+of the region seed voxel’s location. A network is considered to be reported by a study if it reports 
+one of the network’s regions, based on the previous definition.
+
+In NeuroLang, this is expressed with the following rules, where `EUCLIDEAN` is a built-in function that 
+calculates the Euclidean distance between two coordinates in MNI space :
+```python
+RegionReported(r, s) :- PeakReported(x1, y1, z1, s) & RegionSeedVoxel(r, x2, y2, z2) & (d == EUCLIDEAN(x1, y1, z1, x2, y2, z2)) & (d < 10.0)
+NetworkReported(n, s) :- RegionReported(r, s) & RegionInNetwork(r, n)
+````
+"""
+
 # %%
 query = r"""
 RegionReported(r, s) :- PeakReported(x1, y1, z1, s) & RegionSeedVoxel(r, x2, y2, z2) & (d == EUCLIDEAN(x1, y1, z1, x2, y2, z2)) & (d < 10.0)
 NetworkReported(n, s) :- RegionReported(r, s) & RegionInNetwork(r, n)
+"""
+
+# %% [markdown]
+"""
+Finally, to test our hypothesis, we use the following probability encoding rule
+which calculates the probability of finding an association with topic *t* among studies that 
+report the activation of the **VWFA**, the activation of the network *n*, but do not report the 
+activation of any other network *n2*, where *n2 ̸= n*. 
+
+```python
 StudyMatchingNetworkQuery(s, n) :- RegionReported("VWFA", s) & NetworkReported(n, s) & exists(n2; ((n2 != n) & NetworkReported(n2, s) & Network(n2)))
-StudyNotMatchingSegregationQuery(s, n) :- ~StudyMatchingNetworkQuery(s, n) & Study(s) & Network(n)
 PositiveReverseInferenceSegregationQuery(t, n, PROB(t, n)) :- (TopicAssociation(t, s) & SelectedStudy(s)) // (StudyMatchingNetworkQuery(s, n) & SelectedStudy(s))
+```
+
+Because only two networks, `language` and `attention`, 
+are present in the `Network` table, this rule simultaneously calculates the probabilities for each pair of networks, 
+including one while segregating the other.
+"""
+
+# %%
+query += r"""
+StudyMatchingNetworkQuery(s, n) :- RegionReported("VWFA", s) & NetworkReported(n, s) & exists(n2; ((n2 != n) & NetworkReported(n2, s) & Network(n2)))
+PositiveReverseInferenceSegregationQuery(t, n, PROB(t, n)) :- (TopicAssociation(t, s) & SelectedStudy(s)) // (StudyMatchingNetworkQuery(s, n) & SelectedStudy(s))
+"""
+
+# %%
+query += r"""
+StudyNotMatchingSegregationQuery(s, n) :- ~StudyMatchingNetworkQuery(s, n) & Study(s) & Network(n)
 NegativeReverseInferenceSegregationQuery(t, n, PROB(t, n)) :- (TopicAssociation(t, s) & SelectedStudy(s)) // (StudyNotMatchingSegregationQuery(s, n) & SelectedStudy(s))
 MarginalTopicAssociation(t, PROB(t)) :- SelectedStudy(s) & TopicAssociation(t, s)
 CountStudies(count(s)) :- Study(s)
@@ -143,14 +220,7 @@ ans(topic, network, pTgQ, pTgNotQ, llr, nb_studies_associated_with_topic, nb_stu
 """
 
 # %%
-with nl.scope:
-    res = nl.execute_datalog_program(query)
-
-res
-# %%
 from nlweb.viewers.query import QueryWidget
 
 qw = QueryWidget(nl, query)
 qw
-
-# %%
