@@ -175,3 +175,6 @@ activation_given_term_image(agg_create_region_overlay(i, j, k, p)) :- activation
 
 qw = QueryWidget(nl, query)
 qw
+# -
+
+

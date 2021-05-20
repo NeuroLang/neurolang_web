@@ -1,5 +1,5 @@
--e git+https://github.com/NeuroLang/NeuroLang#egg=neurolang
--e git+https://github.com/NeuroLang/neurolang_ipywidgets#egg=neurolang-ipywidgets
+git+https://github.com/NeuroLang/NeuroLang#egg=neurolang
+git+https://github.com/NeuroLang/neurolang_ipywidgets#egg=neurolang-ipywidgets
 
 # jupyterhub is required and needs to be the same version as the one running on the server.
 # see https://repo2docker.readthedocs.io/en/latest/howto/jupyterhub_images.html

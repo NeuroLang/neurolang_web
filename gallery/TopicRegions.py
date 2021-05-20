@@ -290,15 +290,24 @@ load_study_splits(nl, study_ids, n_splits=10)
 # %%
 query = r"""BinReported(b, s) :- PeakReported(i, j, k, s) & LpfcArea(b, r, i, j, k, g)
 StudyNotReportingPeak(b, s) :- Study(idxs, s) & Bin(b) & ~BinReported(b, s)
-BinAux(b, s) :- Bin(b2) & (b2 != b) & BinReported(b2, s)
-StudyMatchingBinSegregationQuery(s, b) :- BinReported(b, s) & ~BinAux(b, s)
+StudyMatchingBinSegregationQuery(s, b) :- BinReported(b, s) & ~exists(b2; (Bin(b2) & (b2 != b) & BinReported(b2, s)))
 ProbTopicInStudyA(t, split, PROB(t, split)) :- TopicInStudy(t, s) & SelectedStudy(s) & StudySplit(idxs, s, split)
 ProbTopicStudy(t, Mean(p)) :- ProbTopicInStudyA(t, split, p)
 QueryA(t, b, split, PROB(t, b, split)) :- TopicInStudy(t, s) // (StudyMatchingBinSegregationQuery(s, b) & SelectedStudy(s) & StudySplit(idxs, s, split))
-QueryB(t, b, split, PROB(t, b, split)) :- (TopicInStudy(t, s)) // (StudyNotReportingPeak(b, s) & SelectedStudy(s) & StudySplit(idxs, s, split))
+QueryB(t, b, split, PROB(t, b, split)) :- TopicInStudy(t, s) // (StudyNotReportingPeak(b, s) & SelectedStudy(s) & StudySplit(idxs, s, split))
 QueryP(t, b, Mean(p0)) :- QueryA(t, b, split, p0)
 QueryN(t, b, Mean(p1)) :- QueryB(t, b, split, p1)
-ThrQuery(t, b, p, pmarg, zw) :- QueryP(t, b, p) & QueryN(t, b, pmarg) & (zw == log_odds(p, pmarg))"""
+ThrQuery(t, b, p, pmarg, zw) :- QueryP(t, b, p) & QueryN(t, b, pmarg) & (zw == log_odds(p, pmarg))
+ans(t, b, p, pmarg, zw) :- ThrQuery(t, b, p, pmarg, zw)"""
+
+# %%
+with nl.scope:
+    res = nl.execute_datalog_program(query)
+    res = nl.solve_all()
+    
+res
+
+# %%
 
 # %% tags=[]
 from nlweb.viewers.query import QueryWidget
