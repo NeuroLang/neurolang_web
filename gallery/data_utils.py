@@ -10,6 +10,7 @@ import nilearn.image
 import numpy as np
 import pandas as pd
 import scipy.sparse
+from neurolang.frontend.neurosynth_utils import StudyID
 
 DATA_DIR = Path(os.path.dirname(os.path.realpath(__file__))) / "neurolang_data"
 
@@ -96,6 +97,7 @@ def fetch_neuroquery(
 def fetch_neurosynth(
     tfidf_threshold: Optional[float] = None,
     data_dir: Path = DATA_DIR,
+    convert_study_ids: bool = True
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     ns_dir = data_dir / "neurosynth"
     ns_data_url = "https://github.com/neurosynth/neurosynth-data/raw/master/"
@@ -114,7 +116,10 @@ def fetch_neurosynth(
             ),
         ],
     )
-    features = pd.read_csv(ns_features_fn, sep="\t")
+    converters = None
+    if convert_study_ids:
+        converters = {"pmid": StudyID}
+    features = pd.read_csv(ns_features_fn, sep="\t", converters=converters)
     features.rename(columns={"pmid": "study_id"}, inplace=True)
     term_data = pd.melt(
         features,
@@ -128,7 +133,9 @@ def fetch_neurosynth(
         ]
     else:
         term_data = term_data.query("tfidf > 0")[["term", "tfidf", "study_id"]]
-    activations = pd.read_csv(ns_database_fn, sep="\t")
+    if convert_study_ids:
+        converters = {"id": StudyID}
+    activations = pd.read_csv(ns_database_fn, sep="\t", converters=converters)
     mni_peaks = activations.loc[activations.space == "MNI"][
         ["x", "y", "z", "id"]
     ].rename(columns={"id": "study_id"})
@@ -159,9 +166,8 @@ def fetch_neurosynth(
     projected_df = pd.DataFrame(
         np.hstack([projected, non_mni_peaks[["study_id"]].values]),
         columns=["x", "y", "z", "study_id"],
-        dtype=int,
     )
-    peak_data = pd.concat([projected_df, mni_peaks]).astype(int)
+    peak_data = pd.concat([projected_df, mni_peaks]).astype({"x": int, "y": int, "z": int})
     study_ids = peak_data[["study_id"]].drop_duplicates()
     return term_data, peak_data, study_ids
 
@@ -375,7 +381,9 @@ def subsample_cbma_data(
     return term_data, peak_data, study_ids
 
 
-def fetch_neurosynth_topic_associations(n_topics: int, data_dir: Path = DATA_DIR) -> pd.DataFrame:
+def fetch_neurosynth_topic_associations(
+    n_topics: int, data_dir: Path = DATA_DIR, convert_study_ids: bool = True
+) -> pd.DataFrame:
     if n_topics not in {50, 100, 200, 400}:
         raise ValueError(f"Unexpected number of topics: {n_topics}")
     ns_dir = data_dir / "neurosynth"
@@ -390,7 +398,10 @@ def fetch_neurosynth_topic_associations(n_topics: int, data_dir: Path = DATA_DIR
             ),
         ],
     )[0]
-    ta = pd.read_csv(topic_data, sep="\t")
+    converters = None
+    if convert_study_ids:
+        converters = {"id": StudyID}
+    ta = pd.read_csv(topic_data, sep="\t", converters=converters)
     ta.set_index("id", inplace=True)
     ta = ta.unstack().reset_index()
     ta.columns = ("topic", "study_id", "prob")
