@@ -256,20 +256,20 @@ data_dir = Path("neurolang_data")
 resolution = 2
 interpolation = "nearest"
 mni_mask = data_utils.load_mni_atlas(
-    resolution=resolution, interpolation=interpolation
+    resolution=resolution, interpolation=interpolation, data_dir=data_dir
 )
 
 # %%
 coord_type = "ijk"
 tfidf_threshold = 0.01
 term_in_study, peak_reported, study_ids = data_utils.fetch_neuroquery(
-    mni_mask, tfidf_threshold=tfidf_threshold, coord_type=coord_type
+    mni_mask, tfidf_threshold=tfidf_threshold, coord_type=coord_type, data_dir=data_dir
 )
 
 # %%
 n_components = 1024
 region_voxels, difumo_meta = data_utils.fetch_difumo(
-    mni_mask, n_components=n_components, coord_type=coord_type,
+    mni_mask, n_components=n_components, coord_type=coord_type, data_dir=data_dir
 )
 
 # %%

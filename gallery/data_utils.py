@@ -95,8 +95,9 @@ def fetch_neuroquery(
 
 def fetch_neurosynth(
     tfidf_threshold: Optional[float] = None,
+    data_dir: Path = DATA_DIR,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    ns_dir = DATA_DIR / "neurosynth"
+    ns_dir = data_dir / "neurosynth"
     ns_data_url = "https://github.com/neurosynth/neurosynth-data/raw/master/"
     ns_database_fn, ns_features_fn = nilearn.datasets.utils._fetch_files(
         ns_dir,

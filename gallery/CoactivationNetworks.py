@@ -18,6 +18,7 @@ import warnings  # type: ignore
 
 warnings.filterwarnings("ignore")
 
+from pathlib import Path
 from typing import Callable
 
 import nibabel as nib
@@ -25,6 +26,10 @@ import numpy as np
 from neurolang.frontend import NeurolangPDL
 
 from gallery import data_utils
+
+
+# %%
+data_dir = Path("neurolang_data")
 
 
 # %%
@@ -96,13 +101,13 @@ def load_regions_and_peaks_reported(nl):
 
 # %%
 resolution = 3
-mni_mask = data_utils.load_mni_atlas(resolution=resolution)
+mni_mask = data_utils.load_mni_atlas(resolution=resolution, data_dir=data_dir)
 
 # %%
 coord_type = "xyz"
 tfidf_threshold = 1e-2
 _, peak_reported, study_ids = data_utils.fetch_neuroquery(
-    mni_mask, tfidf_threshold=tfidf_threshold, coord_type=coord_type
+    mni_mask, tfidf_threshold=tfidf_threshold, coord_type=coord_type, data_dir=data_dir
 )
 
 # %%
