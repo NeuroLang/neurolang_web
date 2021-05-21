@@ -577,8 +577,13 @@ class QueryWidget(VBox):
 
     def run_query(self, query: str):
         with self.neurolang_engine.scope:
-            self.neurolang_engine.execute_datalog_program(query)
-            res = self.neurolang_engine.solve_all()
+            query_res = self.neurolang_engine.execute_datalog_program(query)
+            if query_res is None:
+                # There is no query rule in the program, run solve_all
+                res = self.neurolang_engine.solve_all()
+            else:
+                # There was a query in the program, return a dict with just the result_set
+                res = {"ans": query_res}
 
             return res
 
