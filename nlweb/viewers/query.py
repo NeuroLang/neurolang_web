@@ -554,7 +554,7 @@ class QueryWidget(VBox):
                 flex_flow="row",
                 align_items="stretch",
                 width="75%",
-                height="100px",
+                min_height="100px",
                 border="solid 1px silver",
             ),
         )
