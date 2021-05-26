@@ -159,10 +159,17 @@ We load the data into tables in the Neurolang engine :
 * **RegionVoxel** is a relation, or tuple, that includes the label of each region in the DiFuMo atlas and the coordinates of each voxel within each region in voxel space (i, j, k).
 * **Study** is a relation, or tuple, with one variable corresponding to the $\textit{id}$ of each study.
 * **SelectedStudy** annotates each study with a probability equal to 1/N of it being chosen out of the whole dataset of size N.
+
+We also generate random splits of the Neurosynth Dataset with 80% of studies in each split to compute confidence intervals.
+We select a small number of splits to be able to compute the results in reasonable time, but this parameter can be increased.
+The ids of the studies in each splits are stored in the **StudySplits** relation.
 """
 # %%
+from sklearn.model_selection import ShuffleSplit
+
+
 def load_studies(
-    nl, region_voxels, peak_reported, study_ids,
+    nl, region_voxels, peak_reported, study_ids, n_splits, subsample_proportion: float = 0.8,
 ):
     nl.add_tuple_set(peak_reported, name="PeakReported")
     nl.add_tuple_set(region_voxels, name="RegionVoxel")
@@ -170,10 +177,20 @@ def load_studies(
     nl.add_uniform_probabilistic_choice_over_set(
         study_ids, name="SelectedStudy"
     )
+    splits = []
+    for i, (train, _) in enumerate(
+        ShuffleSplit(n_splits=n_splits, train_size=subsample_proportion).split(study_ids)
+    ):
+        split = study_ids.iloc[train].copy()
+        split["split"] = i
+        splits.append(split)
+    splits = pd.concat(splits)
+    nl.add_tuple_set(splits, name="StudySplits")
 
 
 # %%
-load_studies(nl, region_voxels, peak_reported, study_ids)
+n_splits = 5
+load_studies(nl, region_voxels, peak_reported, study_ids, n_splits=n_splits)
 
 # %% [markdown]
 """
@@ -260,7 +277,6 @@ ans(difumo_label, i, j, k) :- PCCRegion(difumo_label, i, j, k)
 
 # %%
 pcc_region = nl.execute_datalog_program(pcc_query).as_pandas_dataframe()
-pcc_region
 
 # %% [markdown]
 """
@@ -297,50 +313,42 @@ vpcc = np.where(
 pcc_region["pcc_label"] = ""
 pcc_region["pcc_label"].iloc[dpcc] = "dPCC"
 pcc_region["pcc_label"].iloc[vpcc] = "vPCC"
-pcc_region
 
 # %%
-nl.add_tuple_set([("dPCC",), ("vPCC",)], name="PCCLabel")
-nl.add_tuple_set(
-    np.unique(pcc_region["difumo_label"].values), name="RegionLabel"
-)
-nl.add_tuple_set(pcc_region, name="RegionOfInterest")
-
-# %% [markdown]
-# ### Visualize the Regions of Interest
-
-# %%
-for t in pcc_region.groupby(["pcc_label", "difumo_label"]).mean().itertuples():
-    difumo_label_ix = np.argwhere(
-        difumo_meta.Difumo_names.values == t.Index[1]
-    ).flatten()
-    plotting.plot_stat_map(
-        image.index_img(difumo_img, difumo_label_ix),
-        colorbar=False,
-        title=str(t.Index),
+def add_pcc_regions(nl, pcc_region):
+    nl.add_tuple_set([("dPCC",), ("vPCC",)], name="PCCLabel")
+    nl.add_tuple_set(
+        np.unique(pcc_region["difumo_label"].values), name="RegionLabel"
     )
+    nl.add_tuple_set(pcc_region, name="RegionOfInterest")
+
+# %%
+add_pcc_regions(nl, pcc_region)
 
 # %% [markdown]
 """
-### Generate random splits of the Neurosynth Dataset with 80% of studies in each split to compute confidence intervals
+### Visualize the Regions of Interest
 
-We select a small number of splits to be able to compute the results in reasonable time.
+Using an aggregate function, we can visualize the regions in the PCC. We create a `RegionOfInterestImage` relation which groups the voxels in the `RegionOfInterest` relation by `difumo_label` and `pcc_label` and creates an overlay image.
+
+---
+**NOTE**
+
+Select the `RegionOfInterestImage` symbol in the result tab of the widget below to see the regions on the brain map.
+
+---
 """
 
 # %%
-from sklearn.model_selection import ShuffleSplit
+agg_query = r"""
+RegionOfInterestImage(difumo_label, pcc_label, agg_create_region(i, j, k)) :- RegionOfInterest(difumo_label, i, j, k, pcc_label)
+"""
 
-splits = []
-n_splits = 5
-train_size = 0.8
-for i, (train, _) in enumerate(
-    ShuffleSplit(n_splits=n_splits, train_size=train_size).split(study_ids)
-):
-    split = study_ids.iloc[train].copy()
-    split["split"] = i
-    splits.append(split)
-splits = pd.concat(splits)
-nl.add_tuple_set(splits, name="StudySplits")
+# %%
+from nlweb.viewers.query import QueryWidget
+
+qw = QueryWidget(nl, agg_query)
+qw
 
 # %% [markdown]
 """
@@ -349,30 +357,32 @@ nl.add_tuple_set(splits, name="StudySplits")
 We're now able to create a neurolang program that derives selective functionnal profiles for each of the Dorsal and Ventral
 PCC using a segregation query.
 
-The following query reads as follows:
+We write a datalog program which consists of several rules. 
+
+1. The first one finds the studies that report activation in the PCC:
 
 ```python
 RegionReported(r, s) :- PeakReported(x1, y1, z1, s, i, j, k) & RegionOfInterest(difumo_label, i, j, k, r)
 ```
-This rule find the studies that report activation in the PCC
+
+2. The second rule computes the marginal probability of finding a topic in a study in each of the splits of the database.
 
 ```python
 MarginalProbTopicInStudy(t, split, PROB(t, split)) :- TopicInStudy(t, s)  & SelectedStudy(s)  & StudySplits(s, split)
 ```
-This rule computes the marginal probability of finding a topic in a study in each of the splits of the database.
 
-We then write a segregation query that selects studies reporting activation in one PCC sub-region and not 
+3. We then write a segregation query that selects studies reporting activation in one PCC sub-region and not 
 the other sub-region:
 ```python
 StudyMatchingRegionSegregationQuery(s, r) :-  RegionReported(r, s) & ~RegionReported(r2, s) & RegionLabel(r2) & (r2 != r)
 ```
 
-Which allows us to compute the probability of a topic being present given a segregation query:
+4. Which allows us to compute the probability of a topic being present given a segregation query:
 ```python
 ProbTopicGivenRegionSegregationQuery(t, r, split, PROB(t, r, split)) :- (TopicInStudy(t, s)) // ( StudyMatchingRegionSegregationQuery(s, r) & SelectedStudy(s) & StudySplits(s, split) )    
 ```
 
-Finally, we combine the above queries to calculate the log-odds ratio of topic associations for the dPCC and vPCC:
+5. Finally, we combine the above queries to calculate the log-odds ratio of topic associations for the dPCC and vPCC:
 
 ```python
 TopicRegionAssociationLogOdds(t, r, split, p, pmarg, logodds) :- ProbTopicGivenRegionSegregationQuery(t, r, split, p)  & MarginalProbTopicInStudy(t, split, pmarg)  & (logodds == log_odds(p, pmarg))
