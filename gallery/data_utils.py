@@ -1,7 +1,7 @@
 import datetime
 import os
 from pathlib import Path
-from typing import Callable, Optional, Tuple, Union
+from typing import Callable, List, Optional, Tuple, Union
 
 import nibabel
 import nilearn.datasets
@@ -20,6 +20,7 @@ FILETYPE_TO_EXTENSION = {
 }
 
 DIFUMO_N_COMPONENTS_TO_DOWNLOAD_ID = {
+    128: "wjvd5",
     256: "3vrct",
     512: "9b76y",
     1024: "34792",
@@ -382,7 +383,8 @@ def subsample_cbma_data(
 
 
 def fetch_neurosynth_topic_associations(
-    n_topics: int, data_dir: Path = DATA_DIR, convert_study_ids: bool = True
+    n_topics: int, data_dir: Path = DATA_DIR, convert_study_ids: bool = True,
+    topics_to_keep: List[int] = None, labels: List[str] = None
 ) -> pd.DataFrame:
     if n_topics not in {50, 100, 200, 400}:
         raise ValueError(f"Unexpected number of topics: {n_topics}")
@@ -403,17 +405,21 @@ def fetch_neurosynth_topic_associations(
         converters = {"id": StudyID}
     ta = pd.read_csv(topic_data, sep="\t", converters=converters)
     ta.set_index("id", inplace=True)
+    if topics_to_keep is not None:
+        ta = ta.iloc[:, topics_to_keep]
+    if labels is not None:
+        ta.columns = labels
     ta = ta.unstack().reset_index()
     ta.columns = ("topic", "study_id", "prob")
     ta = ta[["prob", "topic", "study_id"]]
     return ta
 
 
-def load_mni_atlas(data_dir: Path = DATA_DIR, resolution: int = 2, interpolation: str = "continuous"):
+def load_mni_atlas(data_dir: Path = DATA_DIR, resolution: int = 2, interpolation: str = "continuous", key:str = "gm"):
     """Load the MNI atlas and resample it to 2mm voxels."""
 
     mni_mask = nilearn.image.resample_img(
-        nibabel.load(nilearn.datasets.fetch_icbm152_2009(data_dir=str(data_dir))["gm"]),
+        nibabel.load(nilearn.datasets.fetch_icbm152_2009(data_dir=str(data_dir))[key]),
         np.eye(3) * resolution,
         interpolation=interpolation,
     )
