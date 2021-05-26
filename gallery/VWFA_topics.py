@@ -3,6 +3,7 @@
 # jupyter:
 #   jupytext:
 #     formats: ipynb,py:percent
+#     notebook_metadata_filter: voila
 #     text_representation:
 #       extension: .py
 #       format_name: percent
@@ -12,6 +13,8 @@
 #     display_name: Python 3
 #     language: python
 #     name: python3
+#   voila:
+#     template: neurolang
 # ---
 
 # %% [markdown]
@@ -177,7 +180,7 @@ calculates the Euclidean distance between two coordinates in MNI space :
 ```python
 RegionReported(r, s) :- PeakReported(x1, y1, z1, s) & RegionSeedVoxel(r, x2, y2, z2) & (d == EUCLIDEAN(x1, y1, z1, x2, y2, z2)) & (d < 10.0)
 NetworkReported(n, s) :- RegionReported(r, s) & RegionInNetwork(r, n)
-````
+```
 """
 
 # %%

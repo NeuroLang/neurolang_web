@@ -1,0 +1,95 @@
+{%- extends 'lab/index.html.j2' -%}
+
+{% block html_head_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css"
+  integrity="sha384-B0vP5xmATw1+K9KRQjQERJvTumQW0nPEzvF6L/Z6nronJ3oUOFUFpCjEUQouq2+l" crossorigin="anonymous">
+<meta name="theme-color" content="#563d7c">
+{{ super() }}
+
+<style type="text/css">
+  body {
+    background-color: var(--jp-layout-color0);
+    overflow-y: scroll;
+  }
+  .jp-Notebook {
+    padding: 0px;
+  }
+</style>
+
+<style>
+a.anchor-link {
+  display: none;
+}
+.highlight  {
+  margin: 0.4em;
+}
+
+</style>
+
+{% endblock html_head_css %}
+
+{%- block body -%}
+
+{% block body_header %}
+  {{ super() }}
+    <header>
+        <div class="navbar navbar-dark bg-dark shadow-sm">
+            <div class="container d-flex justify-content-between">
+              <a href="/" class="navbar-brand d-flex align-items-center">
+                  <strong>Neurolang</strong>
+              </a>
+            </div>
+        </div>
+    </header>
+    <main>
+      <div class="container">
+        <div class="row">
+          <div class="col s12">
+{% endblock body_header %}
+
+{%- block body_loop -%}
+    <div>
+      {# from this point on, the kernel is started #}
+      {%- with kernel_id = kernel_start(nb) -%}
+        <script id="jupyter-config-data" type="application/json">
+        {
+            "baseUrl": "{{resources.base_url}}",
+            "kernelId": "{{kernel_id}}"
+        }
+        </script>
+        {% set cell_count = nb.cells|length %}
+        {#
+        Voilà is using Jinja's Template.generate method to not render the whole template in one go.
+        The current implementation of Jinja will however not yield template snippets if we call a blocks' super()
+        Therefore it is important to have the cell loop in the template.
+        The issue for Jinja is: https://github.com/pallets/jinja/issues/1044
+        #}
+        {%- for cell in cell_generator(nb, kernel_id) -%}
+          {% set cellloop = loop %}
+          {%- block any_cell scoped -%}
+          <script>
+            voila_process({{ cellloop.index }}, {{ cell_count }})
+          </script>
+            {{ super() }}
+          {%- endblock any_cell -%}
+        {%- endfor -%}
+      {% endwith %}
+    </div>
+{%- endblock body_loop -%}
+
+{% block body_footer %}
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer mt-auto py-3">
+      <div class="container d-flex flex-row justify-content-between">
+          <span class="text-muted">© Copyright 2021, Demian Wassermann et al.</span>
+          <object class="brand-logo" type="image/svg+xml" style="height: 1.5em;" data="{{ resources.include_url("static/inr_logo_rouge.svg") }}"></object>
+      </div>
+  </footer>
+  {{ super() }}
+{% endblock body_footer %}
+
+{%- endblock body -%}
