@@ -169,7 +169,12 @@ from sklearn.model_selection import ShuffleSplit
 
 
 def load_studies(
-    nl, region_voxels, peak_reported, study_ids, n_splits, subsample_proportion: float = 0.8,
+    nl,
+    region_voxels,
+    peak_reported,
+    study_ids,
+    n_splits,
+    subsample_proportion: float = 0.8,
 ):
     nl.add_tuple_set(peak_reported, name="PeakReported")
     nl.add_tuple_set(region_voxels, name="RegionVoxel")
@@ -179,7 +184,9 @@ def load_studies(
     )
     splits = []
     for i, (train, _) in enumerate(
-        ShuffleSplit(n_splits=n_splits, train_size=subsample_proportion).split(study_ids)
+        ShuffleSplit(n_splits=n_splits, train_size=subsample_proportion).split(
+            study_ids
+        )
     ):
         split = study_ids.iloc[train].copy()
         split["split"] = i
@@ -259,14 +266,16 @@ load_topics(nl)
 
 # %% [markdown]
 """
-### Formulate a NeuroLang query that Extracts the DiFuMo regions in the PCC
+### Formulate a NeuroLang query that extracts the DiFuMo regions in the PCC
 
-The following query reads: A region is in PCC if it has voxels (`RegionVoxel`) in the DiFuMo atlas 
-and its label starts (`startswith`) with Posterior cingulate.
+Using neurolang's formalism, we can select the regions in the DiFuMo atlas which are in the PCC by looking at their labels: 
 
 ```python
 PCCRegion(difumo_label, i, j, k) :- RegionVoxel(difumo_label, i, j, k) & startswith("Posterior cingulate", difumo_label)
 ```
+
+This query reads: A region is in PCC if it has voxels (**RegionVoxel**) in the DiFuMo atlas 
+and its label starts (**startswith**) with Posterior cingulate.
 """
 
 # %%
@@ -322,6 +331,7 @@ def add_pcc_regions(nl, pcc_region):
     )
     nl.add_tuple_set(pcc_region, name="RegionOfInterest")
 
+
 # %%
 add_pcc_regions(nl, pcc_region)
 
@@ -329,12 +339,13 @@ add_pcc_regions(nl, pcc_region)
 """
 ### Visualize the Regions of Interest
 
-Using an aggregate function, we can visualize the regions in the PCC. We create a `RegionOfInterestImage` relation which groups the voxels in the `RegionOfInterest` relation by `difumo_label` and `pcc_label` and creates an overlay image.
+Using an aggregate function, we can visualize the regions in the PCC. We create a **RegionOfInterestImage** relation which groups the voxels in the **RegionOfInterest** relation by *difumo_label* and *pcc_label* and creates an overlay image.
 
 ---
 **NOTE**
 
-Select the `RegionOfInterestImage` symbol in the result tab of the widget below to see the regions on the brain map.
+Select the **RegionOfInterestImage** symbol in the result tab of the widget below to see the regions on the brain map.
+The other tabs show all the relations which have been added to the Neurolang engine so far.
 
 ---
 """
@@ -355,18 +366,14 @@ qw
 ### Formulate a NeuroLang Program
 
 We're now able to create a neurolang program that derives selective functionnal profiles for each of the Dorsal and Ventral
-PCC using a segregation query.
-
-We write a datalog program which consists of several rules. 
+PCC using a segregation query. For that we write a datalog program which consists of several rules. 
 
 1. The first one finds the studies that report activation in the PCC:
-
 ```python
 RegionReported(r, s) :- PeakReported(x1, y1, z1, s, i, j, k) & RegionOfInterest(difumo_label, i, j, k, r)
 ```
 
 2. The second rule computes the marginal probability of finding a topic in a study in each of the splits of the database.
-
 ```python
 MarginalProbTopicInStudy(t, split, PROB(t, split)) :- TopicInStudy(t, s)  & SelectedStudy(s)  & StudySplits(s, split)
 ```
@@ -383,7 +390,6 @@ ProbTopicGivenRegionSegregationQuery(t, r, split, PROB(t, r, split)) :- (TopicIn
 ```
 
 5. Finally, we combine the above queries to calculate the log-odds ratio of topic associations for the dPCC and vPCC:
-
 ```python
 TopicRegionAssociationLogOdds(t, r, split, p, pmarg, logodds) :- ProbTopicGivenRegionSegregationQuery(t, r, split, p)  & MarginalProbTopicInStudy(t, split, pmarg)  & (logodds == log_odds(p, pmarg))
 ```
@@ -403,8 +409,10 @@ ans(t, r, split, p, pmarg, logodds) :-  TopicRegionAssociationLogOdds(t, r, spli
 """
 ### Define utilitary plot functions
 
-Before running the program, we define some utility functions to plot the results in a radar chart, 
-as well as making a histogram plot of log-odds ratios across the splits
+Before running the program, we define some utility functions to plot the results. The `make_radar_plot` function
+will create a plot displaying the logodds probability for each region of being associated with one of the networks.
+The `make_histogram_plot` function displays a histogram plot of log-odds ratios across the splits. 
+Both functions are passed a dictionnary containing the result sets of the query that is executed by Neurolang.
 """
 
 # %%
@@ -414,6 +422,14 @@ import matplotlib.pyplot as plt
 
 
 def make_radar_plot(results):
+    """Create a radar plot using the query results
+
+    Parameters
+    ----------
+    results : Dict[str, NamedRelationalAlgebraFrozenSet]
+        a dictionary of name -> relational algebra result sets which contains all
+        the relations returned by the Neurolang program
+    """
     solution = results["ans"]
     d = solution.as_pandas_dataframe()
 
@@ -426,7 +442,9 @@ def make_radar_plot(results):
     n_topics = len(topics)
     angles = np.linspace(0, 2 * np.pi, n_topics, endpoint=False).tolist()
     angles += angles[:1]
-    fig, ax = plt.subplots(figsize=(4.5, 3), subplot_kw=dict(polar=True), dpi=200)
+    fig, ax = plt.subplots(
+        figsize=(4.5, 3), subplot_kw=dict(polar=True), dpi=200
+    )
     fig.canvas.header_visible = False
     colors = {"dPCC": "black", "vPCC": "purple"}
     for network, dn in d.groupby("r"):
@@ -442,7 +460,7 @@ def make_radar_plot(results):
             label=network_to_label[network],
             color=colors[network],
             marker="o",
-            markersize=4
+            markersize=4,
         )
         ax.fill_between(
             angles,
@@ -465,12 +483,22 @@ def make_radar_plot(results):
         else:
             label.set_horizontalalignment("right")
     ax.set_rlabel_position(180 / n_topics)
-    ax.legend(bbox_to_anchor=(-0.4, 0.98), loc=3, fontsize=5, )
+    ax.legend(
+        bbox_to_anchor=(-0.4, 0.98), loc=3, fontsize=5,
+    )
     ax.spines["bottom"] = ax.spines["inner"]
 
 
 # %%
 def make_histogram_plot(results):
+    """Create a histogram plot using the query results
+
+    Parameters
+    ----------
+    results : Dict[str, NamedRelationalAlgebraFrozenSet]
+        a dictionary of name -> relational algebra result sets which contains all
+        the relations returned by the Neurolang program
+    """
     solution = results["ans"]
     d = solution.as_pandas_dataframe()
     solution_report = (
@@ -537,7 +565,14 @@ def make_histogram_plot(results):
 # %%
 from nlweb.viewers.query import QueryWidget
 
-qw = QueryWidget(nl, query, callbacks={"Radar Plot": make_radar_plot, "Log-Odds Histogram": make_histogram_plot})
+qw = QueryWidget(
+    nl,
+    query,
+    callbacks={
+        "Radar Plot": make_radar_plot,
+        "Log-Odds Histogram": make_histogram_plot,
+    },
+)
 qw
 
 
