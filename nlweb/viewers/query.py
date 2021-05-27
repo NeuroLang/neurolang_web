@@ -13,6 +13,7 @@ from ipywidgets import (
     Tab,
     Text,
     VBox,
+    Output
 )  # type: ignore
 
 from math import ceil
@@ -28,7 +29,7 @@ from tatsu.exceptions import FailedParse
 
 from traitlets import Int, Unicode  # type: ignore
 
-from typing import Dict, Optional
+from typing import Callable, Dict, Optional
 
 from nlweb.util import debounce
 from nlweb.viewers.factory import ViewerFactory, ColumnsManager
@@ -138,6 +139,45 @@ class PaginationWidget(HBox):
 
         # update label slash widget
         self.__label_slash.value = f"/ {nb_pages}"
+
+
+class GraphOutputWidget(VBox):
+
+    icon = Unicode()
+
+    def __init__(
+        self,
+        title: str,
+        res: Dict[str, NamedRelationalAlgebraFrozenSet],
+        callback: Callable,
+        *args,
+        **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
+        self.loaded = False
+        self.res = res
+        self.callback = callback
+        self._args = args
+        self._kwargs = kwargs
+
+        self._output = Output()
+        self._output.layout = Layout(width="100%", min_height="400px")
+
+    def load(self):
+        if not self.loaded:
+            self.loaded = True
+
+            self._load_output()
+
+            self.children = [self._output]
+
+    def _load_output(self):
+
+        with self._output:
+            try:
+                self.callback(self.res, *self._args, **self._kwargs)
+            except Exception as e:
+                print(f"An error occurred while producing this output.\n{e}")
 
 
 class ResultTabPageWidget(VBox):
@@ -343,13 +383,19 @@ class QResultWidget(VBox):
         # viewers necessary for each resultset, can be shared among resultsets
         self._viewers = None
 
-    def _create_result_tabs(self, res: Dict[str, NamedRelationalAlgebraFrozenSet]):
+    def _create_result_tabs(
+        self,
+        res: Dict[str, NamedRelationalAlgebraFrozenSet],
+        callbacks: Dict[str, Callable] = None,
+    ):
         """Creates necessary tab pages and viewers for the specified query result `res`.
 
         Parameters
         ----------
         res: Dict[str, NamedRelationalAlgebraFrozenSet]
            dictionary of query results with keys as result name and values as result for corresponding key.
+        callbacks : Dict[str, Callable], optional
+            dict of callback functions to display outputs in result tabs, by default None
 
         Returns
         -------
@@ -393,18 +439,34 @@ class QResultWidget(VBox):
 
             viewers = viewers | result_tab.get_viewers()
 
+        if callbacks is not None:
+            for name, callback in callbacks.items():
+                output_tab = GraphOutputWidget(name, res, callback)
+                result_tabs.append(output_tab)
+                titles.append(name)
+                icons.append(output_tab.icon)
+
         return result_tabs, titles, icons, viewers
 
-    def show_results(self, res: Dict[str, NamedRelationalAlgebraFrozenSet]):
+    def show_results(
+        self,
+        res: Dict[str, NamedRelationalAlgebraFrozenSet],
+        callbacks: Dict[str, Callable] = None,
+    ):
         """Creates and displays necessary tab pages and viewers for the specified query result `res`.
 
         Parameters
         ----------
         res: Dict[str, NamedRelationalAlgebraFrozenSet]
            dictionary of query results with keys as result name and values as result for corresponding key.
+        callbacks : Dict[str, Callable], optional
+            dictonary of titles -> callback functions which will be called to create an output in one of the
+            result tabs, by default None
         """
 
-        result_tabs, titles, icons, self._viewers = self._create_result_tabs(res)
+        result_tabs, titles, icons, self._viewers = self._create_result_tabs(
+            res, callbacks
+        )
 
         self._tab.children = result_tabs
 
@@ -528,6 +590,8 @@ class QueryWidget(VBox):
                    Default query text, will be shown in textarea
     reraise: bool
              re-raise exceptions thrown during query execution
+    callbacks : Dict[str, Callable], optional
+        dictionnary of title -> callback function, by default None
     """
 
     def __init__(
@@ -535,6 +599,7 @@ class QueryWidget(VBox):
         neurolang_engine,
         default_query="union(region_union(r)) :- destrieux(..., r)",
         reraise=False,
+        callbacks: Dict[str, Callable] = None,
     ):
         if neurolang_engine is None:
             raise TypeError("neurolang_engine should not be NoneType!")
@@ -545,6 +610,7 @@ class QueryWidget(VBox):
 
         self.neurolang_engine = neurolang_engine
         self.reraise = reraise
+        self.callbacks = callbacks
 
         self.query = NlCodeEditor(
             default_query,
@@ -608,7 +674,7 @@ class QueryWidget(VBox):
             self._handle_generic_error(e)
         else:
             if qresult != {}:
-                self.result_viewer.show_results(qresult)
+                self.result_viewer.show_results(qresult, self.callbacks)
                 self.result_viewer.layout.visibility = "visible"
             else:
                 self._handle_generic_error(
