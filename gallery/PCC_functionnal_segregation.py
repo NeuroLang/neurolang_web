@@ -390,7 +390,6 @@ TopicRegionAssociationLogOdds(t, r, split, p, pmarg, logodds) :- ProbTopicGivenR
 """
 
 # %%
-
 query = r"""
 RegionReported(r, s) :- PeakReported(x1, y1, z1, s, i, j, k) & RegionOfInterest(difumo_label, i, j, k, r)
 MarginalProbTopicInStudy(t, split, PROB(t, split)) :- TopicInStudy(t, s)  & SelectedStudy(s)  & StudySplits(s, split)
@@ -409,12 +408,13 @@ as well as making a histogram plot of log-odds ratios across the splits
 """
 
 # %%
-
+# %matplotlib widget
 import seaborn as sns
 import matplotlib.pyplot as plt
 
 
-def make_radar_plot(solution):
+def make_radar_plot(results):
+    solution = results["ans"]
     d = solution.as_pandas_dataframe()
 
     topics = list(sorted(d["t"].unique()))
@@ -426,7 +426,8 @@ def make_radar_plot(solution):
     n_topics = len(topics)
     angles = np.linspace(0, 2 * np.pi, n_topics, endpoint=False).tolist()
     angles += angles[:1]
-    _, ax = plt.subplots(figsize=(9, 6), subplot_kw=dict(polar=True), dpi=300)
+    fig, ax = plt.subplots(figsize=(4.5, 3), subplot_kw=dict(polar=True), dpi=200)
+    fig.canvas.header_visible = False
     colors = {"dPCC": "black", "vPCC": "purple"}
     for network, dn in d.groupby("r"):
         dn = dn.groupby("t").agg({"logodds": ["mean", "std"]}).loc[topics]
@@ -437,10 +438,11 @@ def make_radar_plot(solution):
         ax.plot(
             angles,
             p_mean,
-            linewidth=3,
+            linewidth=1,
             label=network_to_label[network],
             color=colors[network],
             marker="o",
+            markersize=4
         )
         ax.fill_between(
             angles,
@@ -453,7 +455,7 @@ def make_radar_plot(solution):
     ax.set_theta_offset(np.pi / 2)
     ax.set_theta_direction(-1)
     ax.set_thetagrids(
-        np.degrees(angles[:-1]), topics, fontsize=11, weight="bold"
+        np.degrees(angles[:-1]), topics, fontsize=5,
     )
     for label, angle in zip(ax.get_xticklabels(), angles[:-1]):
         if angle in (0, np.pi):
@@ -463,12 +465,13 @@ def make_radar_plot(solution):
         else:
             label.set_horizontalalignment("right")
     ax.set_rlabel_position(180 / n_topics)
-    ax.legend(bbox_to_anchor=(-0.4, 0.98, 1.1, 0.15), loc=3)
+    ax.legend(bbox_to_anchor=(-0.4, 0.98), loc=3, fontsize=5, )
     ax.spines["bottom"] = ax.spines["inner"]
 
 
 # %%
-def make_histogram_plot(solution):
+def make_histogram_plot(results):
+    solution = results["ans"]
     d = solution.as_pandas_dataframe()
     solution_report = (
         d.groupby(["t", "r"])["p"]
@@ -516,6 +519,7 @@ def make_histogram_plot(solution):
         hue="PCC Sub-Region",
         col_order=z_difference_sorted_difference,
     )
+    fg.fig.canvas.header_visible = False
     fg.map(sns.kdeplot, "Log-Odds", shade=True)
     fg.add_legend()
     plt.setp(fg._legend.get_title(), fontsize=15)
@@ -533,7 +537,7 @@ def make_histogram_plot(solution):
 # %%
 from nlweb.viewers.query import QueryWidget
 
-qw = QueryWidget(nl, query)
+qw = QueryWidget(nl, query, callbacks={"Radar Plot": make_radar_plot, "Log-Odds Histogram": make_histogram_plot})
 qw
 
 
