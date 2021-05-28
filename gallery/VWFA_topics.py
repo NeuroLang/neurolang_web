@@ -186,8 +186,7 @@ NetworkReported(n, s) :- RegionReported(r, s) & RegionInNetwork(r, n)
 # %%
 query = r"""
 RegionReported(r, s) :- PeakReported(x1, y1, z1, s) & RegionSeedVoxel(r, x2, y2, z2) & (d == EUCLIDEAN(x1, y1, z1, x2, y2, z2)) & (d < 10.0)
-NetworkReported(n, s) :- RegionReported(r, s) & RegionInNetwork(r, n)
-"""
+NetworkReported(n, s) :- RegionReported(r, s) & RegionInNetwork(r, n)"""
 
 # %% [markdown]
 """
@@ -209,8 +208,7 @@ including one while segregating the other.
 # %%
 query += r"""
 StudyMatchingNetworkQuery(s, n) :- RegionReported("VWFA", s) & NetworkReported(n, s) & exists(n2; ((n2 != n) & NetworkReported(n2, s) & Network(n2)))
-PositiveReverseInferenceSegregationQuery(t, n, PROB(t, n)) :- (TopicAssociation(t, s) & SelectedStudy(s)) // (StudyMatchingNetworkQuery(s, n) & SelectedStudy(s))
-"""
+PositiveReverseInferenceSegregationQuery(t, n, PROB(t, n)) :- (TopicAssociation(t, s) & SelectedStudy(s)) // (StudyMatchingNetworkQuery(s, n) & SelectedStudy(s))"""
 
 # %%
 query += r"""
