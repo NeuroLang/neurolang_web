@@ -131,7 +131,7 @@ def load_studies(
     )
 
 
-# %%\
+# %%
 def load_voxels(nl, region_voxels, mni_mask):
     nl.add_tuple_set(region_voxels, name="RegionVoxel")
     nl.add_tuple_set(
