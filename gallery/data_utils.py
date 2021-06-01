@@ -384,7 +384,7 @@ def subsample_cbma_data(
 
 def fetch_neurosynth_topic_associations(
     n_topics: int, data_dir: Path = DATA_DIR, convert_study_ids: bool = True,
-    topics_to_keep: List[int] = None, labels: List[str] = None
+    topics_to_keep: List[int] = None, labels: List[str] = None, version: str = "v5"
 ) -> pd.DataFrame:
     if n_topics not in {50, 100, 200, 400}:
         raise ValueError(f"Unexpected number of topics: {n_topics}")
@@ -394,8 +394,8 @@ def fetch_neurosynth_topic_associations(
         ns_dir,
         [
             (
-                f"analyses/v5-topics-{n_topics}.txt",
-                ns_data_url + "topics/v5-topics.tar.gz",
+                f"analyses/{version}-topics-{n_topics}.txt",
+                ns_data_url + f"topics/{version}-topics.tar.gz",
                 {"uncompress": True},
             ),
         ],
