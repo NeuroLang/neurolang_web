@@ -88,7 +88,7 @@ def load_topics(n_topics: int = 200):
         data_dir=data_dir,
         topics_to_keep=topics_to_keep,
         labels=labels,
-        version="v4"
+        version="v4",
     )
     return topic_association[["prob", "topic", "study_id"]]
 
@@ -156,7 +156,10 @@ _, peak_reported, study_ids = data_utils.fetch_neurosynth(
 coord_type = "xyz"
 n_difumo_components = 256
 region_voxels, difumo_meta = data_utils.fetch_difumo(
-    mask=mni_mask, coord_type=coord_type, n_components=n_difumo_components
+    mask=mni_mask,
+    coord_type=coord_type,
+    n_components=n_difumo_components,
+    data_dir=data_dir,
 )
 
 
