@@ -1,7 +1,9 @@
--e git+https://github.com/NeuroLang/NeuroLang#egg=neurolang
--e git+https://github.com/NeuroLang/neurolang_ipywidgets#egg=neurolang-ipywidgets
+git+https://github.com/NeuroLang/NeuroLang#egg=neurolang
+git+https://github.com/NeuroLang/neurolang_ipywidgets#egg=neurolang-ipywidgets
 
-# nbconvert==6.0.7 installe avec voila
+# jupyterhub is required and needs to be the same version as the one running on the server.
+# see https://repo2docker.readthedocs.io/en/latest/howto/jupyterhub_images.html
+jupyterhub==1.4.0
 jupyter==1.0.0
 jupytext==1.11.1
 ipysheet==0.4.4
@@ -11,4 +13,6 @@ traitlets>=4.3.3
 pandas==1.1.5
 plotly==4.14.3
 voila==0.2.10
-
+ipympl==0.7.0
+seaborn==0.11.1
+matplotlib==3.4.1
