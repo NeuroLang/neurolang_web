@@ -170,7 +170,8 @@ CountStudiesNetworkReported(n, scount) :- ProbNetworkReported(n, prob) & CountSt
 ProbRegionAndNetworkReported(r, n, PROB(r, n)) :- RegionReported(r, s) & NetworkReported(n, s) & SelectedStudy(s)
 CountStudiesRegionAndNetworkReported(r, n, scount) :- ProbRegionAndNetworkReported(r, n, prob) & CountStudies(N) & (scount == prob * N)
 Counts(region, network, N, n, m, k) :- CountStudies(N) & CountStudiesRegionReported(region, m) & CountStudiesNetworkReported(network, n) & CountStudiesRegionAndNetworkReported(region, network, k)
-Query(region, network, p, p0, p1, llr, N, n, m, k) :- ProbActivation(region, p) & ProbActivationGivenNoNetworkActivation(region, network, p0) & ProbActivationGivenNetworkActivation(region, network, p1) & Counts(region, network, N, n, m, k) & ( llr == ( k * log(p1) + ((n - k) * log(1 - p1) + ((m - k) * log(p0) + (((N - n) - (m - k)) * log(1 - p0))))) - ( k * log(p) + ((n - k) * log(1 - p) + ((m - k) * log(p) + (((N - n) - (m - k)) * log(1 - p))))))"""
+Query(region, network, p, p0, p1, llr, N, n, m, k) :- ProbActivation(region, p) & ProbActivationGivenNoNetworkActivation(region, network, p0) & ProbActivationGivenNetworkActivation(region, network, p1) & Counts(region, network, N, n, m, k) & ( llr == ( k * log(p1) + ((n - k) * log(1 - p1) + ((m - k) * log(p0) + (((N - n) - (m - k)) * log(1 - p0))))) - ( k * log(p) + ((n - k) * log(1 - p) + ((m - k) * log(p) + (((N - n) - (m - k)) * log(1 - p))))))
+ans(region, network, p, p0, p1, llr, N, n, m, k) :- Query(region, network, p, p0, p1, llr, N, n, m, k)"""
 
 # %%
 from nlweb.viewers.query import QueryWidget
@@ -179,16 +180,18 @@ qw = QueryWidget(nl, query)
 qw
 
 # %% [markdown]
-# ### References
-# <a id="1">[1]</a>
-# Matthew L. Dixon, Alejandro De La Vega, Caitlin Mills, Jessica Andrews-Hanna, R. Nathan Spreng, Michael W. Cole, and Kalina Christoff. 
-# Heterogeneity within the frontoparietal control network and its relationship to the default and dorsal attention networks. 
-# *Proceedings of the National Academy of Sciences*, 115(7):E1598, February 2018. doi: 10.1073/pnas.1715766115. 
-# URL http://www.pnas.org/content/115/7/E1598.abstract.
-#
-# <a id="2">[2]</a>
-# BT Thomas Yeo, Fenna M Krienen, Jorge Sepulcre, Mert R Sabuncu, Danial Lashkari, Marisa Hollinshead, Joshua L Roffman, 
-# Jordan W Smoller, Lilla Zollei, Jonathan R Polimeni, and others. The organization of the human cerebral cortex estimated 
-# by intrinsic functional connectivity. *Journal of neurophysiology, 2011*. Publisher: American Physiological Society Bethesda, MD.
+"""
+### References
+<a id="1">[1]</a>
+Matthew L. Dixon, Alejandro De La Vega, Caitlin Mills, Jessica Andrews-Hanna, R. Nathan Spreng, Michael W. Cole, and Kalina Christoff. 
+Heterogeneity within the frontoparietal control network and its relationship to the default and dorsal attention networks. 
+*Proceedings of the National Academy of Sciences*, 115(7):E1598, February 2018. doi: 10.1073/pnas.1715766115. 
+URL http://www.pnas.org/content/115/7/E1598.abstract.
+
+<a id="2">[2]</a>
+BT Thomas Yeo, Fenna M Krienen, Jorge Sepulcre, Mert R Sabuncu, Danial Lashkari, Marisa Hollinshead, Joshua L Roffman, 
+Jordan W Smoller, Lilla Zollei, Jonathan R Polimeni, and others. The organization of the human cerebral cortex estimated 
+by intrinsic functional connectivity. *Journal of neurophysiology, 2011*. Publisher: American Physiological Society Bethesda, MD.
+"""
 
 # %%

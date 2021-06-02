@@ -25,11 +25,11 @@
 In this example, we perform forward inference *topic-based segregation queries* to derive activation patterns within 
 the frontoparietal cognitive control network (FPCN), given the presence of a psychological topic of interest, 
 with an additional condition that studies included within the meta-analysis are *not associated* with all other topics 
-of interest. Often referred to as the *multiple demand system* (33), activity within the FPCN is associated with a large 
+of interest. Often referred to as the *multiple demand system* [[1]](#1), activity within the FPCN is associated with a large 
 set of tasks, themselves belonging to disparate and overlapping cognitive components such as decision making, 
 working memory, memory retrieval, task switching, and semantic processing, to name a few. Yet, the literature provides 
 evidence of a heterogeneous internal organization, whereby a different combination of regions may be involved in a 
-different domain of processing (9). Thus, the main goal of this example is to identify unique activation patterns within 
+different domain of processing [[2]](#2). Thus, the main goal of this example is to identify unique activation patterns within 
 the FPCN each predicted by the presence of a particular topic and the simultaneous absence of other topics.
 
 **Segregation queries can maximise the specificity of meta-analytic forward inferences** by minimising the amount of 
@@ -64,11 +64,11 @@ def init_frontend():
 
 # %% [markdown]
 """
-From a set of 200 topics, learned from a large corpus of studies using topic modeling and made available by Neurosynth (25), 
+From a set of 200 topics, learned from a large corpus of studies using topic modeling and made available by Neurosynth [[3]](#3), 
 we selected five topics representing a subset of the broad cognitive processes widely attributed to the FPCN, along 
 with the loading values of studies on each topic: *working memory*, *decision making*, *task set switching*, 
-*semantic processing*, and *memory retrieval*. This selection was based on the findings of Spreng et al. (28), 
-Duncan (33), Yarkoni et al. (34), Niendam et al. (35).
+*semantic processing*, and *memory retrieval*. This selection was based on the findings of Spreng et al. [[4]](#4), 
+Duncan [[1]](#1), Yarkoni et al. [[5]](#5), Niendam et al. [[6]](#6).
 """
 
 # %%
@@ -215,4 +215,38 @@ demonstrate the power of NeuroLang in expressing segregation queries capable of 
 internal organisation.
 """
 
-# %%
+# %% [markdown]
+"""
+### References
+<a id="1">[1]</a>
+John Duncan. The multiple-demand (MD) system of the primate brain: mental programs for intelligent behaviour. 
+*Trends in Cognitive Sciences*, 14(4):172–179, April 2010. ISSN 1364-6613. doi: 10.1016/j.tics.2010. 01.004. 
+URL https://www.sciencedirect.com/science/article/pii/ S1364661310000057.
+
+<a id="2">[2]</a>
+Matthew L. Dixon, Alejandro De La Vega, Caitlin Mills, Jessica Andrews- Hanna, R. Nathan Spreng, Michael W. Cole, and Kalina Christoff. 
+Heterogeneity within the frontoparietal control network and its relationship to the default and dorsal attention networks. 
+*Proceedings of the National Academy of Sciences*, 115(7):E1598, February 2018. doi: 10.1073/pnas.1715766115. 
+URL http://www.pnas.org/content/115/7/E1598.abstract.
+
+<a id="3">[3]</a>
+Russell A. Poldrack, Jeanette A. Mumford, Tom Schonberg, Donald Kalar, Bishal Barman, and Tal Yarkoni. 
+Discovering Relations Between Mind, Brain, and Mental Disorders Using Topic Mapping. 
+*PLoS Computational Biology*, 8(10):e1002707, October 2012. ISSN 1553-7358. doi: 10.1371/journal.pcbi.1002707. 
+URL https://dx.plos.org/10.1371/ journal.pcbi.1002707.
+
+<a id="4">[4]</a>
+R. Nathan Spreng, Jorge Sepulcre, Gary R. Turner, W. Dale Stevens, and Daniel L. Schacter. 
+Intrinsic architecture underlying the relations among the default, dorsal attention, and frontoparietal control networks 
+of the human brain. *Journal of Cognitive Neuroscience*, 25(1):74–86, January 2013. ISSN 1530-8898. doi: 10.1162/jocn a 00281.
+
+<a id="5">[5]</a>
+Tal Yarkoni, Jeremy R. Gray, Elizabeth R. Chrastil, Deanna M. Barch, Leonard Green, and Todd S. Braver. 
+Sustained neural activity associated with cognitive control during temporally extended decision making. 
+*Brain Research. Cognitive Brain Research*, 23(1):71–84, April 2005. ISSN 0926- 6410. doi: 10.1016/j.cogbrainres.2005.01.013.
+
+<a id="6">[6]</a>
+Tara A. Niendam, Angela R. Laird, Kimberly L. Ray, Y. Monica Dean, David C. Glahn, and Cameron S. Carter. 
+Meta-analytic evidence for a superordinate cognitive control network subserving diverse executive functions. 
+*Cognitive, Affective & Behavioral Neuroscience*, 12(2):241–268, June 2012. ISSN 1531-135X. doi: 10.3758/s13415-011-0083-5.
+"""
