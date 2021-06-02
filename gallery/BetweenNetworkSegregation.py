@@ -36,9 +36,10 @@ import warnings  # type: ignore
 warnings.filterwarnings("ignore")
 
 from pathlib import Path
+from typing import Callable, Iterable
 
 import numpy as np
-import nibabel
+import pandas as pd
 from neurolang.frontend import NeurolangPDL
 
 from gallery import data_utils
@@ -49,6 +50,21 @@ data_dir = Path("neurolang_data")
 # %%
 def init_frontend():
     nl = NeurolangPDL()
+    
+    nl.add_symbol(
+        np.log,
+        name="log",
+        type_=Callable[[float], float],
+    )
+    nl.add_symbol(
+        lambda it: float(sum(it)),
+        name="agg_sum",
+        type_=Callable[[Iterable], float],
+    )
+
+    @nl.add_symbol
+    def agg_count(*iterables) -> int:
+        return len(next(iter(iterables)))
 
     return nl
 
@@ -68,35 +84,21 @@ reflecting upon the general understanding of their roles in the literature.
 """
 
 # %%
-def load_topics(n_topics: int = 200):
-    topics_to_keep = [3, 147, 157, 118, 187]
-
-    labels = [
-        "Memory Retrieval",
-        "Task Set Switching",
-        "Working Memory",
-        "Decision Making",
-        "Semantics",
-    ]
-
-    topic_association = data_utils.fetch_neurosynth_topic_associations(
-        n_topics,
-        data_dir=data_dir,
-        topics_to_keep=topics_to_keep,
-        labels=labels,
-        version="v4",
+def load_topics(nl, data_dir):
+    path = data_dir / "v4-topics-60.txt"
+    topic_term = pd.read_csv(path, delimiter="\t")
+    topic_term.drop(columns=["loading", "topic_number"], inplace=True)
+    topic_term = topic_term.melt("nickname")[["nickname", "value"]]
+    topic_term.rename(
+        columns={"nickname": "topic", "value": "term"}, inplace=True
     )
-    return topic_association[["prob", "topic", "study_id"]]
+    topic_term.drop_duplicates(inplace=True)
+    nl.add_tuple_set(topic_term, name="TopicTerm")
 
-
-# %%
-n_topics = 200
-topic_association = load_topics(n_topics=n_topics)
 
 # %%
 def load_studies(
     nl,
-    topic_association,
     term_data,
     peak_reported,
     study_ids,
@@ -139,7 +141,6 @@ def load_voxels(nl, region_voxels, difumo_meta):
 resolution = 3
 mni_mask = data_utils.load_mni_atlas(data_dir=data_dir, resolution=resolution)
 
-
 # %%
 coord_type = "ijk"
 term_data, peak_reported, study_ids = data_utils.fetch_neuroquery(
@@ -149,16 +150,19 @@ term_data, peak_reported, study_ids = data_utils.fetch_neuroquery(
 # %%
 n_difumo_components = 256
 region_voxels, difumo_meta = data_utils.fetch_difumo(
-    mask=mni_mask, coord_type=coord_type, n_components=n_difumo_components, data_dir=data_dir
+    mask=mni_mask,
+    coord_type=coord_type,
+    n_components=n_difumo_components,
+    data_dir=data_dir,
 )
-
 
 # %%
 nl = init_frontend()
 
 # %%
-load_studies(nl, topic_association, peak_reported, study_ids)
-load_voxels(nl, region_voxels, mni_mask)
+load_studies(nl, term_data, peak_reported, study_ids)
+load_voxels(nl, region_voxels, difumo_meta)
+load_topics(nl, data_dir=data_dir)
 
 # %% [markdown]
 """
@@ -206,7 +210,7 @@ where the **//** operator represents a probabilistic conditioning.
 query = r"""tfidf :: TermInStudy(t, s) :- NeuroQueryTFIDF(tfidf, t, s)
 TopicAssociation(topic, s) :- TermInStudy(term, s) & TopicTerm(topic, term)
 RegionReported(r, s) :- PeakReported(i, j, k, s) & RegionVoxel(r, i, j, k)
-RegionVolume(r, agg_count(i, j, k)) = RegionVoxel(r, i, j, k)
+RegionVolume(r, agg_count(i, j, k)) :- RegionVoxel(r, i, j, k)
 NetworkVolume(n, agg_sum(v)) :- RegionVolume(r, v) & NetworkRegion(n, r)
 NetworkReportedVolume(network, study, agg_sum(volume)) :- NetworkRegion(network, region) & RegionReported(region, study) & RegionVolume(region, volume)
 prob :: NetworkReported(network, study) :- NetworkVolume(network, nv) & NetworkReportedVolume(network, study, nrv) & (prob == nrv / nv)
@@ -240,21 +244,23 @@ reporting DMN activations than those reporting FPCN or DAN.
 """
 
 # %% [markdown]
-# ### References
-# <a id="1">[1]</a>
-# R. Nathan Spreng, Jorge Sepulcre, Gary R. Turner, W. Dale Stevens, and Daniel L. Schacter. 
-# Intrinsic architecture underlying the relations among the default, dorsal attention, and frontoparietal 
-# control networks of the human brain. *Journal of Cognitive Neuroscience*, 25(1):74–86, 
-# January 2013. ISSN 1530-8898. doi: 10.1162/jocn a 00281.
-#
-# <a id="2">[2]</a>
-# Matthew L. Dixon, Alejandro De La Vega, Caitlin Mills, Jessica Andrews-Hanna, R. Nathan Spreng, Michael W. Cole, and Kalina Christoff. 
-# Heterogeneity within the frontoparietal control network and its relationship to the default and dorsal attention networks. 
-# *Proceedings of the National Academy of Sciences*, 115(7):E1598, February 2018. doi: 10.1073/pnas.1715766115. 
-# URL http://www.pnas.org/content/115/7/E1598.abstract.
-#
-# <a id="3">[3]</a>
-# Radek Ptak, Armin Schnider, and Julia Fellrath. The Dorsal Frontoparietal Network: A Core System for Emulated Action. 
-# *Trends in Cognitive Sciences*, 21(8):589–599, August 2017. ISSN 1879-307X. doi: 10.1016/j.tics.2017.05.002.
+"""
+### References
+<a id="1">[1]</a>
+R. Nathan Spreng, Jorge Sepulcre, Gary R. Turner, W. Dale Stevens, and Daniel L. Schacter.
+Intrinsic architecture underlying the relations among the default, dorsal attention, and frontoparietal
+control networks of the human brain. *Journal of Cognitive Neuroscience*, 25(1):74–86,
+January 2013. ISSN 1530-8898. doi: 10.1162/jocn a 00281.
+
+<a id="2">[2]</a>
+Matthew L. Dixon, Alejandro De La Vega, Caitlin Mills, Jessica Andrews-Hanna, R. Nathan Spreng, Michael W. Cole, and Kalina Christoff.
+Heterogeneity within the frontoparietal control network and its relationship to the default and dorsal attention networks.
+*Proceedings of the National Academy of Sciences*, 115(7):E1598, February 2018. doi: 10.1073/pnas.1715766115.
+URL http://www.pnas.org/content/115/7/E1598.abstract.
+
+<a id="3">[3]</a>
+Radek Ptak, Armin Schnider, and Julia Fellrath. The Dorsal Frontoparietal Network: A Core System for Emulated Action.
+*Trends in Cognitive Sciences*, 21(8):589–599, August 2017. ISSN 1879-307X. doi: 10.1016/j.tics.2017.05.002.
+"""
 
 # %%
