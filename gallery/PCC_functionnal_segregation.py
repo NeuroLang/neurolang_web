@@ -82,9 +82,7 @@ def init_frontend():
 
     # Aggregation function to build a region
     @nl.add_symbol
-    def agg_create_region(
-        i: Iterable, j: Iterable, k: Iterable
-    ) -> ExplicitVBR:
+    def agg_create_region(i: Iterable, j: Iterable, k: Iterable) -> ExplicitVBR:
         voxels = np.c_[i, j, k]
         return ExplicitVBR(voxels, mni_mask.affine, image_dim=mni_mask.shape)
 
@@ -94,9 +92,7 @@ def init_frontend():
         i: Iterable, j: Iterable, k: Iterable, p: Iterable
     ) -> ExplicitVBR:
         voxels = np.c_[i, j, k]
-        return ExplicitVBROverlay(
-            voxels, mni_mask.affine, p, image_dim=mni_mask.shape
-        )
+        return ExplicitVBROverlay(voxels, mni_mask.affine, p, image_dim=mni_mask.shape)
 
     return nl
 
@@ -113,19 +109,14 @@ its associated `v5-topics-200` topic model (Poldrack et al., 2012), and the DiFu
 # %%
 # MNI Template
 resolution = 3
-mni_mask = data_utils.load_mni_atlas(
-    data_dir=data_dir, resolution=resolution, key="t1"
-)
+mni_mask = data_utils.load_mni_atlas(data_dir=data_dir, resolution=resolution, key="t1")
 
 # %%
 # Difumo 128 Regions Atlas
 coord_type = "ijk"
 n_components = 128
 region_voxels, difumo_meta = data_utils.fetch_difumo(
-    data_dir=data_dir,
-    mask=mni_mask,
-    coord_type=coord_type,
-    n_components=n_components,
+    data_dir=data_dir, mask=mni_mask, coord_type=coord_type, n_components=n_components,
 )
 
 difumo_img = datasets.fetch_atlas_difumo(
@@ -134,13 +125,9 @@ difumo_img = datasets.fetch_atlas_difumo(
 
 # %%
 # NeuroSynth database
-term_in_study, peak_reported, study_ids = data_utils.fetch_neurosynth(
-    data_dir=data_dir
-)
+term_in_study, peak_reported, study_ids = data_utils.fetch_neurosynth(data_dir=data_dir)
 ijk_positions = np.round(
-    data_utils.xyz_to_ijk(
-        peak_reported[["x", "y", "z"]].values.astype(float), mni_mask
-    )
+    data_utils.xyz_to_ijk(peak_reported[["x", "y", "z"]].values.astype(float), mni_mask)
 )
 peak_reported["i"] = ijk_positions[:, 0]
 peak_reported["j"] = ijk_positions[:, 1]
@@ -179,9 +166,7 @@ def load_studies(
     nl.add_tuple_set(peak_reported, name="PeakReported")
     nl.add_tuple_set(region_voxels, name="RegionVoxel")
     nl.add_tuple_set(study_ids, name="Study")
-    nl.add_uniform_probabilistic_choice_over_set(
-        study_ids, name="SelectedStudy"
-    )
+    nl.add_uniform_probabilistic_choice_over_set(study_ids, name="SelectedStudy")
     splits = []
     for i, (train, _) in enumerate(
         ShuffleSplit(n_splits=n_splits, train_size=subsample_proportion).split(
@@ -247,16 +232,11 @@ def load_topics(nl):
 
     n_topics = 200
     topic_association = data_utils.fetch_neurosynth_topic_associations(
-        n_topics,
-        data_dir=data_dir,
-        topics_to_keep=topics_to_keep,
-        labels=labels,
+        n_topics, data_dir=data_dir, topics_to_keep=topics_to_keep, labels=labels,
     )
 
     nl.add_probabilistic_facts_from_tuples(
-        topic_association[["prob", "topic", "study_id"]].itertuples(
-            index=False
-        ),
+        topic_association[["prob", "topic", "study_id"]].itertuples(index=False),
         name="TopicInStudy",
     )
 
@@ -301,22 +281,13 @@ relations in Neurolang:
 
 # %%
 dpcc = np.where(
-    (
-        pcc_region["difumo_label"].values
-        == "Posterior cingulate cortex antero-inferior"
-    )
-    | (
-        pcc_region["difumo_label"].values
-        == "Posterior cingulate cortex superior"
-    )
+    (pcc_region["difumo_label"].values == "Posterior cingulate cortex antero-inferior")
+    | (pcc_region["difumo_label"].values == "Posterior cingulate cortex superior")
 )
 
 vpcc = np.where(
     (pcc_region["difumo_label"].values == "Posterior cingulate cortex")
-    | (
-        pcc_region["difumo_label"].values
-        == "Posterior cingulate cortex inferior"
-    )
+    | (pcc_region["difumo_label"].values == "Posterior cingulate cortex inferior")
 )
 
 pcc_region["pcc_label"] = ""
@@ -326,9 +297,7 @@ pcc_region["pcc_label"].iloc[vpcc] = "vPCC"
 # %%
 def add_pcc_regions(nl, pcc_region):
     nl.add_tuple_set([("dPCC",), ("vPCC",)], name="PCCLabel")
-    nl.add_tuple_set(
-        np.unique(pcc_region["difumo_label"].values), name="RegionLabel"
-    )
+    nl.add_tuple_set(np.unique(pcc_region["difumo_label"].values), name="RegionLabel")
     nl.add_tuple_set(pcc_region, name="RegionOfInterest")
 
 
@@ -442,9 +411,7 @@ def make_radar_plot(results):
     n_topics = len(topics)
     angles = np.linspace(0, 2 * np.pi, n_topics, endpoint=False).tolist()
     angles += angles[:1]
-    fig, ax = plt.subplots(
-        figsize=(4.5, 3), subplot_kw=dict(polar=True), dpi=200
-    )
+    fig, ax = plt.subplots(figsize=(4.5, 3), subplot_kw=dict(polar=True), dpi=200)
     fig.canvas.header_visible = False
     colors = {"dPCC": "black", "vPCC": "purple"}
     for network, dn in d.groupby("r"):
@@ -511,9 +478,7 @@ def make_histogram_plot(results):
                 "std",
             ]
         )
-        .rename(
-            columns={"<lambda_0>": "C.I. 95% -", "<lambda_1>": "C.I. 95% +"}
-        )
+        .rename(columns={"<lambda_0>": "C.I. 95% -", "<lambda_1>": "C.I. 95% +"})
     )
 
     pooled_std = np.sqrt(

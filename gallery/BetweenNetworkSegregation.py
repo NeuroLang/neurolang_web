@@ -50,16 +50,12 @@ data_dir = Path("neurolang_data")
 # %%
 def init_frontend():
     nl = NeurolangPDL()
-    
+
     nl.add_symbol(
-        np.log,
-        name="log",
-        type_=Callable[[float], float],
+        np.log, name="log", type_=Callable[[float], float],
     )
     nl.add_symbol(
-        lambda it: float(sum(it)),
-        name="agg_sum",
-        type_=Callable[[Iterable], float],
+        lambda it: float(sum(it)), name="agg_sum", type_=Callable[[Iterable], float],
     )
 
     @nl.add_symbol
@@ -89,9 +85,7 @@ def load_topics(nl, data_dir):
     topic_term = pd.read_csv(path, delimiter="\t")
     topic_term.drop(columns=["loading", "topic_number"], inplace=True)
     topic_term = topic_term.melt("nickname")[["nickname", "value"]]
-    topic_term.rename(
-        columns={"nickname": "topic", "value": "term"}, inplace=True
-    )
+    topic_term.rename(columns={"nickname": "topic", "value": "term"}, inplace=True)
     topic_term.drop_duplicates(inplace=True)
     nl.add_tuple_set(topic_term, name="TopicTerm")
 
@@ -109,18 +103,12 @@ def load_studies(
     np.random.seed(split_id)
     study_ids = study_ids.sample(n_studies_selected)
     term_data = term_data.loc[term_data.study_id.isin(study_ids.study_id)]
-    peak_reported = peak_reported.loc[
-        peak_reported.study_id.isin(study_ids.study_id)
-    ]
+    peak_reported = peak_reported.loc[peak_reported.study_id.isin(study_ids.study_id)]
 
     nl.add_tuple_set(peak_reported, name="PeakReported")
-    nl.add_tuple_set(
-        term_data[["tfidf", "term", "study_id"]], name="NeuroQueryTFIDF"
-    )
+    nl.add_tuple_set(term_data[["tfidf", "term", "study_id"]], name="NeuroQueryTFIDF")
     nl.add_tuple_set(study_ids, name="Study")
-    nl.add_uniform_probabilistic_choice_over_set(
-        study_ids, name="SelectedStudy"
-    )
+    nl.add_uniform_probabilistic_choice_over_set(study_ids, name="SelectedStudy")
 
 
 # %%

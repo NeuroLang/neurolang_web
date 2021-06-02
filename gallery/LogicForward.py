@@ -109,9 +109,7 @@ def load_studies(
     n_studies_selected = int(len(study_ids) * subsample_proportion)
     np.random.seed(split_id)
     study_ids = study_ids.sample(n_studies_selected)
-    peak_reported = peak_reported.loc[
-        peak_reported.study_id.isin(study_ids.study_id)
-    ]
+    peak_reported = peak_reported.loc[peak_reported.study_id.isin(study_ids.study_id)]
     topic_association = topic_association.loc[
         topic_association.study_id.isin(study_ids.study_id)
     ]
@@ -122,13 +120,9 @@ def load_studies(
         topic_association, name="TopicAssociation",
     )
     nl.add_tuple_set(peak_reported, name="PeakReported")
-    nl.add_uniform_probabilistic_choice_over_set(
-        study_ids, name="SelectedStudy"
-    )
+    nl.add_uniform_probabilistic_choice_over_set(study_ids, name="SelectedStudy")
     nl.add_tuple_set(study_ids, name="Study")
-    nl.add_tuple_set(
-        topic_association[["topic"]].drop_duplicates(), name="Topic"
-    )
+    nl.add_tuple_set(topic_association[["topic"]].drop_duplicates(), name="Topic")
 
 
 # %%

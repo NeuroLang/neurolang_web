@@ -73,9 +73,7 @@ def load_studies(
     n_studies_selected = int(len(study_ids) * subsample_proportion)
     np.random.seed(split_id)
     study_ids = study_ids.sample(n_studies_selected)
-    peak_reported = peak_reported.loc[
-        peak_reported.study_id.isin(study_ids.study_id)
-    ]
+    peak_reported = peak_reported.loc[peak_reported.study_id.isin(study_ids.study_id)]
     topic_association = topic_association.loc[
         topic_association.study_id.isin(study_ids.study_id)
     ]
@@ -84,9 +82,7 @@ def load_studies(
         name="TopicAssociation",
     )
     nl.add_tuple_set(peak_reported, name="PeakReported")
-    nl.add_uniform_probabilistic_choice_over_set(
-        study_ids, name="SelectedStudy"
-    )
+    nl.add_uniform_probabilistic_choice_over_set(study_ids, name="SelectedStudy")
     nl.add_tuple_set(study_ids, name="Study")
 
 
@@ -147,10 +143,14 @@ mni_mask = data_utils.load_mni_atlas(data_dir=data_dir, resolution=resolution)
 
 # %%
 n_topics = 100
-topic_association = data_utils.fetch_neurosynth_topic_associations(n_topics, data_dir=data_dir)
+topic_association = data_utils.fetch_neurosynth_topic_associations(
+    n_topics, data_dir=data_dir
+)
 
 # %%
-_, peak_reported, study_ids = data_utils.fetch_neurosynth(tfidf_threshold=1e-2, data_dir=data_dir)
+_, peak_reported, study_ids = data_utils.fetch_neurosynth(
+    tfidf_threshold=1e-2, data_dir=data_dir
+)
 
 # %%
 nl = init_frontend()

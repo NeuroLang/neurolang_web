@@ -13,7 +13,7 @@ from ipywidgets import (
     Tab,
     Text,
     VBox,
-    Output
+    Output,
 )  # type: ignore
 
 from math import ceil
@@ -630,7 +630,13 @@ class QueryWidget(VBox):
         self.info_display = HTML(layout=Layout(visibility="hidden"))
         self.query_section = Tab(
             children=[
-                VBox([HBox([self.query, self.button]), self.error_display, self.info_display]),
+                VBox(
+                    [
+                        HBox([self.query, self.button]),
+                        self.error_display,
+                        self.info_display,
+                    ]
+                ),
                 SymbolsWidget(self.neurolang_engine),
             ]
         )
@@ -731,4 +737,3 @@ def _format_info(info: str):
     Format an info string for display
     """
     return f"<pre style='background-color:#a5affa; border: 1px solid blue; padding: 0.4em'>{info}</pre>"
-

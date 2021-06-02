@@ -89,4 +89,3 @@ with open(os.devnull, "w") as devnull:
 query = "union(region_union(r)) :- destrieux(..., r)"
 qw = QueryWidget(nl, query)
 qw
-

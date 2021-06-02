@@ -26,11 +26,9 @@ DIFUMO_N_COMPONENTS_TO_DOWNLOAD_ID = {
     1024: "34792",
 }
 
+
 def xyz_to_ijk(xyz, mask):
-    voxels = nibabel.affines.apply_affine(
-        np.linalg.inv(mask.affine),
-        xyz,
-    ).astype(int)
+    voxels = nibabel.affines.apply_affine(np.linalg.inv(mask.affine), xyz,).astype(int)
     return voxels
 
 
@@ -70,9 +68,7 @@ def fetch_neuroquery(
         coordinates["j"] = ijk[:, 1]
         coordinates["k"] = ijk[:, 2]
     coord_cols = list(coord_type)
-    peak_data = coordinates[coord_cols + ["pmid"]].rename(
-        columns={"pmid": "study_id"}
-    )
+    peak_data = coordinates[coord_cols + ["pmid"]].rename(columns={"pmid": "study_id"})
     feature_names = pd.read_csv(feature_names_fn, header=None)
     study_ids = pd.read_csv(study_ids_fn, header=None)
     study_ids.rename(columns={0: "study_id"}, inplace=True)
@@ -80,17 +76,11 @@ def fetch_neuroquery(
     tfidf["study_id"] = study_ids.iloc[:, 0]
     if tfidf_threshold is None:
         term_data = pd.melt(
-            tfidf,
-            var_name="term",
-            id_vars="study_id",
-            value_name="tfidf",
+            tfidf, var_name="term", id_vars="study_id", value_name="tfidf",
         ).query("tfidf > 0")[["term", "tfidf", "study_id"]]
     else:
         term_data = pd.melt(
-            tfidf,
-            var_name="term",
-            id_vars="study_id",
-            value_name="tfidf",
+            tfidf, var_name="term", id_vars="study_id", value_name="tfidf",
         ).query(f"tfidf > {tfidf_threshold}")[["term", "study_id"]]
     return term_data, peak_data, study_ids
 
@@ -98,7 +88,7 @@ def fetch_neuroquery(
 def fetch_neurosynth(
     tfidf_threshold: Optional[float] = None,
     data_dir: Path = DATA_DIR,
-    convert_study_ids: bool = True
+    convert_study_ids: bool = True,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     ns_dir = data_dir / "neurosynth"
     ns_data_url = "https://github.com/neurosynth/neurosynth-data/raw/master/"
@@ -123,10 +113,7 @@ def fetch_neurosynth(
     features = pd.read_csv(ns_features_fn, sep="\t", converters=converters)
     features.rename(columns={"pmid": "study_id"}, inplace=True)
     term_data = pd.melt(
-        features,
-        var_name="term",
-        id_vars="study_id",
-        value_name="tfidf",
+        features, var_name="term", id_vars="study_id", value_name="tfidf",
     )
     if tfidf_threshold is not None:
         term_data = term_data.query("tfidf > {}".format(tfidf_threshold))[
@@ -168,14 +155,15 @@ def fetch_neurosynth(
         np.hstack([projected, non_mni_peaks[["study_id"]].values]),
         columns=["x", "y", "z", "study_id"],
     )
-    peak_data = pd.concat([projected_df, mni_peaks]).astype({"x": int, "y": int, "z": int})
+    peak_data = pd.concat([projected_df, mni_peaks]).astype(
+        {"x": int, "y": int, "z": int}
+    )
     study_ids = peak_data[["study_id"]].drop_duplicates()
     return term_data, peak_data, study_ids
 
 
 def fetch_difumo_meta(
-    data_dir: Path = DATA_DIR,
-    n_components: int = 256,
+    data_dir: Path = DATA_DIR, n_components: int = 256,
 ) -> pd.DataFrame:
     out_dir = data_dir / "difumo"
     download_id = DIFUMO_N_COMPONENTS_TO_DOWNLOAD_ID[n_components]
@@ -201,9 +189,7 @@ def fetch_difumo(
     out_dir = data_dir / "difumo"
     download_id = DIFUMO_N_COMPONENTS_TO_DOWNLOAD_ID[n_components]
     url = f"https://osf.io/{download_id}/download"
-    csv_file = os.path.join(
-        str(n_components), f"labels_{n_components}_dictionary.csv"
-    )
+    csv_file = os.path.join(str(n_components), f"labels_{n_components}_dictionary.csv")
     nifti_file = os.path.join(str(n_components), "3mm/maps.nii.gz")
     files = [
         (csv_file, url, {"uncompress": True}),
@@ -213,9 +199,7 @@ def fetch_difumo(
     labels = pd.DataFrame(pd.read_csv(files[0]))
     img = nilearn.image.load_img(files[1])
     img = nilearn.image.resample_img(
-        img,
-        target_affine=mask.affine,
-        interpolation="nearest",
+        img, target_affine=mask.affine, interpolation="nearest",
     )
     img_data = img.get_fdata()
     to_concat = list()
@@ -254,9 +238,7 @@ def get_exp_dir(exp_name: str):
     module_dir = Path(__file__).parent
     exp_dir = module_dir / exp_name
     if not exp_dir.is_dir():
-        raise FileNotFoundError(
-            f"Unknown exp: exp dir {exp_dir} does not exist"
-        )
+        raise FileNotFoundError(f"Unknown exp: exp dir {exp_dir} does not exist")
     return exp_dir
 
 
@@ -312,9 +294,7 @@ def load_results(
     return results
 
 
-def load_aggregated_results(
-    exp_name: str, file_type: str = "hdf"
-) -> pd.DataFrame:
+def load_aggregated_results(exp_name: str, file_type: str = "hdf") -> pd.DataFrame:
     extension = FILETYPE_TO_EXTENSION[file_type]
     exp_dir = get_exp_dir(exp_name)
     result_dir = exp_dir / "_results"
@@ -323,13 +303,9 @@ def load_aggregated_results(
             f"Results not available for exp {exp_name}. "
             f"Directory {exp_dir} does not exist"
         )
-    cache_paths = list(
-        result_dir.glob(f"{exp_name}-aggregated-results*.{extension}")
-    )
+    cache_paths = list(result_dir.glob(f"{exp_name}-aggregated-results*.{extension}"))
     if not cache_paths:
-        raise FileNotFoundError(
-            f"Aggregated results not available in {result_dir}"
-        )
+        raise FileNotFoundError(f"Aggregated results not available in {result_dir}")
     print("loading cached aggregated results from")
     print(next(iter(cache_paths)))
     path = result_dir / next(iter(cache_paths))
@@ -383,8 +359,12 @@ def subsample_cbma_data(
 
 
 def fetch_neurosynth_topic_associations(
-    n_topics: int, data_dir: Path = DATA_DIR, convert_study_ids: bool = True,
-    topics_to_keep: List[int] = None, labels: List[str] = None, version: str = "v5"
+    n_topics: int,
+    data_dir: Path = DATA_DIR,
+    convert_study_ids: bool = True,
+    topics_to_keep: List[int] = None,
+    labels: List[str] = None,
+    version: str = "v5",
 ) -> pd.DataFrame:
     if n_topics not in {50, 100, 200, 400}:
         raise ValueError(f"Unexpected number of topics: {n_topics}")
@@ -415,7 +395,12 @@ def fetch_neurosynth_topic_associations(
     return ta
 
 
-def load_mni_atlas(data_dir: Path = DATA_DIR, resolution: int = 2, interpolation: str = "continuous", key:str = "gm"):
+def load_mni_atlas(
+    data_dir: Path = DATA_DIR,
+    resolution: int = 2,
+    interpolation: str = "continuous",
+    key: str = "gm",
+):
     """Load the MNI atlas and resample it to 2mm voxels."""
 
     mni_mask = nilearn.image.resample_img(

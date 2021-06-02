@@ -53,13 +53,9 @@ def init_agent():
 
     # Adding new aggregation function to build a region
     @nl.add_symbol
-    def agg_create_region(
-        i: Iterable, j: Iterable, k: Iterable
-    ) -> ExplicitVBR:
+    def agg_create_region(i: Iterable, j: Iterable, k: Iterable) -> ExplicitVBR:
         voxels = np.c_[i, j, k]
-        return ExplicitVBR(
-            voxels, mni_t1_4mm.affine, image_dim=mni_t1_4mm.shape
-        )
+        return ExplicitVBR(voxels, mni_t1_4mm.affine, image_dim=mni_t1_4mm.shape)
 
     # Adding new aggregation function to build a region overlay
     @nl.add_symbol

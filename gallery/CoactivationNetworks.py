@@ -47,14 +47,10 @@ def init_frontend():
 def load_studies(nl, peak_reported, study_ids):
     n_studies_selected = int(len(study_ids) * 0.01)
     study_ids = study_ids.sample(n_studies_selected)
-    peak_reported = peak_reported.loc[
-        peak_reported.study_id.isin(study_ids.study_id)
-    ]
+    peak_reported = peak_reported.loc[peak_reported.study_id.isin(study_ids.study_id)]
 
     nl.add_tuple_set(peak_reported, name="PeakReported")
-    nl.add_uniform_probabilistic_choice_over_set(
-        study_ids, name="SelectedStudy"
-    )
+    nl.add_uniform_probabilistic_choice_over_set(study_ids, name="SelectedStudy")
     nl.add_tuple_set(
         np.round(
             nib.affines.apply_affine(
@@ -79,9 +75,7 @@ def load_regions_and_peaks_reported(nl):
             & (e.d == e.EUCLIDEAN(e.x, e.y, e.z, e.x1, e.y1, e.z1))
             & (e.d < 10)
         )
-        region_reported = nl.query(
-            (e.region, e.s), e.RegionReported(e.region, e.s)
-        )
+        region_reported = nl.query((e.region, e.s), e.RegionReported(e.region, e.s))
     region_reported = region_reported.as_pandas_dataframe()
     nl.add_tuple_set(region_reported, name="RegionReported")
 
