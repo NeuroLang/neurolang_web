@@ -170,11 +170,10 @@ def fetch_neurosynth(
             ),
         ],
     )
-    converters = None
-    if convert_study_ids:
-        converters = {"pmid": StudyID}
-    features = pd.read_csv(ns_features_fn, sep="\t", converters=converters)
+    features = read_and_convert_csv_to_hdf(ns_features_fn, sep="\t")
     features.rename(columns={"pmid": "study_id"}, inplace=True)
+    if convert_study_ids:
+        features["study_id"] = features["study_id"].apply(StudyID)
     term_data = pd.melt(
         features, var_name="term", id_vars="study_id", value_name="tfidf",
     )
@@ -184,9 +183,9 @@ def fetch_neurosynth(
         ]
     else:
         term_data = term_data.query("tfidf > 0")[["term", "tfidf", "study_id"]]
+    activations = read_and_convert_csv_to_hdf(ns_database_fn, sep="\t")
     if convert_study_ids:
-        converters = {"id": StudyID}
-    activations = pd.read_csv(ns_database_fn, sep="\t", converters=converters)
+        activations["id"] = activations["id"].apply(StudyID)
     mni_peaks = activations.loc[activations.space == "MNI"][
         ["x", "y", "z", "id"]
     ].rename(columns={"id": "study_id"})
@@ -225,23 +224,6 @@ def fetch_neurosynth(
     return term_data, peak_data, study_ids
 
 
-def fetch_difumo_meta(
-    data_dir: Path = DATA_DIR, n_components: int = 256,
-) -> pd.DataFrame:
-    out_dir = data_dir / "difumo"
-    download_id = DIFUMO_N_COMPONENTS_TO_DOWNLOAD_ID[n_components]
-    url = f"https://osf.io/{download_id}/download"
-    labels_path = os.path.join(
-        str(n_components), f"labels_{n_components}_dictionary.csv"
-    )
-    files = [
-        (labels_path, url, {"uncompress": True}),
-    ]
-    files = nilearn.datasets.utils._fetch_files(out_dir, files, verbose=2)
-    labels = pd.DataFrame(pd.read_csv(files[0]))
-    return labels
-
-
 def fetch_difumo(
     mask: nibabel.Nifti1Image,
     component_filter_fun: Callable = lambda _: True,
@@ -259,7 +241,7 @@ def fetch_difumo(
         (nifti_file, url, {"uncompress": True}),
     ]
     files = nilearn.datasets.utils._fetch_files(out_dir, files, verbose=2)
-    labels = pd.DataFrame(pd.read_csv(files[0]))
+    labels = read_and_convert_csv_to_hdf(files[0])
     img = nilearn.image.load_img(files[1])
     img = nilearn.image.resample_img(
         img, target_affine=mask.affine, interpolation="nearest",
@@ -279,146 +261,6 @@ def fetch_difumo(
         to_concat.append(region_data[["label"] + list(coord_type)])
     region_voxels = pd.concat(to_concat)
     return region_voxels, labels
-
-
-def save_file(d: pd.DataFrame, dst_path: Path, file_type: str = "hdf") -> None:
-    print(f"saving to {dst_path}")
-    if file_type == "hdf":
-        with pd.HDFStore(
-            dst_path, mode="w", complib="blosc:lz4", complevel=9
-        ) as hdf_store:
-            hdf_store["data"] = d
-    else:
-        d.to_parquet(dst_path)
-
-
-def save_to_parquet(d: pd.DataFrame, dst_path: Path) -> None:
-    print(f"saving to {dst_path}")
-    d.to_parquet(dst_path, compression="gzip")
-
-
-def get_exp_dir(exp_name: str):
-    module_dir = Path(__file__).parent
-    exp_dir = module_dir / exp_name
-    if not exp_dir.is_dir():
-        raise FileNotFoundError(f"Unknown exp: exp dir {exp_dir} does not exist")
-    return exp_dir
-
-
-def load_results(
-    exp_name: str,
-    out_path: Optional[Union[str, Path]] = None,
-    use_cache: bool = True,
-    take_last: bool = False,
-    file_type: str = "hdf",
-) -> pd.DataFrame:
-    extension = FILETYPE_TO_EXTENSION[file_type]
-    exp_dir = get_exp_dir(exp_name)
-    result_dir = exp_dir / "_results"
-    if not result_dir.is_dir():
-        raise FileNotFoundError(
-            f"Results not available for exp {exp_name}. "
-            f"Directory {exp_dir} does not exist"
-        )
-    if use_cache:
-        cache_paths = list(result_dir.glob(f"{exp_name}-results*.{extension}"))
-        if cache_paths:
-            path = result_dir / next(reversed(sorted(cache_paths)))
-            if file_type == "hdf":
-                return pd.read_hdf(path, "data")
-            elif file_type == "parquet":
-                return pd.read_parquet(path)
-    if out_path is not None:
-        if isinstance(out_path, str):
-            out_path = Path(out_path)
-    paths = list(
-        sorted(
-            p
-            for p in result_dir.glob(f"*.{extension}")
-            if not str(p).startswith("exp_name")
-        )
-    )
-    if take_last:
-        paths = paths[-1:]
-    to_concat = list()
-    for path in paths:
-        if file_type == "hdf":
-            to_concat.append(pd.read_hdf(result_dir / path, "data"))
-        else:
-            to_concat.append(pd.read_parquet(result_dir / path))
-    results = pd.concat(to_concat)
-    datestr = datetime.date.today().isoformat()
-    cache_path = result_dir / f"{exp_name}-results-{datestr}.{extension}"
-    if cache_path.is_file():
-        cache_path.unlink()
-    save_file(results, cache_path, file_type=file_type)
-    if out_path is not None:
-        save_file(results, out_path, file_type=file_type)
-    return results
-
-
-def load_aggregated_results(exp_name: str, file_type: str = "hdf") -> pd.DataFrame:
-    extension = FILETYPE_TO_EXTENSION[file_type]
-    exp_dir = get_exp_dir(exp_name)
-    result_dir = exp_dir / "_results"
-    if not result_dir.is_dir():
-        raise FileNotFoundError(
-            f"Results not available for exp {exp_name}. "
-            f"Directory {exp_dir} does not exist"
-        )
-    cache_paths = list(result_dir.glob(f"{exp_name}-aggregated-results*.{extension}"))
-    if not cache_paths:
-        raise FileNotFoundError(f"Aggregated results not available in {result_dir}")
-    print("loading cached aggregated results from")
-    print(next(iter(cache_paths)))
-    path = result_dir / next(iter(cache_paths))
-    if file_type == "hdf":
-        return pd.read_hdf(path, "data")
-    return pd.read_parquet(path)
-
-
-def save_aggregated_results(
-    exp_name: str, results: pd.DataFrame, file_type: str = "hdf"
-) -> None:
-    extension = FILETYPE_TO_EXTENSION[file_type]
-    exp_dir = get_exp_dir(exp_name)
-    result_dir = exp_dir / "_results"
-    if not result_dir.is_dir():
-        raise FileNotFoundError(f"Directory {exp_dir} does not exist")
-    datestr = datetime.date.today().isoformat()
-    filename = f"{exp_name}-aggregated-results-{datestr}.{extension}"
-    save_file(results, result_dir / filename, file_type=file_type)
-    print("saved aggregated results to")
-    print(result_dir / filename)
-
-
-def load_cognitive_terms(filename: str) -> pd.Series:
-    if filename is None:
-        path = Path(__file__).parent / "cognitive_terms.txt"
-    else:
-        path = Path(__file__).parent / f"{filename}.txt"
-    return pd.read_csv(path, header=None, names=["term"]).drop_duplicates()
-
-
-def load_term_cogfun() -> pd.DataFrame:
-    path = Path(__file__).parent / "term_cogfun.csv"
-    return pd.read_csv(path)
-
-
-def subsample_cbma_data(
-    term_data: pd.DataFrame,
-    peak_data: pd.DataFrame,
-    study_ids: pd.DataFrame,
-    proportion: float = None,
-    nb_samples: int = None,
-):
-    if proportion is not None:
-        assert nb_samples is None
-        nb_samples = int(len(study_ids) * proportion)
-    study_ids = study_ids.sample(nb_samples)
-    term_data = term_data.loc[term_data.study_id.isin(study_ids.study_id)]
-    peak_data = peak_data.loc[peak_data.study_id.isin(study_ids.study_id)]
-    return term_data, peak_data, study_ids
 
 
 def fetch_neurosynth_topic_associations(
@@ -443,10 +285,9 @@ def fetch_neurosynth_topic_associations(
             ),
         ],
     )[0]
-    converters = None
+    ta = read_and_convert_csv_to_hdf(topic_data, sep="\t")
     if convert_study_ids:
-        converters = {"id": StudyID}
-    ta = pd.read_csv(topic_data, sep="\t", converters=converters)
+        ta["id"] = ta["id"].apply(StudyID)
     ta.set_index("id", inplace=True)
     if topics_to_keep is not None:
         ta = ta.iloc[:, topics_to_keep]

@@ -115,13 +115,10 @@ mni_mask = data_utils.load_mni_atlas(data_dir=data_dir, resolution=resolution, k
 # Difumo 128 Regions Atlas
 coord_type = "ijk"
 n_components = 128
-region_voxels, difumo_meta = data_utils.fetch_difumo(
+region_voxels, _ = data_utils.fetch_difumo(
     data_dir=data_dir, mask=mni_mask, coord_type=coord_type, n_components=n_components,
 )
 
-difumo_img = datasets.fetch_atlas_difumo(
-    dimension=n_components, data_dir=str(data_dir)
-).maps
 
 # %%
 # NeuroSynth database
