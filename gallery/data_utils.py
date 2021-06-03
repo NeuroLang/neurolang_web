@@ -32,11 +32,72 @@ def xyz_to_ijk(xyz, mask):
     return voxels
 
 
+def read_and_convert_csv_to_feather(file: Union[Path, str], **csv_read_args):
+    """
+    Load a target csv file. If this is the first time this file is read,
+    this method will save the file to feather file format. Later calls to
+    this method to read the csv file will then read the file from the 
+    .feather file instead of from the .csv file, speeding up read times.
+
+    Parameters
+    ----------
+    file : Union[Path, str]
+        the path of the csv file
+    **csv_read_args :
+        additional args to pass to pandas read_csv method
+
+    Returns
+    -------
+    pd.DataFrame
+        the loaded dataframe
+    """
+    if not isinstance(file, Path):
+        file = Path(file)
+    target_file = file.with_suffix(".feather")
+    if not os.path.isfile(target_file):
+        df = pd.read_csv(file, **csv_read_args)
+        df.to_feather(target_file)
+    else:
+        df = pd.read_feather(target_file)
+    return df
+
+
+def read_and_convert_csv_to_hdf(file: Union[Path, str], **csv_read_args):
+    """
+    Load a target csv file. If this is the first time this file is read,
+    this method will save the file to hdf fixed file format. Later calls to
+    this method to read the csv file will then read the file from the 
+    hdf file instead of from the .csv file, speeding up read times.
+
+    Parameters
+    ----------
+    file : Union[Path, str]
+        the path of the csv file
+    **csv_read_args :
+        additional args to pass to pandas read_csv method
+
+    Returns
+    -------
+    pd.DataFrame
+        the loaded dataframe
+    """
+    if not isinstance(file, Path):
+        file = Path(file)
+    target_file = file.with_suffix(".h5")
+    if not os.path.isfile(target_file):
+        df = pd.read_csv(file, **csv_read_args)
+        df.to_hdf(target_file, "data", mode="w")
+    else:
+        df = pd.read_hdf(target_file, "data")
+    return df
+
+
 def fetch_neuroquery(
     mask: nibabel.Nifti1Image,
     data_dir: Path = DATA_DIR,
     tfidf_threshold: Optional[float] = None,
     coord_type: str = "xyz",
+    convert_study_ids: bool = True,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     base_url = "https://github.com/neuroquery/neuroquery_data/"
     tfidf_url = base_url + "raw/master/training_data/corpus_tfidf.npz"
@@ -44,7 +105,6 @@ def fetch_neuroquery(
     feature_names_url = base_url + "raw/master/training_data/feature_names.txt"
     study_ids_url = base_url + "raw/master/training_data/pmids.txt"
     out_dir = data_dir / "neuroquery"
-    os.makedirs(out_dir, exist_ok=True)
     (
         tfidf_fn,
         coordinates_fn,
@@ -60,7 +120,7 @@ def fetch_neuroquery(
         ],
     )
     tfidf = scipy.sparse.load_npz(tfidf_fn)
-    coordinates = pd.read_csv(coordinates_fn)
+    coordinates = read_and_convert_csv_to_hdf(coordinates_fn)
     assert coord_type in ("xyz", "ijk")
     if coord_type == "ijk":
         ijk = xyz_to_ijk(coordinates[["x", "y", "z"]], mask)
@@ -69,9 +129,12 @@ def fetch_neuroquery(
         coordinates["k"] = ijk[:, 2]
     coord_cols = list(coord_type)
     peak_data = coordinates[coord_cols + ["pmid"]].rename(columns={"pmid": "study_id"})
-    feature_names = pd.read_csv(feature_names_fn, header=None)
-    study_ids = pd.read_csv(study_ids_fn, header=None)
+    feature_names = read_and_convert_csv_to_hdf(feature_names_fn, header=None)
+    study_ids = read_and_convert_csv_to_hdf(study_ids_fn, header=None)
     study_ids.rename(columns={0: "study_id"}, inplace=True)
+    if convert_study_ids:
+        peak_data["study_id"] = peak_data["study_id"].apply(StudyID)
+        study_ids["study_id"] = study_ids["study_id"].apply(StudyID)
     tfidf = pd.DataFrame(tfidf.todense(), columns=feature_names[0])
     tfidf["study_id"] = study_ids.iloc[:, 0]
     if tfidf_threshold is None:
