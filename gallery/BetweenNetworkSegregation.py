@@ -52,10 +52,14 @@ def init_frontend():
     nl = NeurolangPDL()
 
     nl.add_symbol(
-        np.log, name="log", type_=Callable[[float], float],
+        np.log,
+        name="log",
+        type_=Callable[[float], float],
     )
     nl.add_symbol(
-        lambda it: float(sum(it)), name="agg_sum", type_=Callable[[Iterable], float],
+        lambda it: float(sum(it)),
+        name="agg_sum",
+        type_=Callable[[Iterable], float],
     )
 
     @nl.add_symbol

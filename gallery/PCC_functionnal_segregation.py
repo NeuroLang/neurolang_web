@@ -69,11 +69,11 @@ def init_frontend():
 
         Parameters
         ----------
-        p, p0 : Float. Probabilities of two events 
+        p, p0 : Float. Probabilities of two events
 
         Returns
         -------
-        logodds : Float. Log-odds Ratio 
+        logodds : Float. Log-odds Ratio
         """
 
         logodds = np.log((p / (1 - p)) / (p0 / (1 - p0)))
@@ -115,7 +115,10 @@ mni_mask = data_utils.load_mni_atlas(data_dir=data_dir, resolution=resolution, k
 coord_type = "ijk"
 n_components = 128
 region_voxels, _ = data_utils.fetch_difumo(
-    data_dir=data_dir, mask=mni_mask, coord_type=coord_type, n_components=n_components,
+    data_dir=data_dir,
+    mask=mni_mask,
+    coord_type=coord_type,
+    n_components=n_components,
 )
 
 
@@ -439,7 +442,9 @@ def make_radar_plot(results):
     ax.set_theta_offset(np.pi / 2)
     ax.set_theta_direction(-1)
     ax.set_thetagrids(
-        np.degrees(angles[:-1]), topics, fontsize=5,
+        np.degrees(angles[:-1]),
+        topics,
+        fontsize=5,
     )
     for label, angle in zip(ax.get_xticklabels(), angles[:-1]):
         if angle in (0, np.pi):
@@ -450,7 +455,9 @@ def make_radar_plot(results):
             label.set_horizontalalignment("right")
     ax.set_rlabel_position(180 / n_topics)
     ax.legend(
-        bbox_to_anchor=(-0.4, 0.98), loc=3, fontsize=5,
+        bbox_to_anchor=(-0.4, 0.98),
+        loc=3,
+        fontsize=5,
     )
     ax.spines["bottom"] = ax.spines["inner"]
 

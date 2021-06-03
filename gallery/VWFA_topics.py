@@ -49,7 +49,9 @@ def init_frontend():
     nl = NeurolangPDL()
 
     nl.add_symbol(
-        np.log, name="log", type_=Callable[[float], float],
+        np.log,
+        name="log",
+        type_=Callable[[float], float],
     )
 
     return nl

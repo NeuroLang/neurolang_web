@@ -117,7 +117,8 @@ def load_studies(
         topic_association.prob > 0.05, ["topic", "study_id"]
     ]
     nl.add_tuple_set(
-        topic_association, name="TopicAssociation",
+        topic_association,
+        name="TopicAssociation",
     )
     nl.add_tuple_set(peak_reported, name="PeakReported")
     nl.add_uniform_probabilistic_choice_over_set(study_ids, name="SelectedStudy")

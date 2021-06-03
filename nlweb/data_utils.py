@@ -21,7 +21,10 @@ DIFUMO_N_COMPONENTS_TO_DOWNLOAD_ID = {
 
 
 def xyz_to_ijk(xyz, mask):
-    voxels = nibabel.affines.apply_affine(np.linalg.inv(mask.affine), xyz,).astype(int)
+    voxels = nibabel.affines.apply_affine(
+        np.linalg.inv(mask.affine),
+        xyz,
+    ).astype(int)
     return voxels
 
 
@@ -29,7 +32,7 @@ def read_and_convert_csv_to_feather(file: Union[Path, str], **csv_read_args):
     """
     Load a target csv file. If this is the first time this file is read,
     this method will save the file to feather file format. Later calls to
-    this method to read the csv file will then read the file from the 
+    this method to read the csv file will then read the file from the
     .feather file instead of from the .csv file, speeding up read times.
 
     Parameters
@@ -59,7 +62,7 @@ def read_and_convert_csv_to_hdf(file: Union[Path, str], **csv_read_args):
     """
     Load a target csv file. If this is the first time this file is read,
     this method will save the file to hdf fixed file format. Later calls to
-    this method to read the csv file will then read the file from the 
+    this method to read the csv file will then read the file from the
     hdf file instead of from the .csv file, speeding up read times.
 
     Parameters
@@ -132,11 +135,17 @@ def fetch_neuroquery(
     tfidf["study_id"] = study_ids.iloc[:, 0]
     if tfidf_threshold is None:
         term_data = pd.melt(
-            tfidf, var_name="term", id_vars="study_id", value_name="tfidf",
+            tfidf,
+            var_name="term",
+            id_vars="study_id",
+            value_name="tfidf",
         ).query("tfidf > 0")[["term", "tfidf", "study_id"]]
     else:
         term_data = pd.melt(
-            tfidf, var_name="term", id_vars="study_id", value_name="tfidf",
+            tfidf,
+            var_name="term",
+            id_vars="study_id",
+            value_name="tfidf",
         ).query(f"tfidf > {tfidf_threshold}")[["term", "study_id"]]
     return term_data, peak_data, study_ids
 
@@ -168,7 +177,10 @@ def fetch_neurosynth(
     if convert_study_ids:
         features["study_id"] = features["study_id"].apply(StudyID)
     term_data = pd.melt(
-        features, var_name="term", id_vars="study_id", value_name="tfidf",
+        features,
+        var_name="term",
+        id_vars="study_id",
+        value_name="tfidf",
     )
     if tfidf_threshold is not None:
         term_data = term_data.query("tfidf > {}".format(tfidf_threshold))[
@@ -237,7 +249,9 @@ def fetch_difumo(
     labels = read_and_convert_csv_to_hdf(files[0])
     img = nilearn.image.load_img(files[1])
     img = nilearn.image.resample_img(
-        img, target_affine=mask.affine, interpolation="nearest",
+        img,
+        target_affine=mask.affine,
+        interpolation="nearest",
     )
     img_data = img.get_fdata()
     to_concat = list()

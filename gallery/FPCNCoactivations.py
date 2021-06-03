@@ -51,10 +51,14 @@ def init_frontend():
     nl = NeurolangPDL()
 
     nl.add_symbol(
-        np.log, name="log", type_=Callable[[float], float],
+        np.log,
+        name="log",
+        type_=Callable[[float], float],
     )
     nl.add_symbol(
-        lambda it: float(sum(it)), name="agg_sum", type_=Callable[[Iterable], float],
+        lambda it: float(sum(it)),
+        name="agg_sum",
+        type_=Callable[[Iterable], float],
     )
 
     @nl.add_symbol
@@ -66,7 +70,11 @@ def init_frontend():
 
 # %%
 def load_studies(
-    nl, peak_reported, study_ids, split_id: int = 42, subsample_proportion: float = 0.6,
+    nl,
+    peak_reported,
+    study_ids,
+    split_id: int = 42,
+    subsample_proportion: float = 0.6,
 ):
     n_studies_selected = int(len(study_ids) * subsample_proportion)
     np.random.seed(split_id)

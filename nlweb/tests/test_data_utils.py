@@ -14,7 +14,7 @@ def test_read_and_convert_csv_to_hdf(tmp_path):
     Parameters
     ----------
     tmp_path : Path
-        fixture which will provide a temporary directory unique to 
+        fixture which will provide a temporary directory unique to
         the test invocation, created in the base temporary directory.
     """
     # Create csv file to read

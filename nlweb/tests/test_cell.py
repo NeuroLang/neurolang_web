@@ -19,7 +19,7 @@ class TestWidget:
 
 
 class TestStudyIdWidget(TestWidget):
-    """ Tests StudyIdWidget."""
+    """Tests StudyIdWidget."""
 
     def test_create_no_params(self):
         """Tests constructor with no value specified for `study_id`."""
@@ -46,7 +46,7 @@ class TestStudyIdWidget(TestWidget):
 
 
 class TestTfIDfWidget(TestWidget):
-    """ Tests TfIDfWidget."""
+    """Tests TfIDfWidget."""
 
     def test_create_no_params(self):
         """Tests constructor with no value specified for `tfidf`."""
@@ -81,7 +81,7 @@ class TestTfIDfWidget(TestWidget):
 
 
 class TestLabelCellWidget(TestWidget):
-    """ Tests LabelCellWidget."""
+    """Tests LabelCellWidget."""
 
     def test_create_no_params(self):
         """Tests constructor with no value specified for `value`."""
@@ -106,7 +106,7 @@ class TestLabelCellWidget(TestWidget):
 
 
 class TestExplicitVBRCellWidget(TestWidget):
-    """ Tests ExplicitVBRCellWidget."""
+    """Tests ExplicitVBRCellWidget."""
 
     @pytest.fixture
     def widget(self, vbr, mock_viewer):
@@ -175,7 +175,7 @@ class TestExplicitVBRCellWidget(TestWidget):
 
 
 class TestExplicitVBROverlayCellWidget(TestExplicitVBRCellWidget):
-    """ Tests ExplicitOverlayVBRCellWidget."""
+    """Tests ExplicitOverlayVBRCellWidget."""
 
     @pytest.fixture
     def widget(self, vbr_overlay, mock_viewer):

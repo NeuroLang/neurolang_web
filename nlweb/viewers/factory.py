@@ -63,7 +63,7 @@ class ColumnFeederFactory:
 
 
 class ColumnsManager:
-    """A class that creates column feeders for a specified `tuple` of column types and manages creation of widgets for each column and, their corresponding viewers and controls. """
+    """A class that creates column feeders for a specified `tuple` of column types and manages creation of widgets for each column and, their corresponding viewers and controls."""
 
     def __init__(
         self, result_tab, column_types: typing.Tuple, viewer_factory: ViewerFactory
@@ -154,5 +154,5 @@ class ColumnsManager:
 
     @property
     def hasVBRColumn(self):
-        """Returns `True` if this column manager contains a `neurolang.regions.ExplicitVBR` or `neurolang.regions.ExplicitVBROverlay` column; False otherwise. """
+        """Returns `True` if this column manager contains a `neurolang.regions.ExplicitVBR` or `neurolang.regions.ExplicitVBROverlay` column; False otherwise."""
         return self._hasVBRColumn
