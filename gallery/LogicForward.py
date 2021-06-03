@@ -50,7 +50,7 @@ import numpy as np
 import nibabel
 from neurolang.frontend import NeurolangPDL
 
-from gallery import data_utils
+from nlweb import data_utils
 
 # %%
 data_dir = Path("neurolang_data")
@@ -84,8 +84,8 @@ def load_topics(n_topics: int = 200):
     ]
 
     topic_association = data_utils.fetch_neurosynth_topic_associations(
-        n_topics,
         data_dir=data_dir,
+        n_topics=n_topics,
         topics_to_keep=topics_to_keep,
         labels=labels,
         version="v4",

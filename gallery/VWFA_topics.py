@@ -39,7 +39,7 @@ from typing import Callable
 import numpy as np
 from neurolang.frontend import NeurolangPDL
 
-from gallery import data_utils
+from nlweb import data_utils
 
 # %%
 data_dir = Path("neurolang_data")
@@ -144,7 +144,7 @@ mni_mask = data_utils.load_mni_atlas(data_dir=data_dir, resolution=resolution)
 # %%
 n_topics = 100
 topic_association = data_utils.fetch_neurosynth_topic_associations(
-    n_topics, data_dir=data_dir
+    data_dir=data_dir, n_topics=n_topics
 )
 
 # %%

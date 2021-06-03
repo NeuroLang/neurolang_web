@@ -30,10 +30,9 @@ from typing import Iterable
 
 import numpy as np
 import pandas as pd
-from nilearn import datasets, image, plotting
 from neurolang.frontend import NeurolangPDL, ExplicitVBR, ExplicitVBROverlay
 
-from gallery import data_utils
+from nlweb import data_utils
 
 # %%
 data_dir = Path("neurolang_data")
@@ -229,7 +228,10 @@ def load_topics(nl):
 
     n_topics = 200
     topic_association = data_utils.fetch_neurosynth_topic_associations(
-        n_topics, data_dir=data_dir, topics_to_keep=topics_to_keep, labels=labels,
+        data_dir=data_dir,
+        n_topics=n_topics,
+        topics_to_keep=topics_to_keep,
+        labels=labels,
     )
 
     nl.add_probabilistic_facts_from_tuples(

@@ -41,7 +41,7 @@ from typing import Callable, Iterable
 import numpy as np
 from neurolang.frontend import NeurolangPDL
 
-from gallery import data_utils
+from nlweb import data_utils
 
 # %%
 data_dir = Path("neurolang_data")

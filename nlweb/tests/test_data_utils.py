@@ -1,12 +1,9 @@
 import os
-from neurolang.frontend.neurosynth_utils import StudyID
+from pathlib import Path
 
 import pandas as pd
-from pathlib import Path
-from gallery.data_utils import (
-    fetch_neuroquery,
-    read_and_convert_csv_to_hdf,
-)
+from neurolang.frontend.neurosynth_utils import StudyID
+from nlweb.data_utils import fetch_neuroquery, read_and_convert_csv_to_hdf
 from pandas.testing import assert_frame_equal
 
 

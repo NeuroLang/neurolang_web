@@ -1,4 +1,3 @@
-import datetime
 import os
 from pathlib import Path
 from typing import Callable, List, Optional, Tuple, Union
@@ -12,12 +11,6 @@ import pandas as pd
 import scipy.sparse
 from neurolang.frontend.neurosynth_utils import StudyID
 
-DATA_DIR = Path(os.path.dirname(os.path.realpath(__file__))) / "neurolang_data"
-
-FILETYPE_TO_EXTENSION = {
-    "hdf": "h5",
-    "parquet": "gz",
-}
 
 DIFUMO_N_COMPONENTS_TO_DOWNLOAD_ID = {
     128: "wjvd5",
@@ -94,7 +87,7 @@ def read_and_convert_csv_to_hdf(file: Union[Path, str], **csv_read_args):
 
 def fetch_neuroquery(
     mask: nibabel.Nifti1Image,
-    data_dir: Path = DATA_DIR,
+    data_dir: Path,
     tfidf_threshold: Optional[float] = None,
     coord_type: str = "xyz",
     convert_study_ids: bool = True,
@@ -149,8 +142,8 @@ def fetch_neuroquery(
 
 
 def fetch_neurosynth(
+    data_dir: Path,
     tfidf_threshold: Optional[float] = None,
-    data_dir: Path = DATA_DIR,
     convert_study_ids: bool = True,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     ns_dir = data_dir / "neurosynth"
@@ -226,8 +219,8 @@ def fetch_neurosynth(
 
 def fetch_difumo(
     mask: nibabel.Nifti1Image,
+    data_dir: Path,
     component_filter_fun: Callable = lambda _: True,
-    data_dir: Path = DATA_DIR,
     coord_type: str = "xyz",
     n_components: int = 256,
 ) -> Tuple[pd.DataFrame, nibabel.Nifti1Image]:
@@ -264,8 +257,8 @@ def fetch_difumo(
 
 
 def fetch_neurosynth_topic_associations(
+    data_dir: Path,
     n_topics: int,
-    data_dir: Path = DATA_DIR,
     convert_study_ids: bool = True,
     topics_to_keep: List[int] = None,
     labels: List[str] = None,
@@ -300,7 +293,7 @@ def fetch_neurosynth_topic_associations(
 
 
 def load_mni_atlas(
-    data_dir: Path = DATA_DIR,
+    data_dir: Path,
     resolution: int = 2,
     interpolation: str = "continuous",
     key: str = "gm",
