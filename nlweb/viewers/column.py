@@ -1,4 +1,5 @@
 from ipywidgets import Button, Layout
+from matplotlib.figure import Figure
 
 import neurolang
 
@@ -6,6 +7,7 @@ from nlweb.viewers.cell import (
     ExplicitVBRCellWidget,
     ExplicitVBROverlayCellWidget,
     LabelCellWidget,
+    MpltFigureCellWidget,
     StudyIdWidget,
     TfIDfWidget,
 )
@@ -58,6 +60,30 @@ class ColumnFeeder:
             obj_converted = int(obj)
 
         return str(obj_converted)
+
+
+class MpltFigureColumn(ColumnFeeder):
+    def __init__(self, result_tab: ResultTabPageWidget, viewer_factory: ViewerFactory):
+        """
+        Parameters
+        ----------
+        result_tab: ResultTabPageWidget
+            the tab widget that will display the column generated.
+        viewer_factory: ViewerFactory
+            viewer factory to get viewer for corresponding column type.
+        """
+        super().__init__()
+        self.result_tab = result_tab
+
+        self._viewer = viewer_factory.get_figure_viewer()
+
+    def get_widget(self, obj):
+        """"""
+        if isinstance(obj, Figure):
+            e_widget = MpltFigureCellWidget(obj, self._viewer)
+            return e_widget
+        else:
+            return LabelCellWidget(str(obj))
 
 
 class ExplicitVBRColumn(ColumnFeeder):
@@ -157,7 +183,7 @@ class ExplicitVBRColumn(ColumnFeeder):
                 for e_widget in self._evbr_widget_list:
                     e_widget.disable_region(True)
                 self._viewer.set_error(
-                    "Papaya viewer does not allow more than 8 overlays. \nPlease unselect region to be able to add  new ones!"
+                    "Papaya viewer does not allow more than 8 overlays. \nPlease unselect region to be able to add new ones!"
                 )
 
         self.result_tab.icon = self._turn_on_off_btn.icon

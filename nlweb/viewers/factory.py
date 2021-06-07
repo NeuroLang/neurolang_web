@@ -1,5 +1,6 @@
-from ipywidgets import Layout
-
+from ipywidgets import Layout, HBox, Output
+from IPython.display import display
+from matplotlib.figure import Figure
 import neurolang
 import typing
 
@@ -18,9 +19,43 @@ class ViewerFactory:
                 overflow_y="hidden",
             )
         )
+        self._figure_viewer = MpltFigureViewerWidget()
 
     def get_region_viewer(self):
         return self.__papaya_viewer
+
+    def get_figure_viewer(self):
+        return self._figure_viewer
+
+
+class MpltFigureViewerWidget(HBox):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.layout = Layout(
+            display="none",
+            flex_direction="row",
+            border="solid",
+            width="100%",
+            height="auto",
+            overflow="auto",
+        )
+        self._output = Output()
+        self.children = [self._output]
+
+    def reset(self):
+        self._output.clear_output()
+        self.layout.display = "none"
+
+    def show_figure(self, figure):
+        if self.layout.display != "flex":
+            self.layout.display = "flex"
+        self._output.clear_output()
+        with self._output:
+            if hasattr(figure, "canvas"):
+                display(figure.canvas)
+            else:
+                display(figure)
 
 
 class ColumnFeederFactory:
@@ -54,6 +89,8 @@ class ColumnFeederFactory:
             return nlweb.viewers.column.ExplicitVBROverlayColumn(
                 result_tab, viewer_factory
             )
+        elif column_type == Figure:
+            return nlweb.viewers.column.MpltFigureColumn(result_tab, viewer_factory)
         elif column_type == neurolang.frontend.neurosynth_utils.StudyID:
             return nlweb.viewers.column.StudIdColumn()
         elif column_type == neurolang.frontend.neurosynth_utils.TfIDf:
@@ -66,7 +103,10 @@ class ColumnsManager:
     """A class that creates column feeders for a specified `tuple` of column types and manages creation of widgets for each column and, their corresponding viewers and controls."""
 
     def __init__(
-        self, result_tab, column_types: typing.Tuple, viewer_factory: ViewerFactory
+        self,
+        result_tab,
+        column_types: typing.Tuple,
+        viewer_factory: ViewerFactory,
     ):
         """
         Parameters

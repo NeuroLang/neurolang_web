@@ -1,8 +1,11 @@
 from functools import partial
 
 import gzip
+from nlweb.viewers.factory import MpltFigureViewerWidget
 
-from ipywidgets import Button, HBox, Label, Layout
+from ipywidgets import Button, HBox, Label, Layout, Output
+from matplotlib.figure import Figure
+import matplotlib.pyplot as plt
 
 from neurolang.frontend import ExplicitVBR, ExplicitVBROverlay  # type: ignore
 
@@ -62,6 +65,62 @@ class LabelCellWidget(Label, CellWidget):
         super().__init__(*args, **kwargs)
 
 
+class MpltFigureCellWidget(HBox, CellWidget):
+    """A cell widget for MatplotLib Figures."""
+
+    def __init__(self, fig: Figure, viewer: MpltFigureViewerWidget, *args, **kwargs):
+        if fig is None:
+            raise TypeError("fig should not be None!")
+
+        if viewer is None:
+            raise TypeError("viewer should not be None!")
+
+        super().__init__(*args, **kwargs)
+
+        self.fig = fig
+        self._viewer = viewer
+
+        self.layout = Layout(
+            display="flex",
+            flex_direction="row",
+            justify_content="center",
+            align_items="center",
+            width="180px",
+            max_width="180px",
+            flex="0 1 0",
+        )
+
+        self._init_widgets()
+
+        self.children = [
+            self._show_figure_btn,
+        ]
+
+    def _init_widgets(self):
+        layout = Layout(
+            width="30px",
+            max_width="30px",
+            min_width="30px",
+            margin="5px 5px 5px 0",
+            padding="0 0 0 0",
+            flex="0 1 0",
+            align_self="center",
+        )
+        # add widgets
+        self._show_figure_btn = Button(
+            tooltip="Show figure",
+            description="Show figure",
+            icon="eye",
+            layout=layout,
+        )
+
+        # add handlers
+        self._show_figure_btn.on_click(self._show_fig_clicked)
+
+    def _show_fig_clicked(self, event):
+        self._viewer.show_figure(self.fig)
+
+
 class ExplicitVBRCellWidget(HBox, CellWidget):
     """A cell widget for data type `ExplicitVBR` that enables displaying the spatial image in an associated viewer or center on the spatial image's coordinates."""
 
@@ -108,7 +167,11 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
 
         self._init_widgets(self._image)
 
-        self.children = [self._region_checkbox, self._download_link, self._center_btn]
+        self.children = [
+            self._region_checkbox,
+            self._download_link,
+            self._center_btn,
+        ]
 
     def _init_widgets(self, image):
         # add widgets
