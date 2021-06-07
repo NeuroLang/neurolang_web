@@ -32,10 +32,12 @@ class MpltFigureViewerWidget(HBox):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self._current_cell = None
+
         self.layout = Layout(
             display="none",
             flex_direction="row",
-            border="solid",
+            border="solid 1px gray",
             width="100%",
             height="auto",
             overflow="auto",
@@ -46,10 +48,14 @@ class MpltFigureViewerWidget(HBox):
     def reset(self):
         self._output.clear_output()
         self.layout.display = "none"
+        self._current_cell = None
 
-    def show_figure(self, figure):
+    def show_figure(self, figure, cell):
         if self.layout.display != "flex":
             self.layout.display = "flex"
+        if self._current_cell is not None:
+            self._current_cell.unselect_figure()
+        self._current_cell = cell
         self._output.clear_output()
         with self._output:
             if hasattr(figure, "canvas"):

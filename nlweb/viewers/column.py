@@ -74,7 +74,6 @@ class MpltFigureColumn(ColumnFeeder):
         """
         super().__init__()
         self.result_tab = result_tab
-
         self._viewer = viewer_factory.get_figure_viewer()
 
     def get_widget(self, obj):

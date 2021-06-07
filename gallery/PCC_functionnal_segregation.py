@@ -369,10 +369,10 @@ TopicRegionAssociationLogOdds(t, r, split, p, pmarg, logodds) :- ProbTopicGivenR
 # %%
 query = r"""
 RegionReported(r, s) :- PeakReported(x1, y1, z1, s, i, j, k) & RegionOfInterest(difumo_label, i, j, k, r)
-MarginalProbTopicInStudy(t, split, PROB(t, split)) :- TopicInStudy(t, s)  & SelectedStudy(s)  & StudySplits(s, split)
-StudyMatchingRegionSegregationQuery(s, r) :-  RegionReported(r, s) & ~RegionReported(r2, s) & RegionLabel(r2) & (r2 != r)
-ProbTopicGivenRegionSegregationQuery(t, r, split, PROB(t, r, split)) :- (TopicInStudy(t, s)) // ( StudyMatchingRegionSegregationQuery(s, r) & SelectedStudy(s) & StudySplits(s, split) )    
-TopicRegionAssociationLogOdds(t, r, split, p, pmarg, logodds) :- ProbTopicGivenRegionSegregationQuery(t, r, split, p)  & MarginalProbTopicInStudy(t, split, pmarg)  & (logodds == log_odds(p, pmarg))"""
+MarginalProbTopicInStudy(t, split, PROB(t, split)) :- TopicInStudy(t, s) & SelectedStudy(s) & StudySplits(s, split)
+StudyMatchingRegionSegregationQuery(s, r) :- RegionReported(r, s) & ~RegionReported(r2, s) & RegionLabel(r2) & (r2 != r)
+ProbTopicGivenRegionSegregationQuery(t, r, split, PROB(t, r, split)) :- (TopicInStudy(t, s)) // ( StudyMatchingRegionSegregationQuery(s, r) & SelectedStudy(s) & StudySplits(s, split) ) 
+TopicRegionAssociationLogOdds(t, r, split, p, pmarg, logodds) :- ProbTopicGivenRegionSegregationQuery(t, r, split, p) & MarginalProbTopicInStudy(t, split, pmarg)  & (logodds == log_odds(p, pmarg))"""
 
 # %% [markdown]
 """
