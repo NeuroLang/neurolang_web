@@ -1,3 +1,4 @@
+import time
 from pathlib import Path
 from nlweb.data_utils import (
     fetch_difumo,
@@ -17,7 +18,11 @@ class FetchNeuroQuerySuite:
     """
 
     params = [[None, 1e-2], ["xyz", "ijk"], [False, True]]
-    param_names = ["tfidf_threshold", "coord_type", "convert_study_ids"]
+    param_names = [
+        "tfidf_threshold",
+        "coord_type",
+        "convert_study_ids",
+    ]
 
     def setup(self, tfidf_threshold, coord_type, convert_study_ids):
         self.data_dir = Path(__file__).parent.parent / "gallery" / "neurolang_data"
@@ -54,7 +59,7 @@ class FetchDifumoSuite:
         self.resolution = 3
         self.mask = load_mni_atlas(data_dir=self.data_dir, resolution=self.resolution)
 
-    def time_fetch_neuroquery(self, n_components, coord_type):
+    def time_fetch_difumo(self, n_components, coord_type):
         fetch_difumo(
             self.mask,
             data_dir=self.data_dir,
@@ -84,3 +89,21 @@ class FetchNeuroSynthSuite:
             tfidf_threshold=tfidf_threshold,
             convert_study_ids=convert_study_ids,
         )
+
+
+if __name__ == "__main__":
+    tfidf_threshold = None
+    coord_type = "xyz"
+    convert_study_ids = True
+    suite = FetchNeuroSynthSuite()
+    suite.setup(
+        tfidf_threshold=tfidf_threshold,
+        convert_study_ids=convert_study_ids,
+    )
+    start = time.perf_counter()
+    suite.time_fetch_neurosynth(
+        tfidf_threshold=tfidf_threshold,
+        convert_study_ids=convert_study_ids,
+    )
+    stop = time.perf_counter()
+    print(f"Took {stop - start:0.2f} s.")
