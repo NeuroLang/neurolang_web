@@ -134,11 +134,13 @@ def fetch_neuroquery_term_data(
     feature_names = read_and_convert_csv_to_hdf(feature_names_fn, header=None)
     study_ids = read_and_convert_csv_to_hdf(study_ids_fn, header=None)
     study_ids.rename(columns={0: "study_id"}, inplace=True)
-    if convert_study_ids:
-        study_ids["study_id"] = study_ids["study_id"].apply(StudyID)
     tfidf = pd.DataFrame(tfidf.todense(), columns=feature_names[0])
     tfidf["study_id"] = study_ids.iloc[:, 0]
-    return create_and_save_term_data(out_dir, tfidf, tfidf_threshold=tfidf_threshold)
+
+    term_data = create_and_save_term_data(out_dir, tfidf, tfidf_threshold=tfidf_threshold)
+    if convert_study_ids:
+        term_data["study_id"] = term_data["study_id"].apply(StudyID)
+    return term_data
 
 
 def fetch_neuroquery_peak_data(
@@ -260,10 +262,11 @@ def fetch_neurosynth_term_data(
     )[0]
     features = read_and_convert_csv_to_hdf(ns_features_fn, sep="\t")
     features.rename(columns={"pmid": "study_id"}, inplace=True)
-
+    
+    term_data = create_and_save_term_data(ns_dir, features, tfidf_threshold=tfidf_threshold)
     if convert_study_ids:
-        features["study_id"] = features["study_id"].apply(StudyID)
-    return create_and_save_term_data(ns_dir, features, tfidf_threshold=tfidf_threshold)
+        term_data["study_id"] = term_data["study_id"].apply(StudyID)
+    return term_data
 
 
 def fetch_neurosynth(
