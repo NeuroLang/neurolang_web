@@ -105,9 +105,8 @@ mni_mask = data_utils.load_mni_atlas(data_dir=data_dir, resolution=resolution)
 
 # %%
 coord_type = "xyz"
-tfidf_threshold = 1e-2
-_, peak_reported, study_ids = data_utils.fetch_neuroquery(
-    mni_mask, data_dir=data_dir, tfidf_threshold=tfidf_threshold, coord_type=coord_type
+peak_reported, study_ids = data_utils.fetch_neuroquery_peak_data(
+    mni_mask, data_dir=data_dir, coord_type=coord_type
 )
 
 # %%
@@ -128,11 +127,6 @@ Query(x,y,z,region,pA,pASeed,pAgA,pAgD,pAaA,n,m,kk,N, llr) :- ProbActivationAndS
 ans(x,y,z,region,pA,pASeed,pAgA,pAgD,pAaA,n,m,kk,N, llr) :- Query(x,y,z,region,pA,pASeed,pAgA,pAgD,pAaA,n,m,kk,N, llr)
 """
 
-# %%
-with nl.scope:
-    res = nl.execute_datalog_program(query)
-
-res
 # %%
 from nlweb.viewers.query import QueryWidget
 
