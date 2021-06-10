@@ -53,8 +53,9 @@ class TestQueryWidget:
     def test_run_query(self, widget):
         """Tests run_query."""
 
-        res = widget.run_query(widget.query.text)
+        res, symb = widget.run_query(widget.query.text)
         assert res == {}
+        assert symb is None
 
     def test_query_button_clicked_empty_res(self, widget, monkeypatch):
         """Tests _query_button_clicked when empty result returns."""
@@ -138,7 +139,7 @@ class TestQResultWidget:
     def test_show_results(self, widget, res):
         """Tests QResultWidget show_results."""
 
-        widget.show_results(res)
+        widget.show_results(res, None)
 
         assert len(widget._tab.children) == 4
         assert widget._tab.get_title(0) == "A"
@@ -148,12 +149,16 @@ class TestQResultWidget:
         assert widget._tab.selected_index == 0
         assert len(widget._viewers) == 0
 
+        widget.show_results(res, "C")
+        assert len(widget._tab.children) == 4
+        assert widget._tab.selected_index == 2
+
     def test_tab_index_changed(self, widget, res):
         """Tests QResultWidget _tab_index_changed."""
 
         assert len(widget._tab.children) == 0
 
-        widget.show_results(res)
+        widget.show_results(res, None)
         assert len(widget._tab.children) == 4
         assert widget._tab.selected_index == 0
 
@@ -172,7 +177,7 @@ class TestQResultWidget:
     def test_reset(self, widget, res):
         """Tests QResultWidget reset."""
 
-        widget.show_results(res)
+        widget.show_results(res, None)
         widget.reset()
 
         assert widget._viewers is None

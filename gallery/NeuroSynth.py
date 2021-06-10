@@ -170,7 +170,7 @@ query = r"""
 activation(i, j, k) :- activations(..., ..., ..., i, j, k, study_id), docs(study_id)
 term_(term) :- terms(study_id, term, tfidf), tfidf > 0.01, docs(study_id)
 activation_given_term_marginal(i, j, k, PROB(i, j, k)) :- activation(i,j,k) // (term_(term), term == 'auditory')
-activation_given_term_image(agg_create_region_overlay(i, j, k, p)) :- activation_given_term(i,j,k,p)
+activation_given_term_image(agg_create_region_overlay(i, j, k, p)) :- activation_given_term_marginal(i,j,k,p)
 """
 
 qw = QueryWidget(nl, query)

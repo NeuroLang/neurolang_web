@@ -29,7 +29,7 @@ from tatsu.exceptions import FailedParse
 
 from traitlets import Int, Unicode  # type: ignore
 
-from typing import Callable, Dict, Optional
+from typing import Callable, Dict, Optional, Tuple
 
 from nlweb.util import debounce
 from nlweb.viewers.factory import ViewerFactory, ColumnsManager
@@ -451,6 +451,7 @@ class QResultWidget(VBox):
     def show_results(
         self,
         res: Dict[str, NamedRelationalAlgebraFrozenSet],
+        default_symbol: str,
         callbacks: Dict[str, Callable] = None,
     ):
         """Creates and displays necessary tab pages and viewers for the specified query result `res`.
@@ -459,6 +460,8 @@ class QResultWidget(VBox):
         ----------
         res: Dict[str, NamedRelationalAlgebraFrozenSet]
            dictionary of query results with keys as result name and values as result for corresponding key.
+        default_symbol: str
+            the key for the result tab to display by default
         callbacks : Dict[str, Callable], optional
             dictonary of titles -> callback functions which will be called to create an output in one of the
             result tabs, by default None
@@ -469,17 +472,19 @@ class QResultWidget(VBox):
         )
 
         self._tab.children = result_tabs
-
+        selected_index = 0
         for i, title in enumerate(titles):
             self._tab.set_title(i, title)
+            if title == default_symbol:
+                selected_index = i
 
         self._tab.title_icons = icons
 
         # observe to load each table upon tab selection
         self._tab.observe(self._tab_index_changed, names="selected_index")
 
-        # select first tab so that data is loaded and it is viewed initially
-        self._tab.selected_index = 0
+        # select default tab so that data is loaded and it is viewed initially
+        self._tab.selected_index = selected_index
 
         self.children = (self._tab,) + tuple(self._viewers)
 
@@ -647,17 +652,26 @@ class QueryWidget(VBox):
 
         self.children = [self.query_section, self.result_viewer]
 
-    def run_query(self, query: str):
+    def run_query(
+        self, query: str
+    ) -> Tuple[Dict[str, NamedRelationalAlgebraFrozenSet], str]:
         with self.neurolang_engine.scope:
             query_res = self.neurolang_engine.execute_datalog_program(query)
+            last_symbol = None
             if query_res is None:
                 # There is no query rule in the program, run solve_all
                 res = self.neurolang_engine.solve_all()
+                # Try to find the name of the last symbol in the program to display it by default
+                last_rule = str(self.neurolang_engine.current_program[-1])
+                for s in res.keys():
+                    if last_rule.startswith(s):
+                        last_symbol = s
             else:
                 # There was a query in the program, return a dict with just the result_set
                 res = {"ans": query_res}
+                last_symbol = "ans"
 
-            return res
+            return res, last_symbol
 
     def _on_query_button_clicked(self, b):
         """Runs the query in the query text area and diplays the results.
@@ -672,7 +686,7 @@ class QueryWidget(VBox):
 
         try:
             self._display_info("Your query is running, this may take a while ...")
-            qresult = self.run_query(self.query.text)
+            qresult, default_symbol = self.run_query(self.query.text)
         except FailedParse as fp:
             self._set_error_marker(fp)
             self._handle_generic_error(fp)
@@ -680,7 +694,7 @@ class QueryWidget(VBox):
             self._handle_generic_error(e)
         else:
             if qresult != {}:
-                self.result_viewer.show_results(qresult, self.callbacks)
+                self.result_viewer.show_results(qresult, default_symbol, self.callbacks)
                 self.result_viewer.layout.visibility = "visible"
             else:
                 self._handle_generic_error(
