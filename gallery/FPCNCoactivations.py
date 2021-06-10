@@ -107,7 +107,7 @@ mni_mask = data_utils.load_mni_atlas(data_dir=data_dir, resolution=resolution)
 
 # %%
 coord_type = "ijk"
-_, peak_reported, study_ids = data_utils.fetch_neuroquery(
+peak_reported, study_ids = data_utils.fetch_neuroquery_peak_data(
     mask=mni_mask, coord_type=coord_type, data_dir=data_dir
 )
 
