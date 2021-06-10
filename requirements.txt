@@ -16,3 +16,4 @@ voila==0.2.10
 ipympl==0.7.0
 seaborn==0.11.1
 matplotlib==3.3.4
+tables==3.6.1

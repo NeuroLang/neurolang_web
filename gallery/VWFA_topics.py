@@ -39,7 +39,7 @@ from typing import Callable
 import numpy as np
 from neurolang.frontend import NeurolangPDL
 
-from gallery import data_utils
+from nlweb import data_utils
 
 # %%
 data_dir = Path("neurolang_data")
@@ -49,7 +49,9 @@ def init_frontend():
     nl = NeurolangPDL()
 
     nl.add_symbol(
-        np.log, name="log", type_=Callable[[float], float],
+        np.log,
+        name="log",
+        type_=Callable[[float], float],
     )
 
     return nl
@@ -144,13 +146,11 @@ mni_mask = data_utils.load_mni_atlas(data_dir=data_dir, resolution=resolution)
 # %%
 n_topics = 100
 topic_association = data_utils.fetch_neurosynth_topic_associations(
-    n_topics, data_dir=data_dir
+    data_dir=data_dir, n_topics=n_topics
 )
 
 # %%
-_, peak_reported, study_ids = data_utils.fetch_neurosynth(
-    tfidf_threshold=1e-2, data_dir=data_dir
-)
+peak_reported, study_ids = data_utils.fetch_neurosynth_peak_data(data_dir=data_dir)
 
 # %%
 nl = init_frontend()

@@ -2,6 +2,7 @@
 # jupyter:
 #   jupytext:
 #     formats: ipynb,py:percent
+#     notebook_metadata_filter: voila
 #     text_representation:
 #       extension: .py
 #       format_name: percent
@@ -166,11 +167,13 @@ with open(os.devnull, "w") as devnull:
 # %%
 # Display query gui
 query = r"""
-activation_marginal(i, j, k) :- activations(..., ..., ..., i, j, k, study_id), docs(study_id)
-term_marginal(term) :- terms(study_id, term, tfidf), tfidf > 0.01, docs(study_id), term == 'auditory'
-activation_given_term(i, j, k, PROB(i, j, k)) :- activation_marginal(i,j,k) // term_marginal(term)
+activation(i, j, k) :- activations(..., ..., ..., i, j, k, study_id), docs(study_id)
+term_(term) :- terms(study_id, term, tfidf), tfidf > 0.01, docs(study_id)
+activation_given_term_marginal(i, j, k, PROB(i, j, k)) :- activation(i,j,k) // (term_(term), term == 'auditory')
 activation_given_term_image(agg_create_region_overlay(i, j, k, p)) :- activation_given_term(i,j,k,p)
 """
 
 qw = QueryWidget(nl, query)
 qw
+
+# %%

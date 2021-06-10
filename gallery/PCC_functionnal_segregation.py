@@ -30,10 +30,9 @@ from typing import Iterable
 
 import numpy as np
 import pandas as pd
-from nilearn import datasets, image, plotting
 from neurolang.frontend import NeurolangPDL, ExplicitVBR, ExplicitVBROverlay
 
-from gallery import data_utils
+from nlweb import data_utils
 
 # %%
 data_dir = Path("neurolang_data")
@@ -70,11 +69,11 @@ def init_frontend():
 
         Parameters
         ----------
-        p, p0 : Float. Probabilities of two events 
+        p, p0 : Float. Probabilities of two events
 
         Returns
         -------
-        logodds : Float. Log-odds Ratio 
+        logodds : Float. Log-odds Ratio
         """
 
         logodds = np.log((p / (1 - p)) / (p0 / (1 - p0)))
@@ -115,13 +114,13 @@ mni_mask = data_utils.load_mni_atlas(data_dir=data_dir, resolution=resolution, k
 # Difumo 128 Regions Atlas
 coord_type = "ijk"
 n_components = 128
-region_voxels, difumo_meta = data_utils.fetch_difumo(
-    data_dir=data_dir, mask=mni_mask, coord_type=coord_type, n_components=n_components,
+region_voxels, _ = data_utils.fetch_difumo(
+    data_dir=data_dir,
+    mask=mni_mask,
+    coord_type=coord_type,
+    n_components=n_components,
 )
 
-difumo_img = datasets.fetch_atlas_difumo(
-    dimension=n_components, data_dir=str(data_dir)
-).maps
 
 # %%
 # NeuroSynth database
@@ -232,7 +231,10 @@ def load_topics(nl):
 
     n_topics = 200
     topic_association = data_utils.fetch_neurosynth_topic_associations(
-        n_topics, data_dir=data_dir, topics_to_keep=topics_to_keep, labels=labels,
+        data_dir=data_dir,
+        n_topics=n_topics,
+        topics_to_keep=topics_to_keep,
+        labels=labels,
     )
 
     nl.add_probabilistic_facts_from_tuples(
@@ -440,7 +442,9 @@ def make_radar_plot(results):
     ax.set_theta_offset(np.pi / 2)
     ax.set_theta_direction(-1)
     ax.set_thetagrids(
-        np.degrees(angles[:-1]), topics, fontsize=5,
+        np.degrees(angles[:-1]),
+        topics,
+        fontsize=5,
     )
     for label, angle in zip(ax.get_xticklabels(), angles[:-1]):
         if angle in (0, np.pi):
@@ -451,7 +455,9 @@ def make_radar_plot(results):
             label.set_horizontalalignment("right")
     ax.set_rlabel_position(180 / n_topics)
     ax.legend(
-        bbox_to_anchor=(-0.4, 0.98), loc=3, fontsize=5,
+        bbox_to_anchor=(-0.4, 0.98),
+        loc=3,
+        fontsize=5,
     )
     ax.spines["bottom"] = ax.spines["inner"]
 

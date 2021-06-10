@@ -25,7 +25,7 @@ import nibabel as nib
 import numpy as np
 from neurolang.frontend import NeurolangPDL
 
-from gallery import data_utils
+from nlweb import data_utils
 
 
 # %%
@@ -37,7 +37,9 @@ def init_frontend():
     nl = NeurolangPDL()
 
     nl.add_symbol(
-        np.log, name="log", type_=Callable[[float], float],
+        np.log,
+        name="log",
+        type_=Callable[[float], float],
     )
 
     return nl
@@ -61,7 +63,11 @@ def load_studies(nl, peak_reported, study_ids):
     )
     nl.add_tuple_set(study_ids, name="Study")
     nl.add_tuple_set(
-        {("aCC", -2, 46, -4), ("CS", -34, -26, 60), ("lIPS", -26, -58, 48),},
+        {
+            ("aCC", -2, 46, -4),
+            ("CS", -34, -26, 60),
+            ("lIPS", -26, -58, 48),
+        },
         name="SeedVoxel",
     )
 
@@ -95,13 +101,12 @@ def load_regions_and_peaks_reported(nl):
 
 # %%
 resolution = 3
-mni_mask = data_utils.load_mni_atlas(resolution=resolution, data_dir=data_dir)
+mni_mask = data_utils.load_mni_atlas(data_dir=data_dir, resolution=resolution)
 
 # %%
 coord_type = "xyz"
-tfidf_threshold = 1e-2
-_, peak_reported, study_ids = data_utils.fetch_neuroquery(
-    mni_mask, tfidf_threshold=tfidf_threshold, coord_type=coord_type, data_dir=data_dir
+peak_reported, study_ids = data_utils.fetch_neuroquery_peak_data(
+    mni_mask, data_dir=data_dir, coord_type=coord_type
 )
 
 # %%
@@ -122,11 +127,6 @@ Query(x,y,z,region,pA,pASeed,pAgA,pAgD,pAaA,n,m,kk,N, llr) :- ProbActivationAndS
 ans(x,y,z,region,pA,pASeed,pAgA,pAgD,pAaA,n,m,kk,N, llr) :- Query(x,y,z,region,pA,pASeed,pAgA,pAgD,pAaA,n,m,kk,N, llr)
 """
 
-# %%
-with nl.scope:
-    res = nl.execute_datalog_program(query)
-
-res
 # %%
 from nlweb.viewers.query import QueryWidget
 

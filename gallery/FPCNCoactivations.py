@@ -41,7 +41,7 @@ from typing import Callable, Iterable
 import numpy as np
 from neurolang.frontend import NeurolangPDL
 
-from gallery import data_utils
+from nlweb import data_utils
 
 # %%
 data_dir = Path("neurolang_data")
@@ -51,10 +51,14 @@ def init_frontend():
     nl = NeurolangPDL()
 
     nl.add_symbol(
-        np.log, name="log", type_=Callable[[float], float],
+        np.log,
+        name="log",
+        type_=Callable[[float], float],
     )
     nl.add_symbol(
-        lambda it: float(sum(it)), name="agg_sum", type_=Callable[[Iterable], float],
+        lambda it: float(sum(it)),
+        name="agg_sum",
+        type_=Callable[[Iterable], float],
     )
 
     @nl.add_symbol
@@ -66,7 +70,11 @@ def init_frontend():
 
 # %%
 def load_studies(
-    nl, peak_reported, study_ids, split_id: int = 42, subsample_proportion: float = 0.6,
+    nl,
+    peak_reported,
+    study_ids,
+    split_id: int = 42,
+    subsample_proportion: float = 0.6,
 ):
     n_studies_selected = int(len(study_ids) * subsample_proportion)
     np.random.seed(split_id)
@@ -99,7 +107,7 @@ mni_mask = data_utils.load_mni_atlas(data_dir=data_dir, resolution=resolution)
 
 # %%
 coord_type = "ijk"
-_, peak_reported, study_ids = data_utils.fetch_neuroquery(
+peak_reported, study_ids = data_utils.fetch_neuroquery_peak_data(
     mask=mni_mask, coord_type=coord_type, data_dir=data_dir
 )
 

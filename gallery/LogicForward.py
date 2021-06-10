@@ -50,7 +50,7 @@ import numpy as np
 import nibabel
 from neurolang.frontend import NeurolangPDL
 
-from gallery import data_utils
+from nlweb import data_utils
 
 # %%
 data_dir = Path("neurolang_data")
@@ -84,8 +84,8 @@ def load_topics(n_topics: int = 200):
     ]
 
     topic_association = data_utils.fetch_neurosynth_topic_associations(
-        n_topics,
         data_dir=data_dir,
+        n_topics=n_topics,
         topics_to_keep=topics_to_keep,
         labels=labels,
         version="v4",
@@ -117,7 +117,8 @@ def load_studies(
         topic_association.prob > 0.05, ["topic", "study_id"]
     ]
     nl.add_tuple_set(
-        topic_association, name="TopicAssociation",
+        topic_association,
+        name="TopicAssociation",
     )
     nl.add_tuple_set(peak_reported, name="PeakReported")
     nl.add_uniform_probabilistic_choice_over_set(study_ids, name="SelectedStudy")
@@ -142,9 +143,7 @@ mni_mask = data_utils.load_mni_atlas(data_dir=data_dir, resolution=resolution)
 
 
 # %%
-_, peak_reported, study_ids = data_utils.fetch_neurosynth(
-    tfidf_threshold=1e-2, data_dir=data_dir
-)
+peak_reported, study_ids = data_utils.fetch_neurosynth_peak_data(data_dir=data_dir)
 
 # %%
 coord_type = "xyz"
