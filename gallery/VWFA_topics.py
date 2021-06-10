@@ -150,9 +150,7 @@ topic_association = data_utils.fetch_neurosynth_topic_associations(
 )
 
 # %%
-peak_reported, study_ids = data_utils.fetch_neurosynth_peak_data(
-    data_dir=data_dir
-)
+peak_reported, study_ids = data_utils.fetch_neurosynth_peak_data(data_dir=data_dir)
 
 # %%
 nl = init_frontend()
