@@ -1,15 +1,15 @@
+import matplotlib.pyplot as plt
+import nlweb
 import pytest
-
-from traitlets import TraitError
-
 from nlweb.viewers.column import (
     ColumnFeeder,
     ExplicitVBRColumn,
     ExplicitVBROverlayColumn,
+    MpltFigureColumn,
     StudIdColumn,
     TfIDfColumn,
 )
-import nlweb
+from traitlets import TraitError
 
 
 class TestColumnFeeder:
@@ -111,3 +111,24 @@ class TestTfIDfColumn(TestColumnFeeder):
 
         with pytest.raises(TraitError):
             column.get_widget(-1)
+
+
+class TestMpltFigureColumn:
+    """Tests MpltFigureColumn."""
+
+    @pytest.fixture
+    def fig(self):
+        return plt.figure()
+
+    @pytest.fixture
+    def column(self, mock_resulttabpage, mock_viewerfactory):
+        return MpltFigureColumn(mock_resulttabpage, mock_viewerfactory)
+
+    def test_get_widget(self, column, fig):
+        """Tests MpltFigureColumn get_widget."""
+        assert isinstance(
+            column.get_widget(fig),
+            nlweb.viewers.cell.MpltFigureCellWidget,
+        )
+
+        assert isinstance(column.get_widget(None), nlweb.viewers.cell.LabelCellWidget)

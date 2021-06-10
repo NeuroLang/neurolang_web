@@ -1,21 +1,19 @@
+import gzip
 from functools import partial
 
-import gzip
-
 from ipywidgets import Button, HBox, Label, Layout
-
+from matplotlib.figure import Figure
 from neurolang.frontend import ExplicitVBR, ExplicitVBROverlay  # type: ignore
-
 from neurolang_ipywidgets import (
-    NlDownloadLink,
     NlCheckbox,
+    NlDownloadLink,
     NlLink,
     NlPapayaViewer,
     NlProgress,
     PapayaSpatialImage,
 )
-
 from nlweb.viewers import CellWidget
+from nlweb.viewers.factory import MpltFigureViewerWidget
 
 
 class StudyIdWidget(NlLink, CellWidget):
@@ -60,6 +58,73 @@ class LabelCellWidget(Label, CellWidget):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+
+class MpltFigureCellWidget(HBox, CellWidget):
+    """A cell widget for MatplotLib Figures."""
+
+    def __init__(self, fig: Figure, viewer: MpltFigureViewerWidget, *args, **kwargs):
+        if fig is None:
+            raise TypeError("fig should not be None!")
+
+        if viewer is None:
+            raise TypeError("viewer should not be None!")
+
+        super().__init__(*args, **kwargs)
+
+        self.fig = fig
+        self._viewer = viewer
+
+        self.layout = Layout(
+            display="flex",
+            flex_direction="row",
+            justify_content="center",
+            align_items="center",
+            width="180px",
+            max_width="180px",
+            flex="0 1 0",
+        )
+
+        self._init_widgets()
+
+        self.children = [
+            self._show_fig_checkbox,
+        ]
+
+    @property
+    def is_figure_selected(self):
+        return self._show_fig_checkbox.value
+
+    def unselect_figure(self):
+        if self.is_figure_selected:
+            self.disable_change_callback = True
+            self._show_fig_checkbox.value = False
+
+    def _init_widgets(self):
+        self.disable_change_callback = False
+        self._show_fig_checkbox = NlCheckbox(
+            value=False,
+            description="Show figure",
+            indent=False,
+            layout=Layout(
+                width="120px",
+                max_width="120px",
+                min_width="120px",
+                margin="5px 5px 5px 0",
+                padding="0px 0px 0px 0px",
+                flex="0 1 0",
+                align_self="center",
+            ),
+        )
+
+        self._show_fig_checkbox.observe(partial(self._selection_changed), names="value")
+
+    def _selection_changed(self, change):
+        if change["new"]:
+            self._viewer.show_figure(self.fig, self)
+        elif not self.disable_change_callback:
+            self._viewer.reset()
+        self.disable_change_callback = False
 
 
 class ExplicitVBRCellWidget(HBox, CellWidget):
@@ -108,7 +173,11 @@ class ExplicitVBRCellWidget(HBox, CellWidget):
 
         self._init_widgets(self._image)
 
-        self.children = [self._region_checkbox, self._download_link, self._center_btn]
+        self.children = [
+            self._region_checkbox,
+            self._download_link,
+            self._center_btn,
+        ]
 
     def _init_widgets(self, image):
         # add widgets

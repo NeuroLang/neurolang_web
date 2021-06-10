@@ -1,12 +1,13 @@
+import matplotlib.pyplot as plt
 import pytest
 from ipywidgets import Widget
-
 from traitlets import TraitError
 
 from ..viewers.cell import (
     ExplicitVBRCellWidget,
     ExplicitVBROverlayCellWidget,
     LabelCellWidget,
+    MpltFigureCellWidget,
     StudyIdWidget,
     TfIDfWidget,
 )
@@ -199,3 +200,59 @@ class TestExplicitVBROverlayCellWidget(TestExplicitVBRCellWidget):
         with pytest.raises(TypeError) as error:
             ExplicitVBROverlayCellWidget(vbr=vbr_overlay, viewer=None)
         assert error.value.args[0] == "viewer should not be NoneType!"
+
+
+class TestMpltFigureCellWidget(TestWidget):
+    """Tests MpltFigureCellWidget."""
+
+    @pytest.fixture
+    def fig(self):
+        return plt.figure()
+
+    @pytest.fixture
+    def widget(self, fig, mock_figure_viewer):
+        return MpltFigureCellWidget(fig, mock_figure_viewer)
+
+    def test_create_no_params(self):
+        """Tests constructor with no parameters."""
+        with pytest.raises(TypeError):
+            MpltFigureCellWidget()
+
+    def test_create_fig_none(self, mock_figure_viewer):
+        """Tests constructor with `None` value for `fig`."""
+
+        with pytest.raises(TypeError) as error:
+            MpltFigureCellWidget(fig=None, viewer=mock_figure_viewer)
+        assert error.value.args[0] == "fig should not be None!"
+
+    def test_create_viewer_none(self, fig):
+        """Tests constructor with `None` value for `viewer`."""
+
+        with pytest.raises(TypeError) as error:
+            MpltFigureCellWidget(fig=fig, viewer=None)
+        assert error.value.args[0] == "viewer should not be None!"
+
+    def test_create(self, widget):
+        """Tests constructor with valid values for `fig` and `viewer`."""
+
+        assert widget._viewer is not None
+        assert widget.fig is not None
+        assert widget.is_figure_selected == False
+        assert widget._show_fig_checkbox is not None
+
+    def test_unselect_figure(self, widget):
+        """Tests `unselect_figure`."""
+
+        widget.unselect_figure()
+        assert not widget.is_figure_selected
+        widget._viewer.reset.assert_not_called()
+
+        widget._show_fig_checkbox.value = True
+        widget.unselect_figure()
+        assert not widget.is_figure_selected
+        widget._viewer.reset.assert_not_called()
+
+    def test_select_figure(self, widget):
+        widget._show_fig_checkbox.value = True
+        assert widget.is_figure_selected
+        widget._viewer.show_figure.assert_called_with(widget.fig, widget)

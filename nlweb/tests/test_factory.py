@@ -1,8 +1,10 @@
+from typing import Tuple
+
+import matplotlib
+import neurolang
+import nlweb
 import pytest
 from nlweb.viewers.factory import ColumnFeederFactory, ColumnsManager, ViewerFactory
-import nlweb
-import neurolang
-from typing import Tuple
 from traitlets import TraitError
 
 
@@ -48,6 +50,11 @@ class TestColumnFeederFactory:
         assert isinstance(
             column_vbroverlay, nlweb.viewers.column.ExplicitVBROverlayColumn
         )
+
+        column_fig = factory.get_column(
+            mock_resulttabpage, matplotlib.figure.Figure, mock_viewerfactory
+        )
+        assert isinstance(column_fig, nlweb.viewers.column.MpltFigureColumn)
 
 
 class TestColumnManager:

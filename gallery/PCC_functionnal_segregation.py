@@ -369,81 +369,83 @@ TopicRegionAssociationLogOdds(t, r, split, p, pmarg, logodds) :- ProbTopicGivenR
 # %%
 query = r"""
 RegionReported(r, s) :- PeakReported(x1, y1, z1, s, i, j, k) & RegionOfInterest(difumo_label, i, j, k, r)
-MarginalProbTopicInStudy(t, split, PROB(t, split)) :- TopicInStudy(t, s)  & SelectedStudy(s)  & StudySplits(s, split)
-StudyMatchingRegionSegregationQuery(s, r) :-  RegionReported(r, s) & ~RegionReported(r2, s) & RegionLabel(r2) & (r2 != r)
-ProbTopicGivenRegionSegregationQuery(t, r, split, PROB(t, r, split)) :- (TopicInStudy(t, s)) // ( StudyMatchingRegionSegregationQuery(s, r) & SelectedStudy(s) & StudySplits(s, split) )    
-TopicRegionAssociationLogOdds(t, r, split, p, pmarg, logodds) :- ProbTopicGivenRegionSegregationQuery(t, r, split, p)  & MarginalProbTopicInStudy(t, split, pmarg)  & (logodds == log_odds(p, pmarg))
-ans(t, r, split, p, pmarg, logodds) :-  TopicRegionAssociationLogOdds(t, r, split, p, pmarg, logodds)
-"""
+MarginalProbTopicInStudy(t, split, PROB(t, split)) :- TopicInStudy(t, s) & SelectedStudy(s) & StudySplits(s, split)
+StudyMatchingRegionSegregationQuery(s, r) :- RegionReported(r, s) & ~RegionReported(r2, s) & RegionLabel(r2) & (r2 != r)
+ProbTopicGivenRegionSegregationQuery(t, r, split, PROB(t, r, split)) :- (TopicInStudy(t, s)) // ( StudyMatchingRegionSegregationQuery(s, r) & SelectedStudy(s) & StudySplits(s, split) ) 
+TopicRegionAssociationLogOdds(t, r, split, p, pmarg, logodds) :- ProbTopicGivenRegionSegregationQuery(t, r, split, p) & MarginalProbTopicInStudy(t, split, pmarg)  & (logodds == log_odds(p, pmarg))"""
 
 # %% [markdown]
 """
-### Define utilitary plot functions
+### Define aggregate plot functions
 
-Before running the program, we define some utility functions to plot the results. The `make_radar_plot` function
-will create a plot displaying the logodds probability for each region of being associated with one of the networks.
-The `make_histogram_plot` function displays a histogram plot of log-odds ratios across the splits. 
-Both functions are passed a dictionnary containing the result sets of the query that is executed by Neurolang.
+Before running the program, we define some aggregate functions to plot the results. The `agg_radar_plot` function
+will create a plot displaying the log-odds ratio of topic associations for each region.
+The `agg_histogram_plot` function displays a histogram plot of log-odds ratios across the splits for each topic. 
 """
 
 # %%
 # %matplotlib widget
 import seaborn as sns
 import matplotlib.pyplot as plt
+import matplotlib
 
 
-def make_radar_plot(results):
-    """Create a radar plot using the query results
+plt.ioff()
+
+
+@nl.add_symbol
+def agg_radar_plot(topics: Iterable, logodds: Iterable) -> matplotlib.figure.Figure:
+    """
+    Create a radar plot showing the log-odds ratios.
 
     Parameters
     ----------
-    results : Dict[str, NamedRelationalAlgebraFrozenSet]
-        a dictionary of name -> relational algebra result sets which contains all
-        the relations returned by the Neurolang program
+    topics : Iterable[str]
+        the topics
+    logodds: Iterable[float]
+        the log-odds ratios
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+        a Figure
     """
-    solution = results["ans"]
-    d = solution.as_pandas_dataframe()
+    u_topics = list(sorted(topics.unique()))
+    n_topics = len(u_topics)
 
-    topics = list(sorted(d["t"].unique()))
-    network_to_label = {
-        "dPCC": "dorsal PCC",
-        "vPCC": "ventral PCC",
-    }
-
-    n_topics = len(topics)
     angles = np.linspace(0, 2 * np.pi, n_topics, endpoint=False).tolist()
     angles += angles[:1]
-    fig, ax = plt.subplots(figsize=(4.5, 3), subplot_kw=dict(polar=True), dpi=200)
+    fig = plt.figure(figsize=(4.5, 3), dpi=200)
     fig.canvas.header_visible = False
-    colors = {"dPCC": "black", "vPCC": "purple"}
-    for network, dn in d.groupby("r"):
-        dn = dn.groupby("t").agg({"logodds": ["mean", "std"]}).loc[topics]
-        p_mean = list(dn[("logodds", "mean")])
-        p_std = list(dn[("logodds", "std")])
-        p_mean += p_mean[:1]
-        p_std += p_std[:1]
-        ax.plot(
-            angles,
-            p_mean,
-            linewidth=1,
-            label=network_to_label[network],
-            color=colors[network],
-            marker="o",
-            markersize=4,
-        )
-        ax.fill_between(
-            angles,
-            np.array(p_mean) - np.array(p_std),
-            np.array(p_mean) + np.array(p_std),
-            color=colors[network],
-            alpha=0.4,
-        )
+    ax = fig.add_subplot(polar=True)
 
+    df = pd.DataFrame({"topics": topics, "logodds": logodds})
+    dn = df.groupby("topics").agg({"logodds": ["mean", "std"]}).loc[u_topics]
+    p_mean = list(dn[("logodds", "mean")])
+    p_std = list(dn[("logodds", "std")])
+    p_mean += p_mean[:1]
+    p_std += p_std[:1]
+    ax.plot(
+        angles,
+        p_mean,
+        linewidth=1,
+        # label=network_to_label[network],
+        color="blue",
+        marker="o",
+        markersize=4,
+    )
+    ax.fill_between(
+        angles,
+        np.array(p_mean) - np.array(p_std),
+        np.array(p_mean) + np.array(p_std),
+        color="blue",
+        alpha=0.4,
+    )
     ax.set_theta_offset(np.pi / 2)
     ax.set_theta_direction(-1)
     ax.set_thetagrids(
         np.degrees(angles[:-1]),
-        topics,
+        u_topics,
         fontsize=5,
     )
     for label, angle in zip(ax.get_xticklabels(), angles[:-1]):
@@ -454,28 +456,44 @@ def make_radar_plot(results):
         else:
             label.set_horizontalalignment("right")
     ax.set_rlabel_position(180 / n_topics)
-    ax.legend(
-        bbox_to_anchor=(-0.4, 0.98),
-        loc=3,
-        fontsize=5,
-    )
     ax.spines["bottom"] = ax.spines["inner"]
+    return fig
 
 
 # %%
-def make_histogram_plot(results):
-    """Create a histogram plot using the query results
+@nl.add_symbol
+def agg_histogram_plot(
+    topics: Iterable, regions: Iterable, probs: Iterable, logodds: Iterable
+) -> matplotlib.figure.Figure:
+    """
+    Create a histogram plot
 
     Parameters
     ----------
-    results : Dict[str, NamedRelationalAlgebraFrozenSet]
-        a dictionary of name -> relational algebra result sets which contains all
-        the relations returned by the Neurolang program
+    topics : Iterable
+        the topics
+    regions : Iterable
+        the regions
+    probs : Iterable
+        probs
+    logodds : Iterable
+        log-odds ratios
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+        the figure to display
     """
-    solution = results["ans"]
-    d = solution.as_pandas_dataframe()
-    solution_report = (
-        d.groupby(["t", "r"])["p"]
+    df = pd.DataFrame(
+        {
+            "regions": regions,
+            "topics": topics,
+            "probs": probs,
+            "logodds": logodds,
+        }
+    )
+    dn = (
+        df.groupby(["topics", "regions"])["probs"]
         .aggregate(
             [
                 "mean",
@@ -489,30 +507,28 @@ def make_histogram_plot(results):
 
     pooled_std = np.sqrt(
         (
-            solution_report.swaplevel(i=0, j=1).loc["dPCC", "std"] ** 2
-            + solution_report.swaplevel(i=0, j=1).loc["vPCC", "std"] ** 2
+            dn.swaplevel(i=0, j=1).loc["dPCC", "std"] ** 2
+            + dn.swaplevel(i=0, j=1).loc["vPCC", "std"] ** 2
         )
         / 2
     )
-
     z_difference = (
-        solution_report.swaplevel(i=0, j=1).loc["dPCC", "mean"]
-        - solution_report.swaplevel(i=0, j=1).loc["vPCC", "mean"]
+        dn.swaplevel(i=0, j=1).loc["dPCC", "mean"]
+        - dn.swaplevel(i=0, j=1).loc["vPCC", "mean"]
     ) / pooled_std
-
     z_difference_sorted_difference = (
         np.abs(z_difference).sort_values(ascending=False).index
     )
 
-    d = d.rename(
+    df = df.rename(
         columns={
-            "t": "Cognitive Function",
-            "r": "PCC Sub-Region",
+            "topics": "Cognitive Function",
+            "regions": "PCC Sub-Region",
             "logodds": "Log-Odds",
         }
     )
     fg = sns.FacetGrid(
-        d,
+        df,
         col="Cognitive Function",
         col_wrap=4,
         hue="PCC Sub-Region",
@@ -531,7 +547,19 @@ def make_histogram_plot(results):
         size=18,
     )
     fg.set_titles(col_template="{col_name}")
+    return fg.fig
 
+
+# %% [markdown]
+"""
+To create the plots, we add new rules to the program which call the aggregate functions we defined with the data required.
+"""
+
+
+# %%
+query += r"""
+RegionTopicRadarPlot(region, agg_radar_plot(t, logodds)) :-  TopicRegionAssociationLogOdds(t, region, split, p, pmarg, logodds)
+Histograms(agg_histogram_plot(t, region, p, logodds)) :- TopicRegionAssociationLogOdds(t, region, split, p, pmarg, logodds)"""
 
 # %%
 from nlweb.viewers.query import QueryWidget
@@ -539,10 +567,6 @@ from nlweb.viewers.query import QueryWidget
 qw = QueryWidget(
     nl,
     query,
-    callbacks={
-        "Radar Plot": make_radar_plot,
-        "Log-Odds Histogram": make_histogram_plot,
-    },
 )
 qw
 

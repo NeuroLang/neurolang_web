@@ -1,6 +1,8 @@
 from neurolang.frontend import ExplicitVBR, ExplicitVBROverlay, NeurolangDL
 import pytest
 import numpy as np
+from unittest.mock import MagicMock
+from nlweb.viewers.factory import MpltFigureViewerWidget
 from os.path import dirname, join
 
 
@@ -78,17 +80,26 @@ def mock_solve_all(monkeypatch, res):
     return solve_all
 
 
+@pytest.fixture
+def mock_figure_viewer(monkeypatch):
+    return MagicMock(spec=MpltFigureViewerWidget)
+
+
 class MockViewerFactory:
-    def __init__(self):
+    def __init__(self, mock_figure_viewer):
         self.viewer = MockNlPapayaViewer()
+        self.figure_viewer = mock_figure_viewer
 
     def get_region_viewer(self):
         return self.viewer
 
+    def get_figure_viewer(self):
+        return self.figure_viewer
+
 
 @pytest.fixture
-def mock_viewerfactory(monkeypatch):
-    return MockViewerFactory()
+def mock_viewerfactory(mock_figure_viewer):
+    return MockViewerFactory(mock_figure_viewer)
 
 
 class MockResultTabPage:
