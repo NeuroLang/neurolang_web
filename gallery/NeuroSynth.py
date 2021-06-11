@@ -43,6 +43,7 @@ from pathlib import Path
 from typing import Callable, Iterable
 
 import numpy as np
+import nibabel
 from neurolang import NeurolangPDL
 from neurolang.frontend import ExplicitVBR, ExplicitVBROverlay
 from nlweb import data_utils
@@ -94,14 +95,14 @@ def init_frontend():
 
 # %%
 # MNI Template with resolution 4mm
-resolution = 4
+resolution = 2
 mni_mask = data_utils.load_mni_atlas(
-    data_dir=data_dir, resolution=resolution, key="t1"
+    data_dir=data_dir, resolution=resolution
 )
 
 # %%
 # Load NeuroSynth database
-tfidf_threshold = 1e-3
+tfidf_threshold = 1e-2
 term_in_study, peak_reported, study_ids = data_utils.fetch_neurosynth(
     data_dir=data_dir, tfidf_threshold=tfidf_threshold
 )
@@ -146,15 +147,15 @@ def load_database(
         study_ids, name="SelectedStudy"
     )
     nl.add_tuple_set(
-        np.hstack(
-            np.meshgrid(
-                *(np.arange(0, dim) for dim in mni_mask.get_fdata().shape)
-            )
-        )
-        .swapaxes(0, 1)
-        .reshape(3, -1)
-        .T,
-        name="Voxel",
+         np.hstack(
+             np.meshgrid(
+                 *(np.arange(0, dim) for dim in mni_mask.get_fdata().shape)
+             )
+         )
+         .swapaxes(0, 1)
+         .reshape(3, -1)
+         .T,
+         name="Voxel",
     )
 
 
@@ -205,8 +206,7 @@ VoxelReported (i, j, k, study) :- PeakReported(i2, j2, k2, study) & Voxel(i, j, 
 TermAssociation(term) :- SelectedStudy(study) & TermInStudy(term, study)
 Activation(i, j, k) :- SelectedStudy(s) & VoxelReported(i, j, k, s)
 ActivationGivenTerm(i, j, k, PROB(i, j, k)) :- Activation(i, j, k) // TermAssociation("emotion")
-ActivationGivenTermImage(agg_create_region_overlay(i, j, k, p)) :- ActivationGivenTerm(i, j, k, p)
-"""
+ActivationGivenTermImage(agg_create_region_overlay(i, j, k, p)) :- ActivationGivenTerm(i, j, k, p)"""
 
 # %%
 from nlweb.viewers.query import QueryWidget
