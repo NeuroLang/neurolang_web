@@ -17,6 +17,7 @@ class ViewerFactory:
                 max_height="780px",
                 overflow="hidden",
                 overflow_y="hidden",
+                margin="2px",
             )
         )
         self._figure_viewer = MpltFigureViewerWidget()

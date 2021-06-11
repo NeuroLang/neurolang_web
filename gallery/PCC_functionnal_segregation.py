@@ -267,7 +267,8 @@ ans(difumo_label, i, j, k) :- PCCRegion(difumo_label, i, j, k)
 """
 
 # %%
-pcc_region = nl.execute_datalog_program(pcc_query).as_pandas_dataframe()
+with nl.scope:
+    pcc_region = nl.execute_datalog_program(pcc_query).as_pandas_dataframe()
 
 # %% [markdown]
 """

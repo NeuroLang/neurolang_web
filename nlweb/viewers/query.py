@@ -627,19 +627,25 @@ class QueryWidget(VBox):
                 width="75%",
                 min_height="100px",
                 border="solid 1px silver",
+                margin="5px 0 0",
             ),
         )
-        self.button = Button(description="Run query")
+        self.button = Button(description="Run query", layout=Layout(margin="5px 0 0"))
         self.button.on_click(self._on_query_button_clicked)
         self.error_display = HTML(layout=Layout(visibility="hidden"))
-        self.info_display = HTML(layout=Layout(visibility="hidden"))
+        self.info_display = HTML(layout=Layout(visibility="hidden", margin="5px 0"))
+        self.help_display = HTML(layout=Layout(display="none"))
+        button_info_box = VBox(
+            [self.button, self.info_display],
+            layout=Layout(width="25%", padding="0 5px"),
+        )
         self.query_section = Tab(
             children=[
                 VBox(
                     [
-                        HBox([self.query, self.button]),
+                        HBox([self.query, button_info_box]),
                         self.error_display,
-                        self.info_display,
+                        self.help_display,
                     ]
                 ),
                 SymbolsWidget(self.neurolang_engine),
@@ -705,6 +711,7 @@ class QueryWidget(VBox):
 
     def _reset_output(self):
         self.error_display.layout.visibility = "hidden"
+        self.help_display.layout.display = "none"
         self.info_display.layout.visibility = "hidden"
         self.result_viewer.layout.visibility = "hidden"
         self.query.clear_marks()
@@ -728,6 +735,11 @@ class QueryWidget(VBox):
     def _handle_generic_error(self, e: Exception):
         self.error_display.layout.visibility = "visible"
         self.error_display.value = _format_exc(e)
+        if e.__doc__ != "":
+            self.help_display.layout.display = "block"
+            self.help_display.value = _format_help_message(
+                e.__class__.__name__, e.__doc__
+            )
         if self.reraise:
             raise e
 
