@@ -124,7 +124,7 @@ region_voxels, _ = data_utils.fetch_difumo(
 
 # %%
 # NeuroSynth database
-term_in_study, peak_reported, study_ids = data_utils.fetch_neurosynth(data_dir=data_dir)
+peak_reported, study_ids = data_utils.fetch_neurosynth_peak_data(data_dir=data_dir)
 ijk_positions = np.round(
     data_utils.xyz_to_ijk(peak_reported[["x", "y", "z"]].values.astype(float), mni_mask)
 )
