@@ -184,7 +184,14 @@ A simple but common spatial smoothing approach is to consider all voxels within 
       PeakReported(x2, y2, z2, s) & Voxel(x, y, z)
       & d = euclidean_distance(x, y, z, x2, y2, z2) & d < 10
 ```
-where the pairwise Euclidean distance between pairs of voxels is calculated using a built-in `euclidean_distance` function (**EUCLIDEAN**). The lower bound d < 10 defines a 10mm radius ball around each peak location. An MKDA meta-analytic map is obtained by estimating the conditional probability that each voxel gets reported by studies associated with a given term of interest (e.g. *‘emotion’*.)
+where the pairwise Euclidean distance between pairs of voxels is calculated using a built-in `euclidean_distance` function (**EUCLIDEAN**). The lower bound d < 10 defines a 10mm radius ball around each peak location. An MKDA meta-analytic map is obtained by estimating the conditional probability that each voxel gets reported by studies associated with a given term of interest (e.g. *‘emotion’*).
+
+---
+**NOTE**
+
+In the query below, we set the lower bound d < 1 since computing all the voxels in a larger radius around each peak location is resource intensive, but this parameter can be tweaked to add a bit more smoothing.
+
+---
 
 ### Estimate the probability of each voxel being reported
 
@@ -196,11 +203,18 @@ voxel being reported. The result of solving a conditional probabilistic rule
       // TermAssociation("emotion", s) & SelectedStudy(s)
 ```
 will contain a probability for each voxel of the brain, based on the frequency at which it is reported by studies within the database. The **//** operator represents a *probabilistic conditioning*.
+
+---
+**NOTE**
+
+In the query below, we split the conditional probabilistic rule into sub rules for readability.
+
+---
 """
 
 # %%
 # Display query gui
-query = r"""
+query = """
 tfidf :: TermInStudy(term, study) :- TermInStudyTFIDF(term, tfidf, study)
 VoxelReported (i, j, k, study) :- PeakReported(i2, j2, k2, study) & Voxel(i, j, k) & (d == EUCLIDEAN(i, j, k, i2, j2, k2)) & (d < 1)
 TermAssociation(term) :- SelectedStudy(study) & TermInStudy(term, study)
