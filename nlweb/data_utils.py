@@ -434,3 +434,35 @@ def load_mni_atlas(
         interpolation=interpolation,
     )
     return mni_mask
+
+
+def fetch_iobc_ontology(data_dir: Path):
+    ontology_dir = data_dir / "ontologies"
+    iobc = nilearn.datasets.utils._fetch_files(
+        ontology_dir,
+        [
+            (
+                "iobc.xrdf",
+                "http://data.bioontology.org/ontologies/IOBC/download?"
+                "apikey=8b5b7825-538d-40e0-9e9e-5ab9274a9aeb&download_format=rdf",
+                {"move": "iobc.xrdf"},
+            )
+        ],
+    )[0]
+    return iobc
+
+
+def fetch_cogat_ontology(data_dir: Path):
+    ontology_dir = data_dir / "ontologies"
+    cogAt = nilearn.datasets.utils._fetch_files(
+        ontology_dir,
+        [
+            (
+                "cogat_old.xml",
+                "https://data.bioontology.org/ontologies/COGAT/submissions/7/download?"
+                "apikey=8b5b7825-538d-40e0-9e9e-5ab9274a9aeb",
+                {"move": "cogat_old.xml"},
+            )
+        ],
+    )[0]
+    return cogAt
