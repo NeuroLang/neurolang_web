@@ -8,7 +8,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.11.3
+#       jupytext_version: 1.11.2
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -77,8 +77,11 @@ def init_frontend():
 ### Fetch the data
 We start by loading the data we need from available atlases.
 
-We use the Neurosynth CBMA database (Yarkoni et al., 2011), consisting of 14,371 studies, 
-and the Interlinking Ontology for Biological Concepts (IOBC) which contains approximately 80,000 biological concepts.
+We use the Neurosynth CBMA database (Yarkoni et al., 2011), consisting of 14,371 studies.
+We also use biological ontologies which contain biological concepts and the relations between them.
+
+In this example, we use the Cognitive Atlas ontology, but others can be used as well, such as the Interlinking Ontology 
+for Biological Concepts (IOBC) which contains approximately 80,000 biological concepts.
 """
 
 # %%
@@ -160,6 +163,21 @@ nl.load_ontology(cogat)
 ### Write a NeuroLang program
 
 We'll start by looking at synonyms **Pain**, **Noxious**, **Nociceptive**.
+
+The first rule of the program, 
+```python
+RelatedBiostimulationTerm(word) :- (word == 'pain')
+```
+
+sets the word we're looking for, while the second rule,
+
+```python
+RelatedBiostimulationTerm(alternative_names) :- subclass_of(biostimulation_subclass, '200906066643737725') & label(pain_entity, 'Pain') &  related(pain_entity, biostimulation_subclass) & altLabel(biostimulation_subclass, alternative_names)
+```
+
+finds alternative names for this term.
+
+Try to remove the first rule to look at the mean activation values for the synonyms without the word **pain**.
 """
 
 # %%
@@ -169,16 +187,41 @@ RelatedBiostimulationTerm(alternative_names) :- subclass_of(biostimulation_subcl
 Synonym(short_name) :- (short_name == first_word(alternative_names)) & RelatedBiostimulationTerm(alternative_names)
 FilteredBySynonym(t, s) :- TermInStudy(t, s) & Synonym(t)
 VoxelReported(x, y, z, s) :-  FocusReported(x2, y2, z2, s) & Voxel(x, y, z) & (d == EUCLIDEAN(x, y, z, x2, y2, z2)) & (d < 1)
-Result(x, y, z, fold, PROB(x, y, z, fold)) :- VoxelReported(x, y, z, s) // ( SelectedStudy(s)  & FilteredBySynonym(t, s) & StudyFolds(s, fold) )
+Result(x, y, z, fold, PROB(x, y, z, fold)) :- VoxelReported(x, y, z, s) // ( SelectedStudy(s) & FilteredBySynonym(t, s) & StudyFolds(s, fold) )
 ResultMean(x, y, z, mean(p)) :- Result(x, y, z, fold, p)
 ResultStd(x, y, z, std(p)) :- Result(x, y, z, fold, p)
 ResultSummaryStats(x, y, z, prob_mean, prob_std) :- ResultMean(x, y, z, prob_mean) & ResultStd(x, y, z, prob_std)
 VoxelActivationImg(agg_create_region_overlay_MNI(x, y, z, p)) :- ResultMean(x, y, z, p)"""
 
+
 # %%
 from nlweb.viewers.query import QueryWidget
 
 qw = QueryWidget(nl, synonyms_query)
+qw
+
+# %% [markdown]
+"""
+### Single term analysis
+
+We can also run single term analysis by fixing the term in the program without using the ontology to select synonyms.
+In the query below, we look at the activation map for the term **noxious**. Change the term defined in the first rule
+to look at the activation map for other terms.
+"""
+
+# %%
+single_term_query = r"""
+FilteredByTerm(t, s) :- TermInStudy(t, s) & (t == 'noxious')
+VoxelReported(x, y, z, s) :-  FocusReported(x2, y2, z2, s) & Voxel(x, y, z) & (d == EUCLIDEAN(x, y, z, x2, y2, z2)) & (d < 1)
+Result(x, y, z, fold, PROB(x, y, z, fold)) :- VoxelReported(x, y, z, s) // ( SelectedStudy(s) & FilteredByTerm(t, s) & StudyFolds(s, fold) )
+ResultMean(x, y, z, mean(p)) :- Result(x, y, z, fold, p)
+ResultStd(x, y, z, std(p)) :- Result(x, y, z, fold, p)
+ResultSummaryStats(x, y, z, prob_mean, prob_std) :- ResultMean(x, y, z, prob_mean) & ResultStd(x, y, z, prob_std)
+VoxelActivationImg(agg_create_region_overlay_MNI(x, y, z, p)) :- ResultMean(x, y, z, p)
+"""
+
+# %%
+qw = QueryWidget(nl, single_term_query)
 qw
 
 # %%
