@@ -140,7 +140,7 @@ term_data, peak_reported, study_ids = data_utils.fetch_neuroquery(
 )
 
 # %%
-n_difumo_components = 256
+n_difumo_components = 128
 region_voxels, difumo_meta = data_utils.fetch_difumo(
     mask=mni_mask,
     coord_type=coord_type,
@@ -158,7 +158,7 @@ load_topics(nl, data_dir=data_dir)
 
 # %% [markdown]
 """
-We assume a DiFuMo-256 component *r* to be reported by a study *s* whenever a peak activation is reported by the study 
+We assume a DiFuMo-128 component *r* to be reported by a study *s* whenever a peak activation is reported by the study 
 within that region. In NeuroLang, this is expressed by the following logic implication rule :
 
 ```python
@@ -217,6 +217,7 @@ ProbTopicAssociationAndNetworkReported(t, n, PROB(t, n)) :- TopicAssociation(t, 
 CountStudiesTopicAssociationAndNetworkReported(t, n, scont) :- ProbTopicAssociationAndNetworkReported(t, n, prob) & CountStudies(N) & (scont == prob * N)
 Counts(topic, network, N, n, m, k) :- CountStudies(N) & CountStudiesTopicAssociation(topic, m) & CountStudiesNetworkReported(network, n) & CountStudiesTopicAssociationAndNetworkReported(topic, network, k)
 Query(topic, network, p_topic, p_network, p0, p1, llr, N, n, m, k) :- ProbTopicAssociation(topic, p_topic) & ProbNetworkReported(network, p_network) & ProbTopicAssociationGivenNoNetworkActivation(topic, network, p0) & ProbTopicAssociationGivenNetworkActivation(topic, network, p1) & Counts(topic, network, N, n, m, k) & ( llr == ( k * log(p1) + ((n - k) * log(1 - p1) + ((m - k) * log(p0) + (((N - n) - (m - k)) * log(1 - p0))))) - ( k * log(p_topic) + ((n - k) * log(1 - p_topic) + ((m - k) * log(p_topic) + (((N - n) - (m - k)) * log(1 - p_topic))))))
+ans(topic, network, p_topic, p_network, p0, p1, llr, N, n, m, k) :- Query(topic, network, p_topic, p_network, p0, p1, llr, N, n, m, k)
 """
 
 # %%

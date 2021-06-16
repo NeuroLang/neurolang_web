@@ -147,7 +147,7 @@ peak_reported, study_ids = data_utils.fetch_neurosynth_peak_data(data_dir=data_d
 
 # %%
 coord_type = "xyz"
-n_difumo_components = 256
+n_difumo_components = 128
 region_voxels, difumo_meta = data_utils.fetch_difumo(
     mask=mni_mask,
     coord_type=coord_type,
@@ -177,7 +177,7 @@ ans1(t, x, y, z, PROB) :- VoxelReported(x, y, z, s) & SelectedStudy(s) // Match(
 
 # %%
 query = r"""
-VoxelReported(x, y, z, s) :- PeakReported(x2, y2, z2, s) & Voxel(x, y, z) & (d == EUCLIDEAN(x, y, z, x2, y2, z2)) & (d < 10)
+VoxelReported(x, y, z, s) :- PeakReported(x2, y2, z2, s) & Voxel(x, y, z) & (d == EUCLIDEAN(x, y, z, x2, y2, z2)) & (d < 4)
 Match(t, s) :- TopicAssociation(t, s) & ~exists(t2; (Topic(t2) & Study(s) & TopicAssociation(t2, s) & (t2 != t)))
 NoMatch(t, s) :- ~Match(t, s) & Topic(t) & Study(s)
 ans1(t, x, y, z, PROB(t, x, y, z)) :- (VoxelReported(x, y, z, s) & SelectedStudy(s)) // (Match(t, s) & SelectedStudy(s))
