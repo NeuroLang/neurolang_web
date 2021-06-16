@@ -664,7 +664,9 @@ class QueryWidget(VBox):
                 # Try to find the name of the last symbol in the program to display it by default
                 last_rule = str(self.neurolang_engine.current_program[-1])
                 for s in res.keys():
-                    if last_rule.startswith(s) and (last_symbol is None or len(s) > len(last_symbol)):
+                    if last_rule.startswith(s) and (
+                        last_symbol is None or len(s) > len(last_symbol)
+                    ):
                         last_symbol = s
             else:
                 # There was a query in the program, return a dict with just the result_set

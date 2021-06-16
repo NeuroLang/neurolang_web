@@ -68,9 +68,7 @@ def init_frontend():
         return np.int64(len(i))
 
     @nl.add_symbol
-    def agg_create_region(
-        i: Iterable, j: Iterable, k: Iterable
-    ) -> ExplicitVBR:
+    def agg_create_region(i: Iterable, j: Iterable, k: Iterable) -> ExplicitVBR:
         voxels = np.c_[i, j, k]
         return ExplicitVBR(voxels, mni_mask.affine, image_dim=mni_mask.shape)
 
@@ -79,9 +77,7 @@ def init_frontend():
         i: Iterable, j: Iterable, k: Iterable, p: Iterable
     ) -> ExplicitVBR:
         voxels = np.c_[i, j, k]
-        return ExplicitVBROverlay(
-            voxels, mni_mask.affine, p, image_dim=mni_mask.shape
-        )
+        return ExplicitVBROverlay(voxels, mni_mask.affine, p, image_dim=mni_mask.shape)
 
     @nl.add_symbol
     def agg_percentile(x: Iterable, q: float) -> float:
@@ -96,9 +92,7 @@ def init_frontend():
 # %%
 # MNI Template with resolution 4mm
 resolution = 2
-mni_mask = data_utils.load_mni_atlas(
-    data_dir=data_dir, resolution=resolution
-)
+mni_mask = data_utils.load_mni_atlas(data_dir=data_dir, resolution=resolution)
 
 # %%
 # Load NeuroSynth database
@@ -107,9 +101,7 @@ term_in_study, peak_reported, study_ids = data_utils.fetch_neurosynth(
     data_dir=data_dir, tfidf_threshold=tfidf_threshold
 )
 ijk_positions = np.round(
-    data_utils.xyz_to_ijk(
-        peak_reported[["x", "y", "z"]].values.astype(float), mni_mask
-    )
+    data_utils.xyz_to_ijk(peak_reported[["x", "y", "z"]].values.astype(float), mni_mask)
 )
 peak_reported["i"] = ijk_positions[:, 0]
 peak_reported["j"] = ijk_positions[:, 1]
@@ -143,19 +135,15 @@ def load_database(
     nl.add_tuple_set(peak_reported, name="PeakReported")
     nl.add_tuple_set(study_ids, name="Study")
     nl.add_tuple_set(term_in_study, name="TermInStudyTFIDF")
-    nl.add_uniform_probabilistic_choice_over_set(
-        study_ids, name="SelectedStudy"
-    )
+    nl.add_uniform_probabilistic_choice_over_set(study_ids, name="SelectedStudy")
     nl.add_tuple_set(
-         np.hstack(
-             np.meshgrid(
-                 *(np.arange(0, dim) for dim in mni_mask.get_fdata().shape)
-             )
-         )
-         .swapaxes(0, 1)
-         .reshape(3, -1)
-         .T,
-         name="Voxel",
+        np.hstack(
+            np.meshgrid(*(np.arange(0, dim) for dim in mni_mask.get_fdata().shape))
+        )
+        .swapaxes(0, 1)
+        .reshape(3, -1)
+        .T,
+        name="Voxel",
     )
 
 
