@@ -205,19 +205,20 @@ qw
 ### Single term analysis
 
 We can also run single term analysis by fixing the term in the program without using the ontology to select synonyms.
-In the query below, we look at the activation map for the term **noxious**. Change the term defined in the first rule
-to look at the activation map for other terms.
+In the query below, we look at the activation map for the terms **pain**, **noxious** and **nociceptive** independently.
 """
 
 # %%
 single_term_query = r"""
+FilteredByTerm(t, s) :- TermInStudy(t, s) & (t == 'pain')
 FilteredByTerm(t, s) :- TermInStudy(t, s) & (t == 'noxious')
+FilteredByTerm(t, s) :- TermInStudy(t, s) & (t == 'nociceptive')
 VoxelReported(x, y, z, s) :-  FocusReported(x2, y2, z2, s) & Voxel(x, y, z) & (d == EUCLIDEAN(x, y, z, x2, y2, z2)) & (d < 1)
-Result(x, y, z, fold, PROB(x, y, z, fold)) :- VoxelReported(x, y, z, s) // ( SelectedStudy(s) & FilteredByTerm(t, s) & StudyFolds(s, fold) )
-ResultMean(x, y, z, mean(p)) :- Result(x, y, z, fold, p)
-ResultStd(x, y, z, std(p)) :- Result(x, y, z, fold, p)
-ResultSummaryStats(x, y, z, prob_mean, prob_std) :- ResultMean(x, y, z, prob_mean) & ResultStd(x, y, z, prob_std)
-VoxelActivationImg(agg_create_region_overlay_MNI(x, y, z, p)) :- ResultMean(x, y, z, p)
+Result(x, y, z, fold, t, PROB(x, y, z, fold, t)) :- VoxelReported(x, y, z, s) // ( SelectedStudy(s) & FilteredByTerm(t, s) & StudyFolds(s, fold) )
+ResultMean(x, y, z, t, mean(p)) :- Result(x, y, z, fold, t, p)
+ResultStd(x, y, z, t, std(p)) :- Result(x, y, z, fold, t, p)
+ResultSummaryStats(x, y, z, t, prob_mean, prob_std) :- ResultMean(x, y, z, t, prob_mean) & ResultStd(x, y, z, t, prob_std)
+VoxelActivationImg(t, agg_create_region_overlay_MNI(x, y, z, p)) :- ResultMean(x, y, z, t, p)
 """
 
 # %%
