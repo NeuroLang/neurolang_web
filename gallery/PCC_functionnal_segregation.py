@@ -18,7 +18,11 @@
 # ---
 
 # %% [markdown]
-# # Using Probabilistic First-Order Logic in NeuroLang To Segregate Dorsal and Ventral Posterior Cingulate Cortex (PCC)
+"""
+# OHBM Poster #2529 : Probabilistic First-Order Logic for Coordinate-Based Meta-Analysis of Functional Segregation in the Brain
+
+Using Probabilistic First-Order Logic in NeuroLang To Segregate Dorsal and Ventral Posterior Cingulate Cortex (PCC)
+"""
 
 # %%
 import warnings  # type: ignore
