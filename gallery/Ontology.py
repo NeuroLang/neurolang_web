@@ -18,7 +18,7 @@
 # ---
 
 # %% [markdown]
-# # Using an Ontology for Synonyms meta-analysis
+# # OHBM Poster #2419 Verifying Ontological Knowledge Through Meta-Analysis: Study Cases of Pain and Consciousness
 
 # %%
 import warnings  # type: ignore
