@@ -40,6 +40,7 @@ from typing import Callable, Iterable
 
 import numpy as np
 from neurolang.frontend import NeurolangPDL
+import scipy.special
 
 from nlweb import data_utils
 
@@ -50,20 +51,12 @@ data_dir = Path("neurolang_data")
 def init_frontend():
     nl = NeurolangPDL()
 
-    nl.add_symbol(
-        np.log,
-        name="log",
-        type_=Callable[[float], float],
-    )
-    nl.add_symbol(
-        lambda it: float(sum(it)),
-        name="agg_sum",
-        type_=Callable[[Iterable], float],
-    )
-
     @nl.add_symbol
-    def agg_count(*iterables) -> int:
-        return len(next(iter(iterables)))
+    def one_way_chi2(llr: float) -> float:
+        """
+        2 * log(LR) follows a one-way chi2 distribution
+        """
+        return scipy.special.chdtrc(1, 2 * llr)
 
     return nl
 
@@ -154,22 +147,23 @@ for multiple comparison, to identify significant coactivating regions.
 
 # %%
 query = r"""RegionReported(r, s) :- PeakReported(i, j, k, s) & RegionVoxel(r, i, j, k)
-RegionVolume(r, agg_count(i, j, k)) :- RegionVoxel(r, i, j, k)
-NetworkVolume(n, agg_sum(v)) :- RegionVolume(r, v) & NetworkRegion(n, r)
-NetworkReportedVolume(network, study, agg_sum(volume)) :- NetworkRegion(network, region) & RegionReported(region, study) & RegionVolume(region, volume)
+RegionVolume(r, count(i, j, k)) :- RegionVoxel(r, i, j, k)
+NetworkVolume(n, sum(v)) :- RegionVolume(r, v) & NetworkRegion(n, r)
+NetworkReportedVolume(network, study, sum(volume)) :- NetworkRegion(network, region) & RegionReported(region, study) & RegionVolume(region, volume)
 prob :: NetworkReported(network, study) :- NetworkVolume(network, nv) & NetworkReportedVolume(network, study, nrv) & (prob == nrv / nv)
 ProbActivationGivenNetworkActivation(r, n, PROB(r, n)) :- (RegionReported(r, s) & SelectedStudy(s)) // (NetworkReported(n, s) & SelectedStudy(s))
 ProbActivationGivenNoNetworkActivation(r, n, PROB(r, n)) :- (RegionReported(r, s) & SelectedStudy(s)) // (~NetworkReported(n, s) & Network(n) & SelectedStudy(s))
 ProbActivation(r, PROB(r)) :- RegionReported(r, s) & SelectedStudy(s)
-CountStudies(agg_count(s)) :- Study(s)
-CountStudiesRegionReported(r, agg_count(s)) :- RegionReported(r, s)
+CountStudies(count(s)) :- Study(s)
+CountStudiesRegionReported(r, count(s)) :- RegionReported(r, s)
 ProbNetworkReported(n, PROB(n)) :- NetworkReported(n, s) & SelectedStudy(s)
 CountStudiesNetworkReported(n, scount) :- ProbNetworkReported(n, prob) & CountStudies(N) & (scount == prob * N)
 ProbRegionAndNetworkReported(r, n, PROB(r, n)) :- RegionReported(r, s) & NetworkReported(n, s) & SelectedStudy(s)
 CountStudiesRegionAndNetworkReported(r, n, scount) :- ProbRegionAndNetworkReported(r, n, prob) & CountStudies(N) & (scount == prob * N)
 Counts(region, network, N, n, m, k) :- CountStudies(N) & CountStudiesRegionReported(region, m) & CountStudiesNetworkReported(network, n) & CountStudiesRegionAndNetworkReported(region, network, k)
 Query(region, network, p, p0, p1, llr, N, n, m, k) :- ProbActivation(region, p) & ProbActivationGivenNoNetworkActivation(region, network, p0) & ProbActivationGivenNetworkActivation(region, network, p1) & Counts(region, network, N, n, m, k) & ( llr == ( k * log(p1) + ((n - k) * log(1 - p1) + ((m - k) * log(p0) + (((N - n) - (m - k)) * log(1 - p0))))) - ( k * log(p) + ((n - k) * log(1 - p) + ((m - k) * log(p) + (((N - n) - (m - k)) * log(1 - p))))))
-ans(region, network, p, p0, p1, llr, N, n, m, k) :- Query(region, network, p, p0, p1, llr, N, n, m, k)"""
+Analysis(region, network, p, p0, p1, pval, N, n, m, k) :- Query(region, network, p, p0, p1, llr, N, n, m, k) & ( pval == one_way_chi2(2 * llr) )
+ans(region, network, p, p0, p1, llr, N, n, m, k) :- Analysis(region, network, p, p0, p1, pval, N, n, m, k)"""
 
 # %%
 from nlweb.viewers.query import QueryWidget
