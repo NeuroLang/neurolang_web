@@ -18,7 +18,11 @@
 # ---
 
 # %% [markdown]
-# # Using Probabilistic First-Order Logic in NeuroLang To Segregate Dorsal and Ventral Posterior Cingulate Cortex (PCC)
+"""
+# OHBM Poster #2529 : Probabilistic First-Order Logic for Coordinate-Based Meta-Analysis of Functional Segregation in the Brain
+
+Using Probabilistic First-Order Logic in NeuroLang To Segregate Dorsal and Ventral Posterior Cingulate Cortex (PCC)
+"""
 
 # %%
 import warnings  # type: ignore
@@ -124,7 +128,7 @@ region_voxels, _ = data_utils.fetch_difumo(
 
 # %%
 # NeuroSynth database
-term_in_study, peak_reported, study_ids = data_utils.fetch_neurosynth(data_dir=data_dir)
+peak_reported, study_ids = data_utils.fetch_neurosynth_peak_data(data_dir=data_dir)
 ijk_positions = np.round(
     data_utils.xyz_to_ijk(peak_reported[["x", "y", "z"]].values.astype(float), mni_mask)
 )
@@ -267,7 +271,8 @@ ans(difumo_label, i, j, k) :- PCCRegion(difumo_label, i, j, k)
 """
 
 # %%
-pcc_region = nl.execute_datalog_program(pcc_query).as_pandas_dataframe()
+with nl.scope:
+    pcc_region = nl.execute_datalog_program(pcc_query).as_pandas_dataframe()
 
 # %% [markdown]
 """

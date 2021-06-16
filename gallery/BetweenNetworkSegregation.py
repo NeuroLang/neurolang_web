@@ -217,7 +217,7 @@ ProbTopicAssociationAndNetworkReported(t, n, PROB(t, n)) :- TopicAssociation(t, 
 CountStudiesTopicAssociationAndNetworkReported(t, n, scont) :- ProbTopicAssociationAndNetworkReported(t, n, prob) & CountStudies(N) & (scont == prob * N)
 Counts(topic, network, N, n, m, k) :- CountStudies(N) & CountStudiesTopicAssociation(topic, m) & CountStudiesNetworkReported(network, n) & CountStudiesTopicAssociationAndNetworkReported(topic, network, k)
 Query(topic, network, p_topic, p_network, p0, p1, llr, N, n, m, k) :- ProbTopicAssociation(topic, p_topic) & ProbNetworkReported(network, p_network) & ProbTopicAssociationGivenNoNetworkActivation(topic, network, p0) & ProbTopicAssociationGivenNetworkActivation(topic, network, p1) & Counts(topic, network, N, n, m, k) & ( llr == ( k * log(p1) + ((n - k) * log(1 - p1) + ((m - k) * log(p0) + (((N - n) - (m - k)) * log(1 - p0))))) - ( k * log(p_topic) + ((n - k) * log(1 - p_topic) + ((m - k) * log(p_topic) + (((N - n) - (m - k)) * log(1 - p_topic))))))
-ans(topic, network, p_topic, p_network, p0, p1, llr, N, n, m, k) :- Query(topic, network, p_topic, p_network, p0, p1, llr, N, n, m, k)
+ans(topic, network, p_topic, p_network, p0, p1, llr, N, n, m, k) :- Query(topic, network, p_topic, p_network, p0, p1, llr, N, n, m, k) 
 """
 
 # %%
