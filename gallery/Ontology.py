@@ -80,8 +80,8 @@ We start by loading the data we need from available atlases.
 We use the Neurosynth CBMA database (Yarkoni et al., 2011), consisting of 14,371 studies.
 We also use biological ontologies which contain biological concepts and the relations between them.
 
-In this example, we use the Cognitive Atlas ontology, but others can be used as well, such as the Interlinking Ontology 
-for Biological Concepts (IOBC) which contains approximately 80,000 biological concepts.
+In this example, we use the Interlinking Ontology for Biological Concepts (IOBC) which contains approximately 80,000 biological 
+concepts. *For better loading times, in this example we use a minimized version of the ontology with only a limited number of entities.*
 """
 
 # %%
@@ -91,8 +91,7 @@ mni_mask = data_utils.load_mni_atlas(data_dir=data_dir, resolution=resolution)
 
 # %%
 # IOBC Ontology
-iobc = data_utils.fetch_iobc_ontology(data_dir=data_dir)
-cogat = data_utils.fetch_cogat_ontology(data_dir=data_dir)
+iobc = str(data_dir / "ontologies" / "iobc_min.xrdf")
 
 # %%
 # NeuroSynth database
@@ -156,7 +155,7 @@ n_splits = 5
 load_studies(nl, mni_mask, term_in_study, peak_reported, study_ids, n_splits=n_splits)
 
 # %%
-nl.load_ontology(cogat)
+nl.load_ontology(iobc)
 
 # %% [markdown]
 """
@@ -183,7 +182,7 @@ Try to remove the first rule to look at the mean activation values for the synon
 # %%
 synonyms_query = r"""
 RelatedBiostimulationTerm(word) :- (word == 'pain')
-RelatedBiostimulationTerm(alternative_names) :- subclass_of(biostimulation_subclass, '200906066643737725') & label(pain_entity, 'Pain') &  related(pain_entity, biostimulation_subclass) & altLabel(biostimulation_subclass, alternative_names)
+RelatedBiostimulationTerm(alternative_names) :- label(biostimulation_class, 'biostimulation') & subclass_of(biostimulation_subclass, biostimulation_class) & label(pain_entity, 'Pain') & related(biostimulation_subclass, pain_entity) & altLabel(biostimulation_subclass, alternative_names)
 Synonym(short_name) :- (short_name == first_word(alternative_names)) & RelatedBiostimulationTerm(alternative_names)
 FilteredBySynonym(t, s) :- TermInStudy(t, s) & Synonym(t)
 VoxelReported(x, y, z, s) :-  FocusReported(x2, y2, z2, s) & Voxel(x, y, z) & (d == EUCLIDEAN(x, y, z, x2, y2, z2)) & (d < 1)
