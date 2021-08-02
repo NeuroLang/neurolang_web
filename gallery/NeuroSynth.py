@@ -203,7 +203,7 @@ In the query below, we split the conditional probabilistic rule into sub rules f
 # %%
 # Display query gui
 query = """
-tfidf :: TermInStudy(term, study) :- TermInStudyTFIDF(term, tfidf, study)
+TermInStudy(term, study) :: tfidf :- TermInStudyTFIDF(term, tfidf, study)
 VoxelReported (i, j, k, study) :- PeakReported(i2, j2, k2, study) & Voxel(i, j, k) & (d == EUCLIDEAN(i, j, k, i2, j2, k2)) & (d < 1)
 TermAssociation(term) :- SelectedStudy(study) & TermInStudy(term, study)
 Activation(i, j, k) :- SelectedStudy(s) & VoxelReported(i, j, k, s)

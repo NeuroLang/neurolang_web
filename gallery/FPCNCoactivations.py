@@ -157,7 +157,7 @@ query = r"""RegionReported(r, s) :- PeakReported(i, j, k, s) & RegionVoxel(r, i,
 RegionVolume(r, count(i, j, k)) :- RegionVoxel(r, i, j, k)
 NetworkVolume(n, sum(v)) :- RegionVolume(r, v) & NetworkRegion(n, r)
 NetworkReportedVolume(network, study, sum(volume)) :- NetworkRegion(network, region) & RegionReported(region, study) & RegionVolume(region, volume)
-prob :: NetworkReported(network, study) :- NetworkVolume(network, nv) & NetworkReportedVolume(network, study, nrv) & (prob == nrv / nv)
+NetworkReported(network, study) :: prob :- NetworkVolume(network, nv) & NetworkReportedVolume(network, study, nrv) & (prob == nrv / nv)
 ProbActivationGivenNetworkActivation(r, n, PROB(r, n)) :- (RegionReported(r, s) & SelectedStudy(s)) // (NetworkReported(n, s) & SelectedStudy(s))
 ProbActivationGivenNoNetworkActivation(r, n, PROB(r, n)) :- (RegionReported(r, s) & SelectedStudy(s)) // (~NetworkReported(n, s) & Network(n) & SelectedStudy(s))
 ProbActivation(r, PROB(r)) :- RegionReported(r, s) & SelectedStudy(s)
