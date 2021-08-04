@@ -43,7 +43,6 @@ from pathlib import Path
 from typing import Callable, Iterable
 
 import numpy as np
-import nibabel
 from neurolang import NeurolangPDL
 from neurolang.frontend import ExplicitVBR, ExplicitVBROverlay
 from nlweb import data_utils

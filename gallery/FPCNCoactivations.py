@@ -36,7 +36,7 @@ import warnings  # type: ignore
 warnings.filterwarnings("ignore")
 
 from pathlib import Path
-from typing import Callable, Iterable
+from typing import Callable
 
 import numpy as np
 from neurolang.frontend import NeurolangPDL
