@@ -197,7 +197,7 @@ activation of any other network *n2*, where *n2 ̸= n*.
 
 ```python
 StudyMatchingNetworkQuery(s, n) :- RegionReported("VWFA", s) & NetworkReported(n, s) & exists(n2; ((n2 != n) & NetworkReported(n2, s) & Network(n2)))
-PositiveReverseInferenceSegregationQuery(t, n, PROB(t, n)) :- (TopicAssociation(t, s) & SelectedStudy(s)) // (StudyMatchingNetworkQuery(s, n) & SelectedStudy(s))
+PositiveReverseInferenceSegregationQuery(t, n, PROB) :- (TopicAssociation(t, s) & SelectedStudy(s)) // (StudyMatchingNetworkQuery(s, n) & SelectedStudy(s))
 ```
 
 Because only two networks, `language` and `attention`, 
@@ -208,17 +208,17 @@ including one while segregating the other.
 # %%
 query += r"""
 StudyMatchingNetworkQuery(s, n) :- RegionReported("VWFA", s) & NetworkReported(n, s) & exists(n2; ((n2 != n) & NetworkReported(n2, s) & Network(n2)))
-PositiveReverseInferenceSegregationQuery(t, n, PROB(t, n)) :- (TopicAssociation(t, s) & SelectedStudy(s)) // (StudyMatchingNetworkQuery(s, n) & SelectedStudy(s))"""
+PositiveReverseInferenceSegregationQuery(t, n, PROB) :- (TopicAssociation(t, s) & SelectedStudy(s)) // (StudyMatchingNetworkQuery(s, n) & SelectedStudy(s))"""
 
 # %%
 query += r"""
 StudyNotMatchingSegregationQuery(s, n) :- ~StudyMatchingNetworkQuery(s, n) & Study(s) & Network(n)
-NegativeReverseInferenceSegregationQuery(t, n, PROB(t, n)) :- (TopicAssociation(t, s) & SelectedStudy(s)) // (StudyNotMatchingSegregationQuery(s, n) & SelectedStudy(s))
-MarginalTopicAssociation(t, PROB(t)) :- SelectedStudy(s) & TopicAssociation(t, s)
+NegativeReverseInferenceSegregationQuery(t, n, PROB) :- (TopicAssociation(t, s) & SelectedStudy(s)) // (StudyNotMatchingSegregationQuery(s, n) & SelectedStudy(s))
+MarginalTopicAssociation(t, PROB) :- SelectedStudy(s) & TopicAssociation(t, s)
 CountStudies(count(s)) :- Study(s)
 CountStudiesWithTopic(t, c) :- MarginalTopicAssociation(t, prob) & (c == prob * N) & CountStudies(N)
 CountStudiesMatchingQuery(n, count(s)) :- StudyMatchingNetworkQuery(s, n)
-JointProb(t, n, PROB(t, n)) :- TopicAssociation(t, s) & StudyMatchingNetworkQuery(s, n) & SelectedStudy(s)
+JointProb(t, n, PROB) :- TopicAssociation(t, s) & StudyMatchingNetworkQuery(s, n) & SelectedStudy(s)
 CountStudiesMatchingQueryWithTopic(t, n, c) :- JointProb(t, n, p) & CountStudies(N) & (c == N * p)
 LikelihoodRatio(topic, network, p1, p0, llr, m, n, k) :- PositiveReverseInferenceSegregationQuery(topic, network, p1) & NegativeReverseInferenceSegregationQuery(topic, network, p0) & MarginalTopicAssociation(topic, p) & CountStudies(N) & CountStudiesWithTopic(topic, m) & CountStudiesMatchingQuery(network, n) & CountStudiesMatchingQueryWithTopic(topic, network, k) & ( llr == ( k * log(p1) + ((n - k) * log(1 - p1) + ((m - k) * log(p0) + (((N - n) - (m - k)) * log(1 - p0))))) - ( k * log(p) + ((n - k) * log(1 - p) + ((m - k) * log(p) + (((N - n) - (m - k)) * log(1 - p))))))
 ans(topic, network, pTgQ, pTgNotQ, llr, nb_studies_associated_with_topic, nb_studies_matching_segregation_query, nb_studies_both_associated_with_topic_and_matching_query) :- LikelihoodRatio(topic, network, pTgQ, pTgNotQ, llr, nb_studies_associated_with_topic, nb_studies_matching_segregation_query, nb_studies_both_associated_with_topic_and_matching_query)

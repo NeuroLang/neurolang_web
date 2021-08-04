@@ -207,7 +207,7 @@ TermInStudy(term, study) :: tfidf :- TermInStudyTFIDF(term, tfidf, study)
 VoxelReported (i, j, k, study) :- PeakReported(i2, j2, k2, study) & Voxel(i, j, k) & (d == EUCLIDEAN(i, j, k, i2, j2, k2)) & (d < 1)
 TermAssociation(term) :- SelectedStudy(study) & TermInStudy(term, study)
 Activation(i, j, k) :- SelectedStudy(s) & VoxelReported(i, j, k, s)
-ActivationGivenTerm(i, j, k, PROB(i, j, k)) :- Activation(i, j, k) // TermAssociation("emotion")
+ActivationGivenTerm(i, j, k, PROB) :- Activation(i, j, k) // TermAssociation("emotion")
 ActivationGivenTermImage(agg_create_region_overlay(i, j, k, p)) :- ActivationGivenTerm(i, j, k, p)"""
 
 # %%

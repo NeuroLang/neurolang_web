@@ -351,7 +351,7 @@ RegionReported(r, s) :- PeakReported(x1, y1, z1, s, i, j, k) & RegionOfInterest(
 
 2. The second rule computes the marginal probability of finding a topic in a study in each of the splits of the database.
 ```python
-MarginalProbTopicInStudy(t, split, PROB(t, split)) :- TopicInStudy(t, s)  & SelectedStudy(s)  & StudySplits(s, split)
+MarginalProbTopicInStudy(t, split, PROB) :- TopicInStudy(t, s)  & SelectedStudy(s)  & StudySplits(s, split)
 ```
 
 3. We then write a segregation query that selects studies reporting activation in one PCC sub-region and not 
@@ -362,7 +362,7 @@ StudyMatchingRegionSegregationQuery(s, r) :-  RegionReported(r, s) & ~RegionRepo
 
 4. Which allows us to compute the probability of a topic being present given a segregation query:
 ```python
-ProbTopicGivenRegionSegregationQuery(t, r, split, PROB(t, r, split)) :- (TopicInStudy(t, s)) // ( StudyMatchingRegionSegregationQuery(s, r) & SelectedStudy(s) & StudySplits(s, split) )    
+ProbTopicGivenRegionSegregationQuery(t, r, split, PROB) :- (TopicInStudy(t, s)) // ( StudyMatchingRegionSegregationQuery(s, r) & SelectedStudy(s) & StudySplits(s, split) )    
 ```
 
 5. Finally, we combine the above queries to calculate the log-odds ratio of topic associations for the dPCC and vPCC:
@@ -374,9 +374,9 @@ TopicRegionAssociationLogOdds(t, r, split, p, pmarg, logodds) :- ProbTopicGivenR
 # %%
 query = r"""
 RegionReported(r, s) :- PeakReported(x1, y1, z1, s, i, j, k) & RegionOfInterest(difumo_label, i, j, k, r)
-MarginalProbTopicInStudy(t, split, PROB(t, split)) :- TopicInStudy(t, s) & SelectedStudy(s) & StudySplits(s, split)
+MarginalProbTopicInStudy(t, split, PROB) :- TopicInStudy(t, s) & SelectedStudy(s) & StudySplits(s, split)
 StudyMatchingRegionSegregationQuery(s, r) :- RegionReported(r, s) & ~RegionReported(r2, s) & RegionLabel(r2) & (r2 != r)
-ProbTopicGivenRegionSegregationQuery(t, r, split, PROB(t, r, split)) :- (TopicInStudy(t, s)) // ( StudyMatchingRegionSegregationQuery(s, r) & SelectedStudy(s) & StudySplits(s, split) ) 
+ProbTopicGivenRegionSegregationQuery(t, r, split, PROB) :- (TopicInStudy(t, s)) // ( StudyMatchingRegionSegregationQuery(s, r) & SelectedStudy(s) & StudySplits(s, split) ) 
 TopicRegionAssociationLogOdds(t, r, split, p, pmarg, logodds) :- ProbTopicGivenRegionSegregationQuery(t, r, split, p) & MarginalProbTopicInStudy(t, split, pmarg)  & (logodds == log_odds(p, pmarg))"""
 
 # %% [markdown]

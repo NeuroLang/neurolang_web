@@ -180,8 +180,8 @@ query = r"""
 VoxelReported(x, y, z, s) :- PeakReported(x2, y2, z2, s) & Voxel(x, y, z) & (d == EUCLIDEAN(x, y, z, x2, y2, z2)) & (d < 4)
 Match(t, s) :- TopicAssociation(t, s) & ~exists(t2; (Topic(t2) & Study(s) & TopicAssociation(t2, s) & (t2 != t)))
 NoMatch(t, s) :- ~Match(t, s) & Topic(t) & Study(s)
-ans1(t, x, y, z, PROB(t, x, y, z)) :- (VoxelReported(x, y, z, s) & SelectedStudy(s)) // (Match(t, s) & SelectedStudy(s))
-ans0(t, x, y, z, PROB(t, x, y, z)) :- (VoxelReported(x, y, z, s) & SelectedStudy(s)) // (NoMatch(t, s) & SelectedStudy(s))
+ans1(t, x, y, z, PROB) :- (VoxelReported(x, y, z, s) & SelectedStudy(s)) // (Match(t, s) & SelectedStudy(s))
+ans0(t, x, y, z, PROB) :- (VoxelReported(x, y, z, s) & SelectedStudy(s)) // (NoMatch(t, s) & SelectedStudy(s))
 Query(t, x, y, z, r, pAgMatch, pAgNoMatch) :- RegionVoxel(r, x, y, z) & ans1(t, x, y, z, pAgMatch) & ans0(t, x, y, z, pAgNoMatch)
 ans(t, x, y, z, r, pAgMatch, pAgNoMatch) :- Query(t, x, y, z, r, pAgMatch, pAgNoMatch)
 """

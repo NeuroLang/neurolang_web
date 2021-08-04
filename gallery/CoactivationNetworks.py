@@ -117,12 +117,12 @@ load_studies(nl, peak_reported, study_ids)
 load_regions_and_peaks_reported(nl)
 
 # %%
-query = r"""ProbActivationGivenSeedActivation(x, y, z, region, PROB(x, y, z, region)) :- (VoxelReported(x, y, z, s) & SelectedStudy(s)) // (RegionReported(region, s) & SelectedStudy(s))
-ProbActivationGivenSeedDeactivation(x, y, z, region, PROB(x, y, z, region)) :- (VoxelReported(x, y, z, s) & SelectedStudy(s)) // (~RegionReported(region, s) & SelectedStudy(s) & SeedVoxel(region, x_s, y_s, z_s))
+query = r"""ProbActivationGivenSeedActivation(x, y, z, region, PROB) :- (VoxelReported(x, y, z, s) & SelectedStudy(s)) // (RegionReported(region, s) & SelectedStudy(s))
+ProbActivationGivenSeedDeactivation(x, y, z, region, PROB) :- (VoxelReported(x, y, z, s) & SelectedStudy(s)) // (~RegionReported(region, s) & SelectedStudy(s) & SeedVoxel(region, x_s, y_s, z_s))
 CountStudies(count(s)) :- Study(s)
-ProbActivation(x, y, z, PROB(x, y, z)) :- VoxelReported(x, y, z, s) & SelectedStudy(s)
-ProbActivationSeed(region, PROB(region)) :- RegionReported(region, s) & SelectedStudy(s)
-ProbActivationAndSeedActivation(x, y, z, region, PROB(x, y, z, region)) :- VoxelReported(x, y, z, s) & SelectedStudy(s) & RegionReported(region, s)
+ProbActivation(x, y, z, PROB) :- VoxelReported(x, y, z, s) & SelectedStudy(s)
+ProbActivationSeed(region, PROB) :- RegionReported(region, s) & SelectedStudy(s)
+ProbActivationAndSeedActivation(x, y, z, region, PROB) :- VoxelReported(x, y, z, s) & SelectedStudy(s) & RegionReported(region, s)
 Query(x,y,z,region,pA,pASeed,pAgA,pAgD,pAaA,n,m,kk,N, llr) :- ProbActivationAndSeedActivation(x, y, z, region, pAaA), ProbActivationGivenSeedActivation(x, y, z, region, pAgA), ProbActivationGivenSeedDeactivation(x, y, z, region, pAgD), ProbActivation(x, y, z, pA), ProbActivationSeed(region, pASeed), CountStudies(N), (m == pA * N), (n == pASeed * N), (kk == pAaA * N), ( llr == (kk * log(pAgA) + ((n - kk) * log(1 - pAgA) + ((m - kk) * log(pAgD) + (((N - n) - (m + kk)) * log(1 - pAgD))))) - (kk * log(pA) + ((n - kk) * log(1 - pA) + ((m - kk) * log(pA) + (((N - n) - (m + kk)) * log(1 - pA))))) )
 ans(x,y,z,region,pA,pASeed,pAgA,pAgD,pAaA,n,m,kk,N, llr) :- Query(x,y,z,region,pA,pASeed,pAgA,pAgD,pAaA,n,m,kk,N, llr)
 """
