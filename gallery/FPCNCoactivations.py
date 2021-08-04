@@ -51,7 +51,6 @@ data_dir = Path("neurolang_data")
 def init_frontend():
     nl = NeurolangPDL()
 
-
     nl.add_symbol(
         np.log,
         name="log",
