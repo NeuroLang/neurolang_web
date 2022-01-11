@@ -337,6 +337,7 @@ class ResultTabPageWidget(VBox):
             rows=min(self._total_nb_rows, number_of_rows),
             columns=len(self._df.columns),
             column_headers=list(self._df.columns),
+            column_sorting=False,
             layout=Layout(width="auto", height="330px"),
         )
 
